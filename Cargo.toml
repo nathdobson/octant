@@ -1,4 +1,8 @@
 [workspace]
 
 members = [
+    "octant-client"
 ]
+
+[profile.release]
+opt-level = "s"
