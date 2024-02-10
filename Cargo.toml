@@ -1,7 +1,9 @@
 [workspace]
+resolver = "2"
 
 members = [
-    "octant-client"
+    "octant-client", "octant-scoreboard",
+    "octant-server"
 ]
 
 [profile.release]
