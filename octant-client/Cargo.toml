@@ -9,3 +9,24 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm-bindgen = "0.2.91"
+tokio = { version = "1.32.0", features = ["sync"] }
+web-sys = { version = "0.3.64", features = [
+    "CloseEvent",
+    "ErrorEvent",
+    "Event",
+    "MessageEvent",
+    "WebSocket",
+    "BinaryType",
+    "Blob",
+    "Window",
+    "Location",
+    "console",
+] }
+log = "0.4.20"
+js-sys = "0.3.64"
+anyhow = "1.0.75"
+wasm-bindgen-futures = "0.4.41"
+wasm-logger = "0.2.0"
+console_error_panic_hook = "0.1.7"
+sendable = "0.6.1"
+sync_wrapper = "0.1.2"
