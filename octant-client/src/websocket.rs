@@ -1,57 +1,47 @@
 use core::mem;
+use std::pin::Pin;
+use std::task::Poll;
 use tokio::sync::mpsc;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{CloseEvent, ErrorEvent, Event, MessageEvent, WebSocket};
-use anyhow::Context;
-use crate::error::WasmError;
-
-
-#[derive(Debug)]
-pub enum RecvError {
-    Disconnected,
-    Anyhow(anyhow::Error),
-}
-
-#[derive(Debug)]
-pub enum TryRecvError {
-    Empty,
-    Disconnected,
-    Anyhow(anyhow::Error),
-}
-
-impl From<anyhow::Error> for RecvError {
-    fn from(value: anyhow::Error) -> Self { RecvError::Anyhow(value) }
-}
-
-impl From<anyhow::Error> for TryRecvError {
-    fn from(value: anyhow::Error) -> Self { TryRecvError::Anyhow(value) }
-}
-
-impl From<RecvError> for TryRecvError {
-    fn from(value: RecvError) -> Self {
-        match value {
-            RecvError::Disconnected => TryRecvError::Disconnected,
-            RecvError::Anyhow(x) => TryRecvError::Anyhow(x),
-        }
-    }
-}
+use anyhow::{anyhow, Context};
+use futures::{Sink, Stream};
+use std::str;
+use std::str::Utf8Error;
+use wasm_error::WasmError;
 
 pub struct WebSocketStream {
-    socket: WebSocket,
-    receiver: mpsc::UnboundedReceiver<Message>,
+    socket: Option<WebSocket>,
+    receiver: mpsc::UnboundedReceiver<WebSocketEvent>,
 }
 
-pub enum Message {
+pub enum WebSocketMessage {
+    Text(String),
+    Binary(Vec<u8>),
+}
+
+enum WebSocketEvent {
     Connect,
     Error(ErrorEvent),
-    Message(Vec<u8>),
+    Message(WebSocketMessage),
 }
 
 impl Drop for WebSocketStream {
     fn drop(&mut self) {
-        if let Err(e) = self.socket.close() {
-            log::error!("Error closing socket: {:?}", e);
+        if let Some(socket) = self.socket.take() {
+            if let Err(e) = socket.close() {
+                log::error!("Error closing socket: {:?}", e);
+            }
+        }
+    }
+}
+
+impl WebSocketMessage {
+    pub fn as_str(&self) -> Result<&str, Utf8Error> {
+        match self {
+            WebSocketMessage::Text(x) => Ok(x),
+            WebSocketMessage::Binary(x) => str::from_utf8(x)
         }
     }
 }
@@ -65,7 +55,7 @@ impl WebSocketStream {
         let onerror_callback: Closure<dyn FnMut(ErrorEvent)> = Closure::new({
             let recv_tx = recv_tx.clone();
             move |e: ErrorEvent| {
-                recv_tx.send(Message::Error(e.into())).ok();
+                recv_tx.send(WebSocketEvent::Error(e.into())).ok();
             }
         });
         socket.set_onerror(Some(onerror_callback.as_ref().unchecked_ref()));
@@ -73,7 +63,7 @@ impl WebSocketStream {
         let onopen_callback: Closure<dyn FnMut(Event)> = Closure::new({
             let recv_tx = recv_tx.clone();
             move |_| {
-                recv_tx.send(Message::Connect).ok();
+                recv_tx.send(WebSocketEvent::Connect).ok();
             }
         });
         socket.set_onopen(Some(onopen_callback.as_ref().unchecked_ref()));
@@ -86,12 +76,12 @@ impl WebSocketStream {
                     let mut vec = vec![];
                     vec.resize(array.length() as usize, 0);
                     array.copy_to(&mut vec);
-                    recv_tx.send(Message::Message(vec)).ok();
+                    recv_tx.send(WebSocketEvent::Message(WebSocketMessage::Binary(vec))).ok();
                 } else if let Ok(_) = e.data().dyn_into::<web_sys::Blob>() {
                     unreachable!();
                 } else if let Ok(abuf) = e.data().dyn_into::<js_sys::JsString>() {
                     recv_tx
-                        .send(Message::Message(String::from(abuf).into_bytes()))
+                        .send(WebSocketEvent::Message(WebSocketMessage::Text(String::from(abuf))))
                         .ok();
                 } else {
                     unreachable!();
@@ -108,44 +98,62 @@ impl WebSocketStream {
         socket.set_onclose(Some(onclose_callback.unchecked_ref()));
 
         match recv_rx.recv().await.unwrap() {
-            Message::Connect => {}
-            Message::Error(e) => {
+            WebSocketEvent::Connect => {}
+            WebSocketEvent::Error(e) => {
                 log::error!("receive error");
                 return Err(WasmError::new_anyhow(JsValue::from(e)).context("Failed to connect."));
             }
-            Message::Message(_) => unreachable!(),
+            WebSocketEvent::Message(_) => unreachable!(),
         }
 
         Ok(WebSocketStream {
-            socket,
+            socket: Some(socket),
             receiver: recv_rx,
         })
     }
 
-    pub fn send(&mut self, message: &[u8]) -> Result<(), anyhow::Error> {
-        Ok(self
-            .socket
-            .send_with_u8_array(&message)
-            .map_err(WasmError::new)
-            .context("Failed to send.")?)
-    }
-    pub async fn recv(&mut self) -> Result<Vec<u8>, RecvError> {
-        match self.receiver.recv().await {
-            None => Err(RecvError::Disconnected),
-            Some(Message::Message(x)) => Ok(x),
-            Some(Message::Error(e)) => Err(RecvError::Anyhow(WasmError::new_anyhow(JsValue::from(e)).context("Failed to recv."))),
-            Some(Message::Connect) => unreachable!(),
+}
+
+impl Stream for WebSocketStream {
+    type Item = anyhow::Result<WebSocketMessage>;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
+        match self.receiver.poll_recv(cx) {
+            Poll::Ready(Some(WebSocketEvent::Connect)) => unreachable!(),
+            Poll::Ready(Some(WebSocketEvent::Message(x))) => Poll::Ready(Some(Ok(x))),
+            Poll::Ready(Some(WebSocketEvent::Error(e))) => Poll::Ready(Some(Err(WasmError::new_anyhow(JsValue::from(e))))),
+            Poll::Ready(None) => Poll::Ready(None),
+            Poll::Pending => Poll::Pending,
         }
     }
-    pub fn try_recv(&mut self) -> Result<Vec<u8>, TryRecvError> {
-        match self.receiver.try_recv() {
-            Ok(Message::Message(x)) => Ok(x),
-            Ok(Message::Error(e)) => Err(TryRecvError::Anyhow(WasmError::new_anyhow(JsValue::from(e)).context("Failed to recv."))),
-            Ok(Message::Connect) => unreachable!(),
-            Err(tokio::sync::mpsc::error::TryRecvError::Empty) => Err(TryRecvError::Empty),
-            Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => {
-                Err(TryRecvError::Disconnected)
-            }
+}
+
+impl Sink<WebSocketMessage> for WebSocketStream {
+    type Error = anyhow::Error;
+
+    fn poll_ready(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn start_send(mut self: Pin<&mut Self>, message: WebSocketMessage) -> Result<(), Self::Error> {
+        let socket = self.socket.as_mut().ok_or_else(|| anyhow!(""))?;
+        match message {
+            WebSocketMessage::Text(x) =>
+                socket.send_with_str(&x),
+            WebSocketMessage::Binary(x) =>
+                socket.send_with_u8_array(&x),
+        }.map_err(WasmError::new)
+            .context("Failed to send.")
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn poll_close(mut self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
+        if let Some(socket) = self.socket.take() {
+            socket.close().map_err(WasmError::new).context("Failed to close.")?;
         }
+        Poll::Ready(Ok(()))
     }
 }

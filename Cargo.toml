@@ -2,9 +2,9 @@
 resolver = "2"
 
 members = [
-    "octant-client", "octant-scoreboard",
+    "octant-client", "octant-gui", "octant-gui-client", "octant-gui-core", "octant-scoreboard",
     "octant-server"
-]
+, "wasm-error"]
 
 [profile.release]
 opt-level = "s"

@@ -4,11 +4,12 @@ mod websocket;
 mod error;
 
 use anyhow::anyhow;
+use futures::StreamExt;
 use web_sys::window;
 use wasm_bindgen::prelude::*;
-use crate::error::WasmError;
-use crate::websocket::{RecvError, WebSocketStream};
-use crate::error::log_error;
+use octant_gui_client::Renderer;
+use crate::websocket::{WebSocketStream};
+use wasm_error::{log_error, WasmError};
 
 #[wasm_bindgen(start)]
 pub async fn main() {
@@ -28,16 +29,12 @@ pub async fn main_impl() -> anyhow::Result<()> {
         "https:" => "wss:",
         _ => { return Err(anyhow!("Cannot infer websocket protocol for {:?}",http_proto)); }
     };
-    let url = format!("{ws_proto}//{host}/socket/render");
+    let url = format!("{ws_proto}//{host}/gui/render");
     log::info!("Connecting to {:?}",url);
     let mut socket = WebSocketStream::connect(&url).await?;
-    log::info!("Response before initial request is {:?}",socket.try_recv());
-    socket.send(b"ping")?;
-    log::info!("Sent ping");
-    match socket.recv().await {
-        Ok(resp) => log::info!("resp is {:?}",String::from_utf8(resp)),
-        Err(RecvError::Disconnected) => log::error!("disconnected"),
-        Err(RecvError::Anyhow(x)) => return Err(x),
-    };
+    let (tx, rx) = socket.split();
+    let rx =
+        rx.map(|x| Ok(serde_json::from_str(x?.as_str()?)?));
+    Renderer::new(Box::pin(rx)).run().await?;
     Ok(())
 }

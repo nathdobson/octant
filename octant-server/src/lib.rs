@@ -6,7 +6,10 @@ use clap::Parser;
 use futures::SinkExt;
 use warp::{Filter};
 use futures::stream::{SplitSink, SplitStream, StreamExt};
+use serde_json::Value;
 use warp::ws::{Message, WebSocket};
+use octant_gui::Root;
+use octant_gui_core::{Argument, Command, CommandList};
 
 #[derive(Parser, Debug)]
 pub struct OctantServer {
@@ -21,18 +24,24 @@ impl OctantServer {
 }
 
 impl OctantServer {
+    async fn encode(x: CommandList) -> anyhow::Result<Message> {
+        Ok(Message::binary(serde_json::to_vec(&x)?))
+    }
     pub async fn run_socket(&self, _name: &str, mut tx: SplitSink<WebSocket, Message>, mut rx: SplitStream<WebSocket>) -> anyhow::Result<()> {
+        let root = Root::new(Box::pin(tx.with(Self::encode)));
+
+        root.log(Argument::Handle(root.window().document().handle.handle()));
+        root.flush().await?;
         while let Some(received) = rx.next().await {
             let received = received?;
             if received.is_close() {
                 break;
             }
             if received.is_binary() {
-                if received.as_bytes() == b"ping" {
-                    tx.send(Message::binary(b"pong")).await?;
-                }
+                log::info!("{:?}",received.as_bytes());
             }
         }
+
         Ok(())
     }
     pub async fn run(self) {
@@ -42,7 +51,7 @@ impl OctantServer {
         let statik =
             warp::path("static").and(warp::fs::dir("./target/www"));
         let socket =
-            warp::path("socket")
+            warp::path("gui")
                 .and(warp::path::param())
                 .and(warp::ws())
                 .map({
