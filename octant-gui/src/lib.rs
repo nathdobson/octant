@@ -1,13 +1,16 @@
 #![deny(unused_must_use)]
 
 use std::{iter, mem};
+use std::ops::Deref;
 use std::pin::Pin;
 use std::sync::Arc;
+
 use atomic_refcell::AtomicRefCell;
 use futures::sink::Sink;
 use futures::SinkExt;
 use serde_json::Value;
-use octant_gui_core::{Argument, Command, CommandList, GlobalMethod, Handle, Method, WindowMethod};
+
+use octant_gui_core::{Argument, Command, CommandList, DocumentMethod, ElementMethod, GlobalMethod, Handle, Method, WindowMethod};
 
 type RenderSink = Pin<Box<dyn Send + Sync + Sink<CommandList, Error=anyhow::Error>>>;
 
@@ -61,7 +64,15 @@ impl Root {
         self.invoke(Method::Log, vec![argument]);
     }
     pub fn window(self: &Arc<Self>) -> Window {
-        Window { handle: self.invoke(Method::Global(GlobalMethod::Window), vec![]) }
+        Window {
+            parent: Node {
+                parent: Object {
+                    parent: JsValue {
+                        handle: self.invoke(Method::Global(GlobalMethod::Window), vec![])
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -80,19 +91,131 @@ impl OwnedHandle {
     }
 }
 
+pub struct JsValue {
+    handle: OwnedHandle,
+}
+
+impl JsValue {
+    pub fn handle(&self) -> &OwnedHandle { &self.handle }
+}
+
+pub struct Object {
+    parent: JsValue,
+}
+
+impl Deref for Object {
+    type Target = JsValue;
+    fn deref(&self) -> &Self::Target { &self.parent }
+}
+
+pub struct Node {
+    parent: Object,
+}
+
+impl Deref for Node {
+    type Target = Object;
+    fn deref(&self) -> &Self::Target { &self.parent }
+}
+
 pub struct Window {
-    pub handle: OwnedHandle,
+    parent: Node,
+}
+
+impl Deref for Window {
+    type Target = Node;
+    fn deref(&self) -> &Self::Target { &self.parent }
 }
 
 pub struct Document {
-    pub handle: OwnedHandle,
+    parent: Node,
+}
+
+impl Deref for Document {
+    type Target = Node;
+    fn deref(&self) -> &Self::Target { &self.parent }
+}
+
+pub struct Element {
+    parent: Node,
+}
+
+impl Deref for Element {
+    type Target = Node;
+    fn deref(&self) -> &Self::Target { &self.parent }
+}
+
+pub struct HtmlElement {
+    parent: Element,
+}
+
+impl Deref for HtmlElement {
+    type Target = Element;
+    fn deref(&self) -> &Self::Target { &self.parent }
+}
+
+pub struct Text {
+    parent: Node,
+}
+
+impl Deref for Text {
+    type Target = Node;
+    fn deref(&self) -> &Self::Target { &self.parent }
 }
 
 impl Window {
     fn invoke(&self, method: WindowMethod, args: Vec<Argument>) -> OwnedHandle {
-        self.handle.invoke(Method::Window(method), args)
+        self.handle().invoke(Method::Window(method), args)
     }
     pub fn document(&self) -> Document {
-        Document { handle: self.invoke(WindowMethod::Document, vec![]) }
+        Document {
+            parent: Node {
+                parent: Object {
+                    parent: JsValue {
+                        handle: self.invoke(WindowMethod::Document, vec![])
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl Document {
+    fn invoke(&self, method: DocumentMethod, args: Vec<Argument>) -> OwnedHandle {
+        self.handle.invoke(Method::Document(method), args)
+    }
+    pub fn body(&self) -> HtmlElement {
+        HtmlElement {
+            parent: Element {
+                parent: Node {
+                    parent: Object {
+                        parent: JsValue {
+                            handle: self.invoke(DocumentMethod::Body, vec![])
+                        }
+                    }
+                }
+            }
+        }
+    }
+    pub fn create_text_node(&self, text: &str) -> Text {
+        Text {
+            parent: Node {
+                parent: Object {
+                    parent: JsValue {
+                        handle: self.invoke(
+                            DocumentMethod::CreateTextNode,
+                            vec![Argument::Json(Value::String(text.to_string()))])
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl Element {
+    fn invoke(&self, method: ElementMethod, args: Vec<Argument>) -> OwnedHandle {
+        self.handle.invoke(Method::Element(method), args)
+    }
+    pub fn append_child(&self, child: &Node) {
+        self.invoke(ElementMethod::AppendChild, vec![Argument::Handle(child.handle().handle())]);
     }
 }

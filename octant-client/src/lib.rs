@@ -1,15 +1,18 @@
 #![deny(unused_must_use)]
 
-mod websocket;
-mod error;
-
 use anyhow::anyhow;
 use futures::StreamExt;
-use web_sys::window;
 use wasm_bindgen::prelude::*;
+use web_sys::window;
+
 use octant_gui_client::Renderer;
-use crate::websocket::{WebSocketStream};
-use wasm_error::{log_error, WasmError};
+use wasm_error::WasmError;
+
+use crate::websocket::WebSocketStream;
+use wasm_error::log_error;
+
+mod websocket;
+mod error;
 
 #[wasm_bindgen(start)]
 pub async fn main() {
@@ -31,8 +34,8 @@ pub async fn main_impl() -> anyhow::Result<()> {
     };
     let url = format!("{ws_proto}//{host}/gui/render");
     log::info!("Connecting to {:?}",url);
-    let mut socket = WebSocketStream::connect(&url).await?;
-    let (tx, rx) = socket.split();
+    let socket = WebSocketStream::connect(&url).await?;
+    let (_tx, rx) = socket.split();
     let rx =
         rx.map(|x| Ok(serde_json::from_str(x?.as_str()?)?));
     Renderer::new(Box::pin(rx)).run().await?;

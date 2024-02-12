@@ -1,16 +1,19 @@
 #![deny(unused_must_use)]
 
 use std::collections::HashMap;
-use std::fmt::Arguments;
 use std::pin::Pin;
+
 use anyhow::anyhow;
 use futures::{Stream, StreamExt};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{console, window};
-use octant_gui_core::{Argument, Command, CommandList, GlobalMethod, Handle, Method, WindowMethod};
-use wasm_error::WasmError;
 use web_sys::Document;
+use web_sys::Element;
+use web_sys::Node;
 use web_sys::Window;
+
+use octant_gui_core::{Argument, Command, CommandList, DocumentMethod, ElementMethod, GlobalMethod, Handle, Method, WindowMethod};
+use wasm_error::WasmError;
 
 pub type RenderSource = Pin<Box<dyn Stream<Item=anyhow::Result<CommandList>>>>;
 
@@ -34,6 +37,7 @@ impl Renderer {
         })).collect::<anyhow::Result<Vec<_>>>()?;
         let result = self.invoke_with(method, &arguments)?;
         if let Some(assign) = assign {
+            console::info_2(&format!("{:?} = ", assign).into(), &result);
             self.handles.insert(assign, result);
         }
         Ok(())
@@ -51,10 +55,29 @@ impl Renderer {
                     WindowMethod::Document => window.document().into()
                 }
             }
-            Method::DocumentMethod(_) => todo!(),
+            Method::Document(method) => {
+                let document: &Document = arguments[0].dyn_ref().ok_or_else(|| anyhow!("cast to Document"))?;
+                match method {
+                    DocumentMethod::Body => document.body().into(),
+                    DocumentMethod::CreateTextNode => {
+                        let text = arguments[1].as_string().ok_or_else(|| anyhow!("expected string"))?;
+                        document.create_text_node(&text).into()
+                    }
+                }
+            }
             Method::Log => {
                 console::info_1(&arguments[0]);
                 JsValue::NULL
+            }
+            Method::Element(method) => {
+                let element: &Element = arguments[0].dyn_ref().ok_or_else(|| anyhow!("cast to Element"))?;
+                match method {
+                    ElementMethod::AppendChild => {
+                        let node: &Node = arguments[1].dyn_ref().ok_or_else(|| anyhow!("cast to Node"))?;
+                        element.append_child(node).map_err(WasmError::new)?;
+                        JsValue::NULL
+                    }
+                }
             }
         })
     }
@@ -65,7 +88,7 @@ impl Renderer {
         while let Some(commands) = self.source.next().await {
             let commands = commands?;
             for command in commands.commands {
-                log::info!("Running command {:?}", command);
+                console::info_1(&format!("{:?}", command).into());
                 match command {
                     Command::Invoke { assign, method, arguments } => {
                         self.invoke(assign, &method, &arguments)?;

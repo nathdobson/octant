@@ -1,14 +1,16 @@
 use core::mem;
 use std::pin::Pin;
-use std::task::Poll;
-use tokio::sync::mpsc;
-use wasm_bindgen::closure::Closure;
-use wasm_bindgen::{JsCast, JsValue};
-use web_sys::{CloseEvent, ErrorEvent, Event, MessageEvent, WebSocket};
-use anyhow::{anyhow, Context};
-use futures::{Sink, Stream};
 use std::str;
 use std::str::Utf8Error;
+use std::task::Poll;
+
+use anyhow::{anyhow, Context};
+use futures::{Sink, Stream};
+use tokio::sync::mpsc;
+use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen::closure::Closure;
+use web_sys::{CloseEvent, ErrorEvent, Event, MessageEvent, WebSocket};
+
 use wasm_error::WasmError;
 
 pub struct WebSocketStream {
@@ -131,7 +133,7 @@ impl Stream for WebSocketStream {
 impl Sink<WebSocketMessage> for WebSocketStream {
     type Error = anyhow::Error;
 
-    fn poll_ready(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_ready(self: Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
         Poll::Ready(Ok(()))
     }
 
@@ -146,11 +148,11 @@ impl Sink<WebSocketMessage> for WebSocketStream {
             .context("Failed to send.")
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_flush(self: Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
         Poll::Ready(Ok(()))
     }
 
-    fn poll_close(mut self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_close(mut self: Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
         if let Some(socket) = self.socket.take() {
             socket.close().map_err(WasmError::new).context("Failed to close.")?;
         }
