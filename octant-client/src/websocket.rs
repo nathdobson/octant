@@ -113,7 +113,6 @@ impl WebSocketStream {
             receiver: recv_rx,
         })
     }
-
 }
 
 impl Stream for WebSocketStream {

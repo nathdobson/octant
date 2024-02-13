@@ -6,10 +6,10 @@ use wasm_bindgen::prelude::*;
 use web_sys::window;
 
 use octant_gui_client::Renderer;
+use wasm_error::log_error;
 use wasm_error::WasmError;
 
 use crate::websocket::WebSocketStream;
-use wasm_error::log_error;
 
 mod websocket;
 mod error;

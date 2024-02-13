@@ -12,7 +12,10 @@ use web_sys::Element;
 use web_sys::Node;
 use web_sys::Window;
 
-use octant_gui_core::{Argument, Command, CommandList, DocumentMethod, ElementMethod, GlobalMethod, Handle, Method, WindowMethod};
+use octant_gui_core::{
+    Argument, Command, CommandList, DocumentMethod, ElementMethod, GlobalMethod, Handle, Method,
+    WindowMethod,
+};
 use wasm_error::WasmError;
 
 pub type RenderSource = Pin<Box<dyn Stream<Item=anyhow::Result<CommandList>>>>;
@@ -24,17 +27,32 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new(source: RenderSource) -> Renderer {
-        Renderer { source, handles: HashMap::new() }
+        Renderer {
+            source,
+            handles: HashMap::new(),
+        }
     }
-    fn invoke(&mut self, assign: Option<Handle>, method: &Method, arguments: &[Argument]) -> anyhow::Result<()> {
-        let arguments = arguments.into_iter().map(|x| Ok(match x {
-            Argument::Handle(handle) => {
-                self.handles.get(handle).ok_or_else(|| anyhow!("unknown handle"))?.clone()
-            }
-            Argument::Json(json) => {
-                serde_wasm_bindgen::to_value(json).map_err(|e| WasmError::new(e.into()))?
-            }
-        })).collect::<anyhow::Result<Vec<_>>>()?;
+    fn invoke(
+        &mut self,
+        assign: Option<Handle>,
+        method: &Method,
+        arguments: &[Argument],
+    ) -> anyhow::Result<()> {
+        let arguments = arguments
+            .into_iter()
+            .map(|x| {
+                Ok(match x {
+                    Argument::Handle(handle) => self
+                        .handles
+                        .get(handle)
+                        .ok_or_else(|| anyhow!("unknown handle"))?
+                        .clone(),
+                    Argument::Json(json) => {
+                        serde_wasm_bindgen::to_value(json).map_err(|e| WasmError::new(e.into()))?
+                    }
+                })
+            })
+            .collect::<anyhow::Result<Vec<_>>>()?;
         let result = self.invoke_with(method, &arguments)?;
         if let Some(assign) = assign {
             console::info_2(&format!("{:?} = ", assign).into(), &result);
@@ -44,24 +62,37 @@ impl Renderer {
     }
     fn invoke_with(&mut self, method: &Method, arguments: &[JsValue]) -> anyhow::Result<JsValue> {
         Ok(match method {
-            Method::Global(method) => {
-                match method {
-                    GlobalMethod::Window => window().into(),
-                }
-            }
+            Method::Global(method) => match method {
+                GlobalMethod::Window => window().into(),
+            },
             Method::Window(method) => {
-                let window: &Window = arguments[0].dyn_ref().ok_or_else(|| anyhow!("cast to Window"))?;
+                let window: &Window = arguments[0]
+                    .dyn_ref()
+                    .ok_or_else(|| anyhow!("cast to Window"))?;
                 match method {
-                    WindowMethod::Document => window.document().into()
+                    WindowMethod::Document => window.document().into(),
                 }
             }
             Method::Document(method) => {
-                let document: &Document = arguments[0].dyn_ref().ok_or_else(|| anyhow!("cast to Document"))?;
+                let document: &Document = arguments[0]
+                    .dyn_ref()
+                    .ok_or_else(|| anyhow!("cast to Document"))?;
                 match method {
                     DocumentMethod::Body => document.body().into(),
                     DocumentMethod::CreateTextNode => {
-                        let text = arguments[1].as_string().ok_or_else(|| anyhow!("expected string"))?;
+                        let text = arguments[1]
+                            .as_string()
+                            .ok_or_else(|| anyhow!("expected string"))?;
                         document.create_text_node(&text).into()
+                    }
+                    DocumentMethod::CreateElement => {
+                        let tag = arguments[1]
+                            .as_string()
+                            .ok_or_else(|| anyhow!("expected string"))?;
+                        document
+                            .create_element(&tag)
+                            .map_err(WasmError::new)?
+                            .into()
                     }
                 }
             }
@@ -70,11 +101,27 @@ impl Renderer {
                 JsValue::NULL
             }
             Method::Element(method) => {
-                let element: &Element = arguments[0].dyn_ref().ok_or_else(|| anyhow!("cast to Element"))?;
+                let element: &Element = arguments[0]
+                    .dyn_ref()
+                    .ok_or_else(|| anyhow!("cast to Element"))?;
                 match method {
                     ElementMethod::AppendChild => {
-                        let node: &Node = arguments[1].dyn_ref().ok_or_else(|| anyhow!("cast to Node"))?;
+                        let node: &Node = arguments[1]
+                            .dyn_ref()
+                            .ok_or_else(|| anyhow!("cast to Node"))?;
                         element.append_child(node).map_err(WasmError::new)?;
+                        JsValue::NULL
+                    }
+                    ElementMethod::SetAttribute => {
+                        let name = arguments[1]
+                            .as_string()
+                            .ok_or_else(|| anyhow!("expected string"))?;
+                        let value = arguments[2]
+                            .as_string()
+                            .ok_or_else(|| anyhow!("expected string"))?;
+                        element
+                            .set_attribute(&name, &value)
+                            .map_err(WasmError::new)?;
                         JsValue::NULL
                     }
                 }
@@ -90,12 +137,14 @@ impl Renderer {
             for command in commands.commands {
                 console::info_1(&format!("{:?}", command).into());
                 match command {
-                    Command::Invoke { assign, method, arguments } => {
+                    Command::Invoke {
+                        assign,
+                        method,
+                        arguments,
+                    } => {
                         self.invoke(assign, &method, &arguments)?;
                     }
-                    Command::Delete(handle) => {
-                        self.delete(handle)
-                    }
+                    Command::Delete(handle) => self.delete(handle),
                 }
             }
         }

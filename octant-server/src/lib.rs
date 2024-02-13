@@ -1,5 +1,6 @@
 #![deny(unused_must_use)]
 
+use std::future::Future;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -13,40 +14,46 @@ use octant_gui::Root;
 use octant_gui_core::CommandList;
 
 #[derive(Parser, Debug)]
-pub struct OctantServer {
+pub struct OctantServerOptions {
     #[arg(long, required = true)]
     pub bind_http: Option<SocketAddr>,
 }
 
-impl OctantServer {
-    pub fn from_command_line() -> OctantServer {
-        OctantServer::parse()
+pub struct OctantServer<A> {
+    pub options: OctantServerOptions,
+    pub application: A,
+}
+
+impl OctantServerOptions {
+    pub fn from_command_line() -> Self {
+        Self::parse()
     }
 }
 
-impl OctantServer {
+pub trait Application: 'static + Sync + Send {
+    fn run_handler(&self, root: Arc<Root>) -> impl Future<Output=anyhow::Result<()>> + Send;
+}
+
+impl<A: Application> OctantServer<A> {
     async fn encode(x: CommandList) -> anyhow::Result<Message> {
         Ok(Message::binary(serde_json::to_vec(&x)?))
     }
-    pub async fn run_socket(&self, _name: &str, tx: SplitSink<WebSocket, Message>, mut rx: SplitStream<WebSocket>) -> anyhow::Result<()> {
+    pub async fn run_socket(self: Arc<Self>, _name: &str, tx: SplitSink<WebSocket, Message>, mut rx: SplitStream<WebSocket>) -> anyhow::Result<()> {
         let root = Root::new(Box::pin(tx.with(Self::encode)));
-        {
-            let document = root.window().document();
-            let body = document.body();
-            let text = document.create_text_node("Lorum Ipsum Dolor Sit Amet");
-            body.append_child(&text);
-        }
-        root.flush().await?;
+        let session = tokio::spawn({
+            let this = self.clone();
+            async move { this.application.run_handler(root).await }
+        });
         while let Some(received) = rx.next().await {
             let received = received?;
             if received.is_close() {
                 break;
             }
             if received.is_binary() {
-                log::info!("{:?}",received.as_bytes());
+                log::info!("received {:?}", received.as_bytes());
             }
         }
-
+        session.abort();
         Ok(())
     }
     pub async fn run(self) {
@@ -74,7 +81,7 @@ impl OctantServer {
                     }
                 })
             ;
-        if let Some(bind_http) = self.bind_http {
+        if let Some(bind_http) = self.options.bind_http {
             warp::serve(statik.or(socket)).run(bind_http).await;
         }
     }

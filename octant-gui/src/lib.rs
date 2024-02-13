@@ -10,7 +10,10 @@ use futures::sink::Sink;
 use futures::SinkExt;
 use serde_json::Value;
 
-use octant_gui_core::{Argument, Command, CommandList, DocumentMethod, ElementMethod, GlobalMethod, Handle, Method, WindowMethod};
+use octant_gui_core::{
+    Argument, Command, CommandList, DocumentMethod, ElementMethod, GlobalMethod, Handle, Method,
+    WindowMethod,
+};
 
 type RenderSink = Pin<Box<dyn Send + Sync + Sink<CommandList, Error=anyhow::Error>>>;
 
@@ -44,7 +47,10 @@ impl Root {
             method,
             arguments,
         });
-        OwnedHandle { root: self.clone(), handle }
+        OwnedHandle {
+            root: self.clone(),
+            handle,
+        }
     }
     pub fn delete(&self, handle: Handle) {
         self.send(Command::Delete(handle));
@@ -55,9 +61,11 @@ impl Root {
     }
     pub async fn flush(&self) -> anyhow::Result<()> {
         let ref mut this = *self.0.borrow_mut();
-        this.consumer.send(CommandList {
-            commands: mem::replace(&mut this.buffer, vec![])
-        }).await?;
+        this.consumer
+            .send(CommandList {
+                commands: mem::replace(&mut this.buffer, vec![]),
+            })
+            .await?;
         Ok(())
     }
     pub fn log(self: &Arc<Self>, argument: Argument) {
@@ -68,10 +76,10 @@ impl Root {
             parent: Node {
                 parent: Object {
                     parent: JsValue {
-                        handle: self.invoke(Method::Global(GlobalMethod::Window), vec![])
-                    }
-                }
-            }
+                        handle: self.invoke(Method::Global(GlobalMethod::Window), vec![]),
+                    },
+                },
+            },
         }
     }
 }
@@ -84,7 +92,12 @@ impl Drop for OwnedHandle {
 
 impl OwnedHandle {
     pub fn invoke(&self, method: Method, args: Vec<Argument>) -> OwnedHandle {
-        self.root.invoke(method, iter::once(Argument::Handle(self.handle)).chain(args.into_iter()).collect())
+        self.root.invoke(
+            method,
+            iter::once(Argument::Handle(self.handle))
+                .chain(args.into_iter())
+                .collect(),
+        )
     }
     pub fn handle(&self) -> Handle {
         self.handle
@@ -96,70 +109,145 @@ pub struct JsValue {
 }
 
 impl JsValue {
-    pub fn handle(&self) -> &OwnedHandle { &self.handle }
+    pub fn new(handle: OwnedHandle) -> Self {
+        JsValue { handle }
+    }
+    pub fn handle(&self) -> &OwnedHandle {
+        &self.handle
+    }
 }
 
 pub struct Object {
     parent: JsValue,
 }
 
+impl Object {
+    pub fn new(handle: OwnedHandle) -> Self {
+        Object {
+            parent: JsValue::new(handle),
+        }
+    }
+}
+
 impl Deref for Object {
     type Target = JsValue;
-    fn deref(&self) -> &Self::Target { &self.parent }
+    fn deref(&self) -> &Self::Target {
+        &self.parent
+    }
 }
 
 pub struct Node {
     parent: Object,
 }
 
+impl Node {
+    pub fn new(handle: OwnedHandle) -> Self {
+        Node {
+            parent: Object::new(handle),
+        }
+    }
+}
+
 impl Deref for Node {
     type Target = Object;
-    fn deref(&self) -> &Self::Target { &self.parent }
+    fn deref(&self) -> &Self::Target {
+        &self.parent
+    }
 }
 
 pub struct Window {
     parent: Node,
 }
 
+impl Window {
+    pub fn new(handle: OwnedHandle) -> Self {
+        Window {
+            parent: Node::new(handle),
+        }
+    }
+}
+
 impl Deref for Window {
     type Target = Node;
-    fn deref(&self) -> &Self::Target { &self.parent }
+    fn deref(&self) -> &Self::Target {
+        &self.parent
+    }
 }
 
 pub struct Document {
     parent: Node,
 }
 
+impl Document {
+    pub fn new(handle: OwnedHandle) -> Self {
+        Document {
+            parent: Node::new(handle),
+        }
+    }
+}
+
 impl Deref for Document {
     type Target = Node;
-    fn deref(&self) -> &Self::Target { &self.parent }
+    fn deref(&self) -> &Self::Target {
+        &self.parent
+    }
 }
 
 pub struct Element {
     parent: Node,
 }
 
+impl Element {
+    pub fn new(handle: OwnedHandle) -> Self {
+        Element {
+            parent: Node::new(handle),
+        }
+    }
+}
+
 impl Deref for Element {
     type Target = Node;
-    fn deref(&self) -> &Self::Target { &self.parent }
+    fn deref(&self) -> &Self::Target {
+        &self.parent
+    }
 }
 
 pub struct HtmlElement {
     parent: Element,
 }
 
+impl HtmlElement {
+    pub fn new(handle: OwnedHandle) -> Self {
+        HtmlElement {
+            parent: Element::new(handle),
+        }
+    }
+}
+
 impl Deref for HtmlElement {
     type Target = Element;
-    fn deref(&self) -> &Self::Target { &self.parent }
+    fn deref(&self) -> &Self::Target {
+        &self.parent
+    }
 }
 
 pub struct Text {
     parent: Node,
 }
 
+impl Text {
+    pub fn new(handle: OwnedHandle) -> Self {
+        Text {
+            parent: Node::new(handle),
+        }
+    }
+}
+
 impl Deref for Text {
     type Target = Node;
-    fn deref(&self) -> &Self::Target { &self.parent }
+    fn deref(&self) -> &Self::Target {
+        &self.parent
+    }
 }
 
 impl Window {
@@ -167,15 +255,7 @@ impl Window {
         self.handle().invoke(Method::Window(method), args)
     }
     pub fn document(&self) -> Document {
-        Document {
-            parent: Node {
-                parent: Object {
-                    parent: JsValue {
-                        handle: self.invoke(WindowMethod::Document, vec![])
-                    }
-                }
-            }
-        }
+        Document::new(self.invoke(WindowMethod::Document, vec![]))
     }
 }
 
@@ -184,30 +264,19 @@ impl Document {
         self.handle.invoke(Method::Document(method), args)
     }
     pub fn body(&self) -> HtmlElement {
-        HtmlElement {
-            parent: Element {
-                parent: Node {
-                    parent: Object {
-                        parent: JsValue {
-                            handle: self.invoke(DocumentMethod::Body, vec![])
-                        }
-                    }
-                }
-            }
-        }
+        HtmlElement::new(self.invoke(DocumentMethod::Body, vec![]))
     }
     pub fn create_text_node(&self, text: &str) -> Text {
-        Text {
-            parent: Node {
-                parent: Object {
-                    parent: JsValue {
-                        handle: self.invoke(
-                            DocumentMethod::CreateTextNode,
-                            vec![Argument::Json(Value::String(text.to_string()))])
-                    }
-                }
-            }
-        }
+        Text::new(self.invoke(
+            DocumentMethod::CreateTextNode,
+            vec![Argument::Json(Value::String(text.to_string()))],
+        ))
+    }
+    pub fn create_element(&self, tag: &str) -> Element {
+        Element::new(self.invoke(
+            DocumentMethod::CreateElement,
+            vec![Argument::Json(Value::String(tag.to_string()))],
+        ))
     }
 }
 
@@ -216,6 +285,18 @@ impl Element {
         self.handle.invoke(Method::Element(method), args)
     }
     pub fn append_child(&self, child: &Node) {
-        self.invoke(ElementMethod::AppendChild, vec![Argument::Handle(child.handle().handle())]);
+        self.invoke(
+            ElementMethod::AppendChild,
+            vec![Argument::Handle(child.handle().handle())],
+        );
+    }
+    pub fn set_attribute(&self, name: &str, value: &str) {
+        self.invoke(
+            ElementMethod::SetAttribute,
+            vec![
+                Argument::Json(Value::String(name.to_string())),
+                Argument::Json(Value::String(value.to_string())),
+            ],
+        );
     }
 }

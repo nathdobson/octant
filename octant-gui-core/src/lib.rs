@@ -1,6 +1,5 @@
 #![deny(unused_must_use)]
 
-
 use std::fmt::{Debug, Formatter};
 
 use serde::{Deserialize, Serialize};
@@ -25,11 +24,13 @@ pub enum WindowMethod {
 pub enum DocumentMethod {
     Body,
     CreateTextNode,
+    CreateElement,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ElementMethod {
     AppendChild,
+    SetAttribute,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -70,7 +71,9 @@ impl Debug for Command {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Command::Invoke {
-                assign, method, arguments
+                assign,
+                method,
+                arguments,
             } => {
                 if let Some(assign) = assign {
                     write!(f, "{:?} := ", assign)?;
