@@ -1,21 +1,22 @@
 #![deny(unused_must_use)]
 
-use std::{iter, mem};
 use std::ops::Deref;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::{iter, mem};
 
 use atomic_refcell::AtomicRefCell;
 use futures::sink::Sink;
-use futures::SinkExt;
+use futures::{SinkExt, Stream, StreamExt};
 use serde_json::Value;
 
 use octant_gui_core::{
     Argument, Command, CommandList, DocumentMethod, ElementMethod, GlobalMethod, Handle, Method,
-    WindowMethod,
+    RemoteEvent, WindowMethod,
 };
 
-type RenderSink = Pin<Box<dyn Send + Sync + Sink<CommandList, Error=anyhow::Error>>>;
+type RenderSink = Pin<Box<dyn Send + Sync + Sink<CommandList, Error = anyhow::Error>>>;
+type EventSource = Pin<Box<dyn Send + Sync + Stream<Item = anyhow::Result<RemoteEvent>>>>;
 
 struct State {
     buffer: Vec<Command>,
@@ -31,12 +32,19 @@ pub struct OwnedHandle {
 }
 
 impl Root {
-    pub fn new(consumer: RenderSink) -> Arc<Self> {
-        Arc::new(Root(AtomicRefCell::new(State {
+    pub fn new(mut events: EventSource, consumer: RenderSink) -> Arc<Self> {
+        let result = Arc::new(Root(AtomicRefCell::new(State {
             buffer: vec![],
             consumer,
             next_handle: 0,
-        })))
+        })));
+        let weak = Arc::downgrade(&result);
+        tokio::spawn(async move {
+            while let Some(event) = events.next().await {
+                log::info!("event {:?}", event);
+            }
+        });
+        result
     }
     pub fn invoke(self: &Arc<Self>, method: Method, arguments: Vec<Argument>) -> OwnedHandle {
         let ref mut this = *self.0.borrow_mut();
@@ -250,6 +258,26 @@ impl Deref for Text {
     }
 }
 
+pub struct HtmlFormElement {
+    parent: HtmlElement,
+}
+
+impl Deref for HtmlFormElement {
+    type Target = HtmlElement;
+
+    fn deref(&self) -> &Self::Target {
+        &self.parent
+    }
+}
+
+impl HtmlFormElement {
+    pub fn new(handle: OwnedHandle) -> Self {
+        HtmlFormElement {
+            parent: HtmlElement::new(handle),
+        }
+    }
+}
+
 impl Window {
     fn invoke(&self, method: WindowMethod, args: Vec<Argument>) -> OwnedHandle {
         self.handle().invoke(Method::Window(method), args)
@@ -277,6 +305,9 @@ impl Document {
             DocumentMethod::CreateElement,
             vec![Argument::Json(Value::String(tag.to_string()))],
         ))
+    }
+    pub fn create_form_element(&self) -> HtmlFormElement {
+        HtmlFormElement::new(self.invoke(DocumentMethod::CreateFormElement, vec![]))
     }
 }
 

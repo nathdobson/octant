@@ -15,10 +15,11 @@ impl Application for ScoreBoardApplication {
             let body = document.body();
             let text = document.create_text_node("Lorum Ipsum Dolor Sit Amet");
             body.append_child(&text);
-            let form = document.create_element("form");
+            let form = document.create_form_element();
             body.append_child(&form);
             let text_input = document.create_element("input");
             form.append_child(&text_input);
+            form.append_child(&document.create_element("br"));
             text_input.set_attribute("type", "text");
             let submit = document.create_element("input");
             form.append_child(&submit);

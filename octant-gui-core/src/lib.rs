@@ -25,6 +25,7 @@ pub enum DocumentMethod {
     Body,
     CreateTextNode,
     CreateElement,
+    CreateFormElement,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -60,6 +61,12 @@ pub enum Command {
     },
     Delete(Handle),
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum RemoteEvent {
+    Submit
+}
+
 
 impl Debug for Handle {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
