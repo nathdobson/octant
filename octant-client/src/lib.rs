@@ -1,6 +1,7 @@
 #![deny(unused_must_use)]
 
 use anyhow::anyhow;
+use futures::SinkExt;
 use futures::StreamExt;
 use wasm_bindgen::prelude::*;
 use web_sys::window;
@@ -11,7 +12,6 @@ use wasm_error::log_error;
 use wasm_error::WasmError;
 
 use crate::websocket::{WebSocketMessage, WebSocketStream};
-use futures::SinkExt;
 
 mod error;
 mod websocket;

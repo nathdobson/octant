@@ -1,18 +1,19 @@
+#![feature(future_join)]
 #![deny(unused_must_use)]
 
 use std::future::Future;
 use std::net::SocketAddr;
 use std::sync::Arc;
+
 use anyhow::anyhow;
-
 use clap::Parser;
-use futures::stream::{SplitSink, SplitStream, StreamExt};
 use futures::SinkExt;
-use warp::ws::{Message, WebSocket};
+use futures::stream::{SplitSink, SplitStream, StreamExt};
 use warp::{Filter, Reply};
+use warp::ws::{Message, WebSocket};
 
-use octant_gui::Root;
-use octant_gui_core::{CommandList, RemoteEvent};
+use octant_gui::{Global, Runtime};
+use octant_gui_core::{DownMessageList, RemoteEvent};
 
 #[derive(Parser, Debug)]
 pub struct OctantServerOptions {
@@ -32,11 +33,11 @@ impl OctantServerOptions {
 }
 
 pub trait Application: 'static + Sync + Send {
-    fn run_handler(&self, root: Arc<Root>) -> impl Future<Output = anyhow::Result<()>> + Send;
+    fn run_handler(&self, root: Arc<Global>) -> impl Future<Output=anyhow::Result<()>> + Send;
 }
 
 impl<A: Application> OctantServer<A> {
-    async fn encode(x: CommandList) -> anyhow::Result<Message> {
+    async fn encode(x: DownMessageList) -> anyhow::Result<Message> {
         Ok(Message::binary(serde_json::to_vec(&x)?))
     }
     fn decode(x: Message) -> anyhow::Result<RemoteEvent> {
@@ -48,13 +49,18 @@ impl<A: Application> OctantServer<A> {
         self: Arc<Self>,
         _name: &str,
         tx: SplitSink<WebSocket, Message>,
-        mut rx: SplitStream<WebSocket>,
+        rx: SplitStream<WebSocket>,
     ) -> anyhow::Result<()> {
-        let root = Root::new(
-            Box::pin(rx.map(|x| Self::decode(x?))),
-            Box::pin(tx.with(Self::encode)),
-        );
-        self.application.run_handler(root).await?;
+        let root = Runtime::new(Box::pin(tx.with(Self::encode)));
+        let global = Global::new(root);
+        let events = async {
+            global
+                .root()
+                .handle_events(Box::pin(rx.map(|x| Self::decode(x?))))
+                .await
+        };
+        let app = async { self.application.run_handler(global.clone()).await };
+        tokio::try_join!(app, events)?;
         Ok(())
     }
     pub async fn run(self) {

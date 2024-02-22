@@ -1,106 +1,94 @@
 #![deny(unused_must_use)]
 
 use std::fmt::{Debug, Formatter};
+use std::hash::Hash;
+use std::marker::PhantomData;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+
+use crate::document::{DocumentMethod, DocumentTag};
+use crate::element::{ElementMethod, ElementTag};
+use crate::global::GlobalMethod;
+use crate::html_form_element::{HtmlFormElementMethod, HtmlFormElementTag};
+use crate::window::{WindowMethod, WindowTag};
+
+pub mod document;
+pub mod element;
+pub mod global;
+pub mod node;
+pub mod object;
+pub mod value;
+pub mod window;
+pub mod html_form_element;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct CommandList {
-    pub commands: Vec<Command>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum GlobalMethod {
-    Window,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum WindowMethod {
-    Document,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum DocumentMethod {
-    Body,
-    CreateTextNode,
-    CreateElement,
-    CreateFormElement,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum ElementMethod {
-    AppendChild,
-    SetAttribute,
+pub struct DownMessageList {
+    pub commands: Vec<DownMessage>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Method {
     Log,
     Global(GlobalMethod),
-    Window(WindowMethod),
-    Document(DocumentMethod),
-    Element(ElementMethod),
+    Window(TypedHandle<WindowTag>, WindowMethod),
+    Document(TypedHandle<DocumentTag>, DocumentMethod),
+    Element(TypedHandle<ElementTag>, ElementMethod),
+    HtmlFormElement(TypedHandle<HtmlFormElementTag>, HtmlFormElementMethod),
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
-pub struct Handle(pub usize);
+pub struct HandleId(pub usize);
+
+pub trait TypeTag:
+'static
++ Serialize
++ for<'de> Deserialize<'de>
++ Copy
++ Clone
++ Eq
++ Ord
++ PartialEq
++ PartialOrd
++ Hash
+{}
+
+#[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
+pub struct TypedHandle<T: TypeTag>(pub HandleId, pub PhantomData<T>);
 
 #[derive(Serialize, Deserialize)]
-pub enum Argument {
-    Handle(Handle),
-    Json(Value),
-}
-
-#[derive(Serialize, Deserialize)]
-pub enum Command {
+pub enum DownMessage {
     Invoke {
-        assign: Option<Handle>,
+        assign: Option<HandleId>,
         method: Method,
-        arguments: Vec<Argument>,
     },
-    Delete(Handle),
+    Delete(HandleId),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum RemoteEvent {
-    Submit
+    Submit(TypedHandle<HtmlFormElementTag>),
 }
 
-
-impl Debug for Handle {
+impl Debug for HandleId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "${}", self.0)
     }
 }
 
-impl Debug for Command {
+impl Debug for DownMessage {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Command::Invoke {
-                assign,
-                method,
-                arguments,
-            } => {
+            DownMessage::Invoke { assign, method } => {
                 if let Some(assign) = assign {
                     write!(f, "{:?} := ", assign)?;
                 }
-                write!(f, "{:?} {:?}", method, arguments)?;
+                write!(f, "{:?}", method)?;
                 Ok(())
             }
-            Command::Delete(handle) => {
+            DownMessage::Delete(handle) => {
                 write!(f, "delete {:?}", handle)?;
                 Ok(())
             }
-        }
-    }
-}
-
-impl Debug for Argument {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Argument::Handle(x) => write!(f, "{:?}", x),
-            Argument::Json(x) => write!(f, "{:?}", x),
         }
     }
 }

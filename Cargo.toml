@@ -2,7 +2,7 @@
 resolver = "2"
 
 members = [
-    "octant-client", "octant-gui", "octant-gui-client", "octant-gui-core", "octant-scoreboard",
+    "octant-client", "octant-gui", "octant-gui-client", "octant-gui-core", "octant-object", "octant-scoreboard",
     "octant-server"
     , "wasm-error"]
 
