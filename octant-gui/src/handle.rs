@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
 use octant_gui_core::{HandleId, Method};
@@ -7,12 +8,18 @@ use octant_object::{base, define_class};
 use crate::handle;
 use crate::runtime::Runtime;
 
-pub trait ParentTrait = Send + Sync + Any;
+pub trait ParentTrait = Send + Sync + Any + Debug;
 
 define_class! {
     pub class extends base implements ParentTrait{
         root: Arc<Runtime>,
         id : HandleId,
+    }
+}
+
+impl Debug for Value {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.id)
     }
 }
 

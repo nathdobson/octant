@@ -7,7 +7,9 @@ use octant_gui_core::document::{DocumentMethod, DocumentTag};
 use octant_gui_core::HandleId;
 use octant_object::define_class;
 
-use crate::{element, HasLocalType, html_element, html_form_element, node, peer, text};
+use crate::{
+    element, html_element, html_form_element, html_input_element, node, peer, text, HasLocalType,
+};
 
 define_class! {
     pub class extends node {
@@ -50,12 +52,27 @@ impl Value {
                 .unwrap(),
         ))
     }
-    pub fn handle_with(&self, method: &DocumentMethod, handle: HandleId) -> Option<Arc<dyn peer::Trait>> {
+    pub fn create_input_element(&self, handle: HandleId) -> Arc<dyn html_input_element::Trait> {
+        Arc::new(html_input_element::Value::new(
+            handle,
+            self.document
+                .create_element("input")
+                .unwrap()
+                .dyn_into()
+                .unwrap(),
+        ))
+    }
+    pub fn handle_with(
+        &self,
+        method: &DocumentMethod,
+        handle: HandleId,
+    ) -> Option<Arc<dyn peer::Trait>> {
         match method {
             DocumentMethod::Body => Some(self.body(handle)),
             DocumentMethod::CreateTextNode(text) => Some(self.create_text_node(handle, text)),
             DocumentMethod::CreateElement(tag) => Some(self.create_element(handle, tag)),
             DocumentMethod::CreateFormElement => Some(self.create_form_element(handle)),
+            DocumentMethod::CreateInputElement => Some(self.create_input_element(handle)),
         }
     }
 }

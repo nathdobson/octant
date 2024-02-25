@@ -3,9 +3,11 @@ use std::sync::Arc;
 use wasm_bindgen::closure::Closure;
 use web_sys::{console, HtmlFormElement, InputEvent};
 
-use crate::{html_element, peer, HasLocalType, Runtime};
-use octant_gui_core::html_form_element::{HtmlFormElementMethod, HtmlFormElementTag};
+use crate::{html_element, html_input_element, peer, HasLocalType, Runtime};
+use octant_gui_core::html_form_element::{HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage};
+use octant_gui_core::html_input_element::HtmlInputElementUpMessage;
 use octant_gui_core::{HandleId, TypedHandle, UpMessage, UpMessageList};
+use octant_object::cast::Cast;
 use octant_object::define_class;
 use wasm_bindgen::JsCast;
 
@@ -41,17 +43,23 @@ impl dyn Trait {
                     move |e: InputEvent| {
                         console::info_2(&"submitted".to_string().into(), &e);
                         e.prevent_default();
-                        let children = form.native().children();
-                        for input in 0..children.length() {
-                            let input = children.item(input).unwrap();
-                            input.set_attribute("disabled", "true").unwrap();
+                        let mut commands: Vec<UpMessage> = vec![];
+                        let children = form.children();
+                        for child in children {
+                            let input: Option<Arc<dyn html_input_element::Trait>> =
+                                child.downcast_trait();
+                            if let Some(input) = input {
+                                input.native().set_attribute("disabled", "true").unwrap();
+                                commands.push(UpMessage::HtmlInputElement(
+                                    input.handle(),
+                                    HtmlInputElementUpMessage::SetInput {
+                                        value: input.native().value(),
+                                    },
+                                ))
+                            }
                         }
-                        let runtime = runtime.clone();
-                        let this = this.clone();
-                        let messages = UpMessageList {
-                            commands: vec![UpMessage::Submit(this.handle())],
-                        };
-                        if let Err(err) = runtime.send(messages) {
+                        commands.push(UpMessage::HtmlFormElement(this.handle(),HtmlFormElementUpMessage::Submit));
+                        if let Err(err) = runtime.send(UpMessageList { commands }) {
                             log::error!("Cannot send event {:?}", err);
                         }
                     }

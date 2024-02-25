@@ -1,6 +1,7 @@
-use std::any::Any;
+use std::any::{type_name, Any};
 use std::marker::PhantomData;
 use std::mem;
+use std::ptr::{DynMetadata, Pointee};
 use std::sync::{Arc, Weak};
 
 use atomic_refcell::AtomicRefCell;
@@ -10,14 +11,15 @@ use weak_table::WeakValueHashMap;
 use octant_gui_core::{
     DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle, UpMessage,
 };
+use octant_object::cast::Cast;
 
-use crate::{handle, html_form_element, DownMessageSink, UpMessageStream};
+use crate::{handle, html_form_element, html_input_element, DownMessageSink, UpMessageStream};
 
 struct State {
     buffer: Vec<DownMessage>,
     consumer: DownMessageSink,
     next_handle: usize,
-    handles: WeakValueHashMap<HandleId, Weak<dyn 'static + Any + Send + Sync>>,
+    handles: WeakValueHashMap<HandleId, Weak<dyn handle::Trait>>,
 }
 
 pub struct Runtime {
@@ -49,8 +51,15 @@ impl Runtime {
     }
     pub fn handle_event(self: &Arc<Self>, event: UpMessage) {
         match event {
-            UpMessage::Submit(handle) => {
-                self.handle::<html_form_element::Value>(handle).submit();
+            // UpMessage::Submit(handle) => {
+            //     self.handle::<html_form_element::Value>(handle).submit();
+            // }
+            // UpMessage::SetInput { handle } => todo!(),
+            UpMessage::HtmlFormElement(form, message) => {
+                self.handle(form).handle_event(message);
+            }
+            UpMessage::HtmlInputElement(input, message) => {
+                self.handle(input).handle_event(message);
             }
         }
     }
@@ -88,15 +97,17 @@ impl Runtime {
             .insert(handle::Trait::value(&*result).id(), result.clone());
         result
     }
-    pub fn handle<T: HasTypedHandle>(&self, key: TypedHandle<T::TypeTag>) -> Arc<T> {
-        Arc::downcast(
-            self.state
-                .borrow_mut()
-                .handles
-                .get(&key.0)
-                .expect("unknown handle"),
-        )
-        .expect("not expected type")
+    pub fn handle<T: HasLocalType>(&self, key: TypedHandle<T>) -> Arc<T::Local> {
+        let handle = self
+            .state
+            .borrow_mut()
+            .handles
+            .get(&key.0)
+            .expect("unknown handle");
+        let dhandle = handle.clone();
+        handle
+            .downcast_trait()
+            .unwrap_or_else(|| panic!("Cannot cast {:?} to {:?}", dhandle, type_name::<T::Local>()))
     }
 }
 
@@ -105,4 +116,8 @@ pub trait HasTypedHandle: handle::Trait {
     fn typed_handle(&self) -> TypedHandle<Self::TypeTag> {
         TypedHandle(handle::Trait::value(self).id(), PhantomData)
     }
+}
+
+pub trait HasLocalType: TypeTag {
+    type Local: ?Sized + Pointee<Metadata = DynMetadata<Self::Local>>;
 }

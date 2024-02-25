@@ -5,6 +5,7 @@ use crate::{handle, object};
 use crate::runtime::HasTypedHandle;
 
 define_class! {
+    #[derive(Debug)]
     pub class extends object {
     }
 }

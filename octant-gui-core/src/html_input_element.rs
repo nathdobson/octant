@@ -3,17 +3,14 @@ use serde::{Deserialize, Serialize};
 use crate::{TypeTag, TypedHandle};
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
-pub struct HtmlFormElementTag;
+pub struct HtmlInputElementTag;
 
-impl TypeTag for HtmlFormElementTag {}
+impl TypeTag for HtmlInputElementTag {}
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum HtmlFormElementMethod {
-    SetListener,
-    Enable,
+pub enum HtmlInputElementUpMessage {
+    SetInput { value: String },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum HtmlFormElementUpMessage {
-    Submit,
-}
+pub enum HtmlInputElementMethod {}

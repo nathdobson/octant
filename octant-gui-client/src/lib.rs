@@ -21,6 +21,7 @@ mod element;
 mod global;
 mod html_element;
 mod html_form_element;
+mod html_input_element;
 mod js_value;
 mod node;
 mod object;
@@ -96,6 +97,9 @@ impl Runtime {
                 self.handle(element_id)
                     .invoke_with(self.clone(), method, handle)
             }
+            Method::HtmlInputElement(element, method) => match method {
+                _ => todo!(),
+            },
         })
     }
     fn delete(self: &Arc<Self>, handle: HandleId) {

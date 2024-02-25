@@ -2,6 +2,7 @@
 #![feature(try_blocks)]
 #![feature(trait_alias)]
 #![feature(trait_upcasting)]
+#![feature(ptr_metadata)]
 
 use std::pin::Pin;
 use std::sync::Arc;
@@ -25,6 +26,7 @@ pub mod object;
 pub mod runtime;
 pub mod text;
 pub mod window;
+mod html_input_element;
 
 pub type DownMessageSink = Pin<Box<dyn Send + Sync + Sink<DownMessageList, Error = anyhow::Error>>>;
 pub type UpMessageStream = Pin<Box<dyn Send + Sync + Stream<Item = anyhow::Result<UpMessageList>>>>;
@@ -36,6 +38,7 @@ pub type Document = Arc<dyn document::Trait>;
 
 pub type HtmlElement = Arc<dyn html_element::Trait>;
 pub type HtmlFormElement = Arc<dyn html_form_element::Trait>;
+pub type HtmlInputElement = Arc<dyn html_input_element::Trait>;
 
 pub type Element = Arc<dyn element::Trait>;
 

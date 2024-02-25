@@ -1,16 +1,15 @@
+use std::fmt::{Debug, Formatter};
 use std::sync::OnceLock;
 
 use octant_gui_core::document::{DocumentMethod, DocumentTag};
 use octant_gui_core::Method;
 use octant_object::define_class;
 
-use crate::{
-    element, Element, handle, html_element, html_form_element, HtmlElement, HtmlFormElement, node,
-    text, Text,
-};
 use crate::runtime::HasTypedHandle;
+use crate::{element, handle, html_element, html_form_element, node, text, Element, HtmlElement, HtmlFormElement, Text, html_input_element, HtmlInputElement};
 
 define_class! {
+    #[derive(Debug)]
     pub class extends node {
         body: OnceLock<HtmlElement>,
     }
@@ -49,6 +48,11 @@ impl Value {
     pub fn create_form_element(&self) -> HtmlFormElement {
         self.runtime().add(html_form_element::Value::new(
             self.invoke(DocumentMethod::CreateFormElement),
+        ))
+    }
+    pub fn create_input_element(&self) -> HtmlInputElement {
+        self.runtime().add(html_input_element::Value::new(
+            self.invoke(DocumentMethod::CreateInputElement),
         ))
     }
 }

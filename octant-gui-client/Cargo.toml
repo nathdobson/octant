@@ -20,6 +20,7 @@ web-sys = { version = "0.3.64", features = [
     "HtmlFormElement",
     "InputEvent",
     "HtmlCollection",
+    "HtmlInputElement",
 ] }
 atomic_refcell = "0.1.13"
 prokio = "0.1.0"

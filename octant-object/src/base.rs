@@ -11,6 +11,7 @@ pub trait Trait: 'static + Any + CastValue {
     fn value(&self) -> &Value;
 }
 
+#[derive(Debug)]
 pub struct Value {}
 
 impl Value {

@@ -16,10 +16,12 @@ pub mod stackbox;
 #[macro_export]
 macro_rules! define_class {
     (
+        $(#[$metas:meta])?
         pub class extends $parent:tt $(implements $interface:path)? {
             $($field:ident : $type:ty),* $(,)?
         }
     ) => {
+            $(#[$metas])?
             pub struct Value {
                 parent: $parent::Value,
                 $($field : $type,)*

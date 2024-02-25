@@ -9,13 +9,17 @@ use serde::{Deserialize, Serialize};
 use crate::document::{DocumentMethod, DocumentTag};
 use crate::element::{ElementMethod, ElementTag};
 use crate::global::GlobalMethod;
-use crate::html_form_element::{HtmlFormElementMethod, HtmlFormElementTag};
+use crate::html_form_element::{
+    HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage,
+};
+use crate::html_input_element::{HtmlInputElementMethod, HtmlInputElementTag, HtmlInputElementUpMessage};
 use crate::window::{WindowMethod, WindowTag};
 
 pub mod document;
 pub mod element;
 pub mod global;
 pub mod html_form_element;
+pub mod html_input_element;
 pub mod node;
 pub mod object;
 pub mod value;
@@ -34,6 +38,7 @@ pub enum Method {
     Document(TypedHandle<DocumentTag>, DocumentMethod),
     Element(TypedHandle<ElementTag>, ElementMethod),
     HtmlFormElement(TypedHandle<HtmlFormElementTag>, HtmlFormElementMethod),
+    HtmlInputElement(TypedHandle<HtmlInputElementTag>, HtmlInputElementMethod),
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
@@ -64,7 +69,8 @@ pub enum DownMessage {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum UpMessage {
-    Submit(TypedHandle<HtmlFormElementTag>),
+    HtmlFormElement(TypedHandle<HtmlFormElementTag>, HtmlFormElementUpMessage),
+    HtmlInputElement(TypedHandle<HtmlInputElementTag>, HtmlInputElementUpMessage),
 }
 
 #[derive(Serialize, Deserialize, Debug)]

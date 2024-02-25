@@ -3,6 +3,7 @@ use octant_object::define_class;
 use crate::{element, handle};
 
 define_class! {
+    #[derive(Debug)]
     pub class extends element{}
 }
 

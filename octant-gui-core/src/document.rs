@@ -13,4 +13,5 @@ pub enum DocumentMethod {
     CreateTextNode(String),
     CreateElement(String),
     CreateFormElement,
+    CreateInputElement,
 }

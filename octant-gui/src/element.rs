@@ -7,11 +7,13 @@ use octant_object::define_class;
 use crate::{handle, node, Node};
 use crate::runtime::HasTypedHandle;
 
+#[derive(Debug)]
 struct State {
     children: Vec<Node>,
 }
 
 define_class! {
+    #[derive(Debug)]
     pub class extends  node {
         state: AtomicRefCell<State>,
     }
