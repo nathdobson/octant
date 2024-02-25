@@ -12,7 +12,7 @@ use futures::{Stream, StreamExt};
 use web_sys::{console, window};
 
 use octant_gui_core::{
-    DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle, UpMessageList,
+    DownMessage, DownMessageList, HandleId, Method, TypedHandle, TypeTag, UpMessageList,
 };
 use octant_object::cast::Cast;
 
@@ -93,13 +93,13 @@ impl Runtime {
                 self.handle(*element).invoke_with(self, method, handle)
             }
             Method::HtmlFormElement(element_id, method) => {
-                let element_id = *element_id;
-                self.handle(element_id)
+                self.handle(*element_id)
                     .invoke_with(self.clone(), method, handle)
             }
-            Method::HtmlInputElement(element, method) => match method {
-                _ => todo!(),
-            },
+            Method::HtmlInputElement(element, method) => {
+                self.handle(*element)
+                    .invoke_with(self.clone(), method, handle)
+            }
         })
     }
     fn delete(self: &Arc<Self>, handle: HandleId) {

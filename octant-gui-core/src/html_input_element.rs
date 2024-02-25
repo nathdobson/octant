@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{TypeTag, TypedHandle};
+use crate::TypeTag;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
 pub struct HtmlInputElementTag;
@@ -13,4 +13,6 @@ pub enum HtmlInputElementUpMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum HtmlInputElementMethod {}
+pub enum HtmlInputElementMethod {
+    Clear,
+}

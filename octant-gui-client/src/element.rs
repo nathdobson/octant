@@ -1,13 +1,13 @@
-use atomic_refcell::AtomicRefCell;
 use std::sync::Arc;
 
+use atomic_refcell::AtomicRefCell;
 use web_sys::Element;
 
 use octant_gui_core::element::{ElementMethod, ElementTag};
 use octant_gui_core::HandleId;
 use octant_object::define_class;
 
-use crate::{node, peer, HasLocalType, Runtime};
+use crate::{HasLocalType, node, peer, Runtime};
 
 struct State {
     children: Vec<Arc<dyn node::Trait>>,

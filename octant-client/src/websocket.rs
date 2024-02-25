@@ -8,8 +8,8 @@ use std::task::Poll;
 use anyhow::Context;
 use futures::Stream;
 use tokio::sync::mpsc;
-use wasm_bindgen::closure::Closure;
 use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen::closure::Closure;
 use web_sys::{CloseEvent, ErrorEvent, Event, MessageEvent, WebSocket};
 
 use wasm_error::WasmError;

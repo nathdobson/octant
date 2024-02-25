@@ -2,17 +2,14 @@ use std::sync::Arc;
 
 use atomic_refcell::AtomicRefCell;
 
-use octant_gui_core::html_form_element::{
-    HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage,
-};
 use octant_gui_core::html_input_element::{
     HtmlInputElementMethod, HtmlInputElementTag, HtmlInputElementUpMessage,
 };
 use octant_gui_core::Method;
 use octant_object::define_class;
 
-use crate::runtime::{HasLocalType, HasTypedHandle};
 use crate::{handle, html_element};
+use crate::runtime::{HasLocalType, HasTypedHandle};
 
 #[derive(Debug)]
 struct State {
@@ -55,5 +52,8 @@ impl Value {
     }
     pub fn input_value(&self) -> Arc<String> {
         self.state.borrow_mut().value.clone()
+    }
+    pub fn clear_value(&self) {
+        self.invoke(HtmlInputElementMethod::Clear);
     }
 }

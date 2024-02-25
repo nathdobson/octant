@@ -1,4 +1,4 @@
-use std::any::{type_name, Any};
+use std::any::type_name;
 use std::marker::PhantomData;
 use std::mem;
 use std::ptr::{DynMetadata, Pointee};
@@ -9,11 +9,11 @@ use futures::{SinkExt, StreamExt};
 use weak_table::WeakValueHashMap;
 
 use octant_gui_core::{
-    DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle, UpMessage,
+    DownMessage, DownMessageList, HandleId, Method, TypedHandle, TypeTag, UpMessage,
 };
 use octant_object::cast::Cast;
 
-use crate::{handle, html_form_element, html_input_element, DownMessageSink, UpMessageStream};
+use crate::{DownMessageSink, handle, UpMessageStream};
 
 struct State {
     buffer: Vec<DownMessage>,

@@ -9,8 +9,8 @@ use octant_gui_core::html_form_element::{
 use octant_gui_core::Method;
 use octant_object::define_class;
 
-use crate::runtime::{HasLocalType, HasTypedHandle};
 use crate::{handle, html_element};
+use crate::runtime::{HasLocalType, HasTypedHandle};
 
 struct State {
     handler: Option<Arc<dyn 'static + Sync + Send + Fn()>>,

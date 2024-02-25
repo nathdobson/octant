@@ -7,10 +7,10 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use clap::Parser;
-use futures::stream::{SplitSink, SplitStream, StreamExt};
 use futures::SinkExt;
-use warp::ws::{Message, WebSocket};
+use futures::stream::{SplitSink, SplitStream, StreamExt};
 use warp::{Filter, Reply};
+use warp::ws::{Message, WebSocket};
 
 use octant_gui::{Global, Runtime};
 use octant_gui_core::{DownMessageList, UpMessageList};

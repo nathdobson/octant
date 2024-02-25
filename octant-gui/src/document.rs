@@ -1,12 +1,15 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::sync::OnceLock;
 
 use octant_gui_core::document::{DocumentMethod, DocumentTag};
 use octant_gui_core::Method;
 use octant_object::define_class;
 
+use crate::{
+    element, Element, handle, html_element, html_form_element, html_input_element, HtmlElement, HtmlFormElement,
+    HtmlInputElement, node, text, Text,
+};
 use crate::runtime::HasTypedHandle;
-use crate::{element, handle, html_element, html_form_element, node, text, Element, HtmlElement, HtmlFormElement, Text, html_input_element, HtmlInputElement};
 
 define_class! {
     #[derive(Debug)]

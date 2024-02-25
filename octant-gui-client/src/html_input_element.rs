@@ -1,13 +1,15 @@
 use std::marker::PhantomData;
-use web_sys::{HtmlInputElement, Node};
+use std::sync::Arc;
 
-use octant_gui_core::html_form_element::HtmlFormElementTag;
-use octant_gui_core::html_input_element::HtmlInputElementTag;
-use octant_gui_core::node::NodeTag;
+use web_sys::HtmlInputElement;
+
 use octant_gui_core::{HandleId, TypedHandle};
+use octant_gui_core::html_input_element::{
+    HtmlInputElementMethod, HtmlInputElementTag,
+};
 use octant_object::define_class;
 
-use crate::{html_element, object, HasLocalType};
+use crate::{HasLocalType, html_element, peer, Runtime};
 
 define_class! {
     pub class extends html_element {
@@ -27,6 +29,21 @@ impl Value {
     }
     pub fn handle(&self) -> TypedHandle<HtmlInputElementTag> {
         TypedHandle(self.raw_handle(), PhantomData)
+    }
+}
+impl dyn Trait {
+    pub fn invoke_with(
+        self: Arc<Self>,
+        _runtime: Arc<Runtime>,
+        method: &HtmlInputElementMethod,
+        _handle_id: HandleId,
+    ) -> Option<Arc<dyn peer::Trait>> {
+        match method {
+            HtmlInputElementMethod::Clear => {
+                self.html_input_element.set_value("");
+                None
+            }
+        }
     }
 }
 

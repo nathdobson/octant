@@ -1,15 +1,17 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
+
 use wasm_bindgen::closure::Closure;
+use wasm_bindgen::JsCast;
 use web_sys::{console, HtmlFormElement, InputEvent};
 
-use crate::{html_element, html_input_element, peer, HasLocalType, Runtime};
+use octant_gui_core::{HandleId, TypedHandle, UpMessage, UpMessageList};
 use octant_gui_core::html_form_element::{HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage};
 use octant_gui_core::html_input_element::HtmlInputElementUpMessage;
-use octant_gui_core::{HandleId, TypedHandle, UpMessage, UpMessageList};
 use octant_object::cast::Cast;
 use octant_object::define_class;
-use wasm_bindgen::JsCast;
+
+use crate::{HasLocalType, html_element, html_input_element, peer, Runtime};
 
 define_class! {
     pub class extends html_element {

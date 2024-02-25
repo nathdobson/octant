@@ -8,7 +8,7 @@ use octant_gui_core::HandleId;
 use octant_object::define_class;
 
 use crate::{
-    element, html_element, html_form_element, html_input_element, node, peer, text, HasLocalType,
+    element, HasLocalType, html_element, html_form_element, html_input_element, node, peer, text,
 };
 
 define_class! {
