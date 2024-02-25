@@ -15,10 +15,8 @@ use wasm_bindgen::JsCast;
 use web_sys::InputEvent;
 use web_sys::{console, window};
 
-use octant_gui_core::html_form_element::{HtmlFormElementMethod};
-use octant_gui_core::{
-    DownMessage, DownMessageList, HandleId, Method, RemoteEvent, TypeTag, TypedHandle,
-};
+use octant_gui_core::html_form_element::HtmlFormElementMethod;
+use octant_gui_core::{DownMessage, DownMessageList, HandleId, Method, UpMessage, TypeTag, TypedHandle, UpMessageList};
 use octant_object::cast::Cast;
 use wasm_error::WasmError;
 
@@ -34,16 +32,18 @@ mod peer;
 mod text;
 mod window;
 
-pub type RenderSource = Pin<Box<dyn Stream<Item = anyhow::Result<DownMessageList>>>>;
-pub type EventSink = Pin<Box<dyn Sink<RemoteEvent, Error = anyhow::Error>>>;
+pub type DownMessageStream = Pin<Box<dyn Stream<Item = anyhow::Result<DownMessageList>>>>;
+pub type UpMessageSink = Box<dyn Fn(UpMessageList) -> anyhow::Result<()>>;
 
 struct State {
-    source: Option<RenderSource>,
-    sink: EventSink,
+    source: Option<DownMessageStream>,
     handles: HashMap<HandleId, Arc<dyn peer::Trait>>,
 }
 
-pub struct Runtime(AtomicRefCell<State>);
+pub struct Runtime {
+    state: AtomicRefCell<State>,
+    sink: UpMessageSink,
+}
 
 pub trait HasLocalType: TypeTag {
     type Local: ?Sized + Pointee<Metadata = DynMetadata<Self::Local>>;
@@ -52,21 +52,24 @@ pub trait HasLocalType: TypeTag {
 pub type WindowPeer = Arc<dyn window::Trait>;
 
 impl Runtime {
-    pub fn new(source: RenderSource, sink: EventSink) -> Arc<Runtime> {
-        Arc::new(Runtime(AtomicRefCell::new(State {
-            source: Some(source),
+    pub fn new(source: DownMessageStream, sink: UpMessageSink) -> Arc<Runtime> {
+        Arc::new(Runtime {
+            state: AtomicRefCell::new(State {
+                source: Some(source),
+
+                handles: HashMap::new(),
+            }),
             sink,
-            handles: HashMap::new(),
-        })))
+        })
     }
     fn invoke(self: &Arc<Self>, assign: HandleId, method: &Method) -> anyhow::Result<()> {
         if let Some(result) = self.invoke_with(method, assign)? {
-            self.0.borrow_mut().handles.insert(assign, result);
+            self.state.borrow_mut().handles.insert(assign, result);
         }
         Ok(())
     }
     fn handle<T: HasLocalType>(&self, handle: TypedHandle<T>) -> Arc<T::Local> {
-        self.0
+        self.state
             .borrow()
             .handles
             .get(&handle.0)
@@ -94,63 +97,16 @@ impl Runtime {
             }
             Method::HtmlFormElement(element_id, method) => {
                 let element_id = *element_id;
-                let element = self.handle(element_id);
-                match method {
-                    HtmlFormElementMethod::SetListener => {
-                        let this = self.clone();
-                        let closure: Box<dyn FnMut(_)> = Box::new({
-                            let form = element.clone();
-                            move |e: InputEvent| {
-                                console::info_2(&"submitted".to_string().into(), &e);
-                                e.prevent_default();
-                                let children = form.native().children();
-                                for input in 0..children.length() {
-                                    let input = children.item(input).unwrap();
-                                    input.set_attribute("disabled", "true").unwrap();
-                                }
-                                let this = this.clone();
-                                prokio::spawn_local(async move {
-                                    if let Err(err) = this
-                                        .0
-                                        .borrow_mut()
-                                        .sink
-                                        .send(RemoteEvent::Submit(element_id))
-                                        .await
-                                    {
-                                        log::error!("Cannot send event {:?}", err);
-                                    }
-                                });
-                            }
-                        });
-                        let closure = Closure::wrap(closure);
-                        element
-                            .native()
-                            .add_event_listener_with_callback(
-                                "submit",
-                                closure.as_ref().unchecked_ref(),
-                            )
-                            .map_err(WasmError::new)?;
-                        closure.forget();
-                        None
-                    }
-                    HtmlFormElementMethod::Enable => {
-                        let form = element.clone();
-                        let children = form.native().children();
-                        for input in 0..children.length() {
-                            let input = children.item(input).unwrap();
-                            input.remove_attribute("disabled").unwrap();
-                        }
-                        None
-                    }
-                }
+                self.handle(element_id)
+                    .invoke_with(self.clone(), method, handle)
             }
         })
     }
     fn delete(self: &Arc<Self>, handle: HandleId) {
-        self.0.borrow_mut().handles.remove(&handle);
+        self.state.borrow_mut().handles.remove(&handle);
     }
     pub async fn run(self: &Arc<Self>) -> anyhow::Result<()> {
-        let mut source = self.0.borrow_mut().source.take().unwrap();
+        let mut source = self.state.borrow_mut().source.take().unwrap();
         while let Some(commands) = source.next().await {
             let commands = commands?;
             for command in commands.commands {
@@ -164,5 +120,8 @@ impl Runtime {
             }
         }
         Ok(())
+    }
+    pub fn send(&self, message: UpMessageList) -> anyhow::Result<()> {
+        (self.sink)(message)
     }
 }

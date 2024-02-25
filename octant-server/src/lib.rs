@@ -13,7 +13,7 @@ use warp::{Filter, Reply};
 use warp::ws::{Message, WebSocket};
 
 use octant_gui::{Global, Runtime};
-use octant_gui_core::{DownMessageList, RemoteEvent};
+use octant_gui_core::{DownMessageList, UpMessage, UpMessageList};
 
 #[derive(Parser, Debug)]
 pub struct OctantServerOptions {
@@ -40,7 +40,7 @@ impl<A: Application> OctantServer<A> {
     async fn encode(x: DownMessageList) -> anyhow::Result<Message> {
         Ok(Message::binary(serde_json::to_vec(&x)?))
     }
-    fn decode(x: Message) -> anyhow::Result<RemoteEvent> {
+    fn decode(x: Message) -> anyhow::Result<UpMessageList> {
         Ok(serde_json::from_str(
             x.to_str().map_err(|_| anyhow!("not text"))?,
         )?)

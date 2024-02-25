@@ -14,4 +14,7 @@ impl Value {
             handle,
         }
     }
+    pub fn raw_handle(&self) -> HandleId {
+        self.handle
+    }
 }

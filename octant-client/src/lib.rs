@@ -7,11 +7,11 @@ use wasm_bindgen::prelude::*;
 use web_sys::window;
 
 use octant_gui_client::Runtime;
-use octant_gui_core::RemoteEvent;
+use octant_gui_core::{UpMessage, UpMessageList};
 use wasm_error::log_error;
 use wasm_error::WasmError;
 
-use crate::websocket::{WebSocketMessage, WebSocketStream};
+use crate::websocket::{WebSocketMessage};
 
 mod error;
 mod websocket;
@@ -41,14 +41,13 @@ pub async fn main_impl() -> anyhow::Result<()> {
     };
     let url = format!("{ws_proto}//{host}/gui/render");
     log::info!("Connecting to {:?}", url);
-    let socket = WebSocketStream::connect(&url).await?;
-    let (tx, rx) = socket.split();
+    let (tx, rx) = websocket::connect(&url).await?;
     let rx = rx.map(|x| {
         return Ok(serde_json::from_str(x?.as_str()?)?);
     });
-    let tx = tx.with(|x: RemoteEvent| async move {
-        return Ok(WebSocketMessage::Text(serde_json::to_string(&x)?));
+    let tx = Box::new(move |x: UpMessageList| {
+        return Ok(tx.send(WebSocketMessage::Text(serde_json::to_string(&x)?))?);
     });
-    Runtime::new(Box::pin(rx), Box::pin(tx)).run().await?;
+    Runtime::new(Box::pin(rx), tx).run().await?;
     Ok(())
 }

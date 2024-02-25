@@ -10,7 +10,7 @@ use futures::sink::Sink;
 use futures::Stream;
 
 pub use global::Global;
-use octant_gui_core::{DownMessageList, RemoteEvent};
+use octant_gui_core::{DownMessageList, UpMessage, UpMessageList};
 pub use runtime::Runtime;
 
 pub mod document;
@@ -26,8 +26,8 @@ pub mod runtime;
 pub mod text;
 pub mod window;
 
-pub type RenderSink = Pin<Box<dyn Send + Sync + Sink<DownMessageList, Error=anyhow::Error>>>;
-pub type EventSource = Pin<Box<dyn Send + Sync + Stream<Item=anyhow::Result<RemoteEvent>>>>;
+pub type DownMessageSink = Pin<Box<dyn Send + Sync + Sink<DownMessageList, Error = anyhow::Error>>>;
+pub type UpMessageStream = Pin<Box<dyn Send + Sync + Stream<Item = anyhow::Result<UpMessageList>>>>;
 pub type Handle = Arc<dyn handle::Trait>;
 pub type JsValue = Arc<dyn js_value::Trait>;
 pub type Window = Arc<dyn window::Trait>;

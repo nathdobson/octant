@@ -8,14 +8,14 @@ use futures::{SinkExt, StreamExt};
 use weak_table::WeakValueHashMap;
 
 use octant_gui_core::{
-    DownMessage, DownMessageList, HandleId, Method, RemoteEvent, TypedHandle, TypeTag,
+    DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle, UpMessage,
 };
 
-use crate::{EventSource, handle, html_form_element, RenderSink};
+use crate::{handle, html_form_element, DownMessageSink, UpMessageStream};
 
 struct State {
     buffer: Vec<DownMessage>,
-    consumer: RenderSink,
+    consumer: DownMessageSink,
     next_handle: usize,
     handles: WeakValueHashMap<HandleId, Weak<dyn 'static + Any + Send + Sync>>,
 }
@@ -25,7 +25,7 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    pub fn new(consumer: RenderSink) -> Arc<Self> {
+    pub fn new(consumer: DownMessageSink) -> Arc<Self> {
         Arc::new(Runtime {
             state: AtomicRefCell::new(State {
                 buffer: vec![],
@@ -35,16 +35,21 @@ impl Runtime {
             }),
         })
     }
-    pub async fn handle_events(self: &Arc<Self>, mut events: EventSource) -> anyhow::Result<()> {
-        while let Some(event) = events.next().await {
-            self.handle_event(event?);
+    pub async fn handle_events(
+        self: &Arc<Self>,
+        mut events: UpMessageStream,
+    ) -> anyhow::Result<()> {
+        while let Some(events) = events.next().await {
+            for event in events?.commands {
+                self.handle_event(event);
+            }
             self.flush().await?;
         }
         Ok(())
     }
-    pub fn handle_event(self: &Arc<Self>, event: RemoteEvent) {
+    pub fn handle_event(self: &Arc<Self>, event: UpMessage) {
         match event {
-            RemoteEvent::Submit(handle) => {
+            UpMessage::Submit(handle) => {
                 self.handle::<html_form_element::Value>(handle).submit();
             }
         }
@@ -91,7 +96,7 @@ impl Runtime {
                 .get(&key.0)
                 .expect("unknown handle"),
         )
-            .expect("not expected type")
+        .expect("not expected type")
     }
 }
 

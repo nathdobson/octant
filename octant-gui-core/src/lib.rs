@@ -63,8 +63,13 @@ pub enum DownMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum RemoteEvent {
+pub enum UpMessage {
     Submit(TypedHandle<HtmlFormElementTag>),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UpMessageList {
+    pub commands: Vec<UpMessage>,
 }
 
 impl Debug for HandleId {
