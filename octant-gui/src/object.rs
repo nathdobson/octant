@@ -3,7 +3,7 @@ use octant_object::define_class;
 use crate::{handle, js_value};
 
 define_class! {
-    pub class : js_value{
+    pub class extends js_value{
     }
 }
 impl Value {

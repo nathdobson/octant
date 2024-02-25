@@ -14,7 +14,7 @@ struct State {
 }
 
 define_class! {
-    pub class : html_element{
+    pub class extends html_element{
         state:AtomicRefCell<State>,
     }
 }

@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 futures = "0.3.28"
 octant-gui-core = { path = "../octant-gui-core" }
+octant-object = { path = "../octant-object" }
 anyhow = "1.0.75"
 log = "0.4.20"
 wasm-bindgen = "0.2.87"

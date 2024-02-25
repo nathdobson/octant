@@ -8,7 +8,7 @@ use crate::{document, Document, handle, node};
 use crate::runtime::HasTypedHandle;
 
 define_class! {
-    pub class : node {
+    pub class extends node {
         document: OnceLock<Document>,
     }
 }

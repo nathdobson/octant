@@ -3,7 +3,7 @@ use octant_object::define_class;
 use crate::handle;
 
 define_class! {
-    pub class : handle {
+    pub class extends handle {
     }
 }
 impl Value {

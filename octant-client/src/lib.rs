@@ -6,7 +6,7 @@ use futures::StreamExt;
 use wasm_bindgen::prelude::*;
 use web_sys::window;
 
-use octant_gui_client::Renderer;
+use octant_gui_client::Runtime;
 use octant_gui_core::RemoteEvent;
 use wasm_error::log_error;
 use wasm_error::WasmError;
@@ -49,6 +49,6 @@ pub async fn main_impl() -> anyhow::Result<()> {
     let tx = tx.with(|x: RemoteEvent| async move {
         return Ok(WebSocketMessage::Text(serde_json::to_string(&x)?));
     });
-    Renderer::new(Box::pin(rx), Box::pin(tx)).run().await?;
+    Runtime::new(Box::pin(rx), Box::pin(tx)).run().await?;
     Ok(())
 }

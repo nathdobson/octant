@@ -12,7 +12,7 @@ struct State {
 }
 
 define_class! {
-    pub class : node {
+    pub class extends  node {
         state: AtomicRefCell<State>,
     }
 }

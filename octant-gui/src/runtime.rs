@@ -12,7 +12,6 @@ use octant_gui_core::{
 };
 
 use crate::{EventSource, handle, html_form_element, RenderSink};
-use crate::handle::Trait;
 
 struct State {
     buffer: Vec<DownMessage>,
@@ -55,7 +54,7 @@ impl Runtime {
         let handle = HandleId(this.next_handle);
         this.next_handle += 1;
         this.buffer.push(DownMessage::Invoke {
-            assign: Some(handle),
+            assign: handle,
             method,
         });
         handle::Value::new(self.clone(), handle)
@@ -81,7 +80,7 @@ impl Runtime {
         self.state
             .borrow_mut()
             .handles
-            .insert(result.concrete().id(), result.clone());
+            .insert(handle::Trait::value(&*result).id(), result.clone());
         result
     }
     pub fn handle<T: HasTypedHandle>(&self, key: TypedHandle<T::TypeTag>) -> Arc<T> {
@@ -99,6 +98,6 @@ impl Runtime {
 pub trait HasTypedHandle: handle::Trait {
     type TypeTag: TypeTag;
     fn typed_handle(&self) -> TypedHandle<Self::TypeTag> {
-        TypedHandle(self.concrete().id(), PhantomData)
+        TypedHandle(handle::Trait::value(self).id(), PhantomData)
     }
 }

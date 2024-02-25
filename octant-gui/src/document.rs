@@ -11,7 +11,7 @@ use crate::{
 use crate::runtime::HasTypedHandle;
 
 define_class! {
-    pub class : node {
+    pub class extends node {
         body: OnceLock<HtmlElement>,
     }
 }

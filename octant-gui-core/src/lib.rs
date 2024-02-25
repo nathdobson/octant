@@ -15,11 +15,11 @@ use crate::window::{WindowMethod, WindowTag};
 pub mod document;
 pub mod element;
 pub mod global;
+pub mod html_form_element;
 pub mod node;
 pub mod object;
 pub mod value;
 pub mod window;
-pub mod html_form_element;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DownMessageList {
@@ -40,27 +40,25 @@ pub enum Method {
 pub struct HandleId(pub usize);
 
 pub trait TypeTag:
-'static
-+ Serialize
-+ for<'de> Deserialize<'de>
-+ Copy
-+ Clone
-+ Eq
-+ Ord
-+ PartialEq
-+ PartialOrd
-+ Hash
-{}
+    'static
+    + Serialize
+    + for<'de> Deserialize<'de>
+    + Copy
+    + Clone
+    + Eq
+    + Ord
+    + PartialEq
+    + PartialOrd
+    + Hash
+{
+}
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
 pub struct TypedHandle<T: TypeTag>(pub HandleId, pub PhantomData<T>);
 
 #[derive(Serialize, Deserialize)]
 pub enum DownMessage {
-    Invoke {
-        assign: Option<HandleId>,
-        method: Method,
-    },
+    Invoke { assign: HandleId, method: Method },
     Delete(HandleId),
 }
 
@@ -79,9 +77,7 @@ impl Debug for DownMessage {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             DownMessage::Invoke { assign, method } => {
-                if let Some(assign) = assign {
-                    write!(f, "{:?} := ", assign)?;
-                }
+                write!(f, "{:?} := ", assign)?;
                 write!(f, "{:?}", method)?;
                 Ok(())
             }

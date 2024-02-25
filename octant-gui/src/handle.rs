@@ -1,13 +1,16 @@
+use std::any::Any;
 use std::sync::Arc;
 
 use octant_gui_core::{HandleId, Method};
-use octant_object::define_class;
+use octant_object::{base, define_class};
 
 use crate::handle;
 use crate::runtime::Runtime;
 
+pub trait ParentTrait = Send + Sync + Any;
+
 define_class! {
-    pub class{
+    pub class extends base implements ParentTrait{
         root: Arc<Runtime>,
         id : HandleId,
     }
@@ -21,7 +24,11 @@ impl Drop for Value {
 
 impl Value {
     pub fn new(root: Arc<Runtime>, handle: HandleId) -> Self {
-        Value { root, id: handle }
+        Value {
+            parent: base::Value::new(),
+            root,
+            id: handle,
+        }
     }
     pub fn id(&self) -> HandleId {
         self.id
