@@ -5,8 +5,8 @@ use std::str::Utf8Error;
 use std::sync::Arc;
 use std::task::Poll;
 
-use anyhow::{anyhow, Context};
-use futures::{Sink, Stream};
+use anyhow::Context;
+use futures::Stream;
 use tokio::sync::mpsc;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::{JsCast, JsValue};
@@ -23,7 +23,7 @@ pub struct WebSocketSender {
 }
 
 pub struct WebSocketReceiver {
-    stream: Arc<WebSocketStream>,
+    _stream: Arc<WebSocketStream>,
     receiver: mpsc::UnboundedReceiver<WebSocketEvent>,
 }
 
@@ -162,7 +162,7 @@ pub async fn connect(address: &str) -> anyhow::Result<(WebSocketSender, WebSocke
             stream: stream.clone(),
         },
         WebSocketReceiver {
-            stream: stream.clone(),
+            _stream: stream.clone(),
             receiver: recv_rx,
         },
     ))

@@ -10,7 +10,7 @@ use futures::sink::Sink;
 use futures::Stream;
 
 pub use global::Global;
-use octant_gui_core::{DownMessageList, UpMessage, UpMessageList};
+use octant_gui_core::{DownMessageList, UpMessageList};
 pub use runtime::Runtime;
 
 pub mod document;

@@ -7,13 +7,13 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use clap::Parser;
-use futures::SinkExt;
 use futures::stream::{SplitSink, SplitStream, StreamExt};
-use warp::{Filter, Reply};
+use futures::SinkExt;
 use warp::ws::{Message, WebSocket};
+use warp::{Filter, Reply};
 
 use octant_gui::{Global, Runtime};
-use octant_gui_core::{DownMessageList, UpMessage, UpMessageList};
+use octant_gui_core::{DownMessageList, UpMessageList};
 
 #[derive(Parser, Debug)]
 pub struct OctantServerOptions {
@@ -33,7 +33,7 @@ impl OctantServerOptions {
 }
 
 pub trait Application: 'static + Sync + Send {
-    fn run_handler(&self, root: Arc<Global>) -> impl Future<Output=anyhow::Result<()>> + Send;
+    fn run_handler(&self, root: Arc<Global>) -> impl Future<Output = anyhow::Result<()>> + Send;
 }
 
 impl<A: Application> OctantServer<A> {

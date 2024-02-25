@@ -8,17 +8,13 @@ use std::ptr::{DynMetadata, Pointee};
 use std::sync::Arc;
 
 use atomic_refcell::AtomicRefCell;
-use futures::SinkExt;
-use futures::{Sink, Stream, StreamExt};
-use wasm_bindgen::closure::Closure;
-use wasm_bindgen::JsCast;
-use web_sys::InputEvent;
+use futures::{Stream, StreamExt};
 use web_sys::{console, window};
 
-use octant_gui_core::html_form_element::HtmlFormElementMethod;
-use octant_gui_core::{DownMessage, DownMessageList, HandleId, Method, UpMessage, TypeTag, TypedHandle, UpMessageList};
+use octant_gui_core::{
+    DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle, UpMessageList,
+};
 use octant_object::cast::Cast;
-use wasm_error::WasmError;
 
 mod document;
 mod element;

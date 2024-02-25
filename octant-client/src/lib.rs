@@ -1,17 +1,16 @@
 #![deny(unused_must_use)]
 
 use anyhow::anyhow;
-use futures::SinkExt;
 use futures::StreamExt;
 use wasm_bindgen::prelude::*;
 use web_sys::window;
 
 use octant_gui_client::Runtime;
-use octant_gui_core::{UpMessage, UpMessageList};
+use octant_gui_core::UpMessageList;
 use wasm_error::log_error;
 use wasm_error::WasmError;
 
-use crate::websocket::{WebSocketMessage};
+use crate::websocket::WebSocketMessage;
 
 mod error;
 mod websocket;

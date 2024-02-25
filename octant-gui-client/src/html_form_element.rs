@@ -8,7 +8,6 @@ use octant_gui_core::html_form_element::{HtmlFormElementMethod, HtmlFormElementT
 use octant_gui_core::{HandleId, TypedHandle, UpMessage, UpMessageList};
 use octant_object::define_class;
 use wasm_bindgen::JsCast;
-use wasm_error::WasmError;
 
 define_class! {
     pub class extends html_element {
@@ -32,7 +31,7 @@ impl dyn Trait {
         self: Arc<Self>,
         runtime: Arc<Runtime>,
         method: &HtmlFormElementMethod,
-        handle_id: HandleId,
+        _handle_id: HandleId,
     ) -> Option<Arc<dyn peer::Trait>> {
         match method {
             HtmlFormElementMethod::SetListener => {
