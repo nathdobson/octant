@@ -9,14 +9,12 @@ use octant_object::define_class;
 
 use crate::{HasLocalType, node, peer, Runtime};
 
-struct State {
-    children: Vec<Arc<dyn node::Trait>>,
-}
+struct State {}
 
 define_class! {
     pub class extends node {
         element: Element,
-        state:AtomicRefCell<State>,
+        state: AtomicRefCell<State>,
     }
 }
 
@@ -25,28 +23,19 @@ impl Value {
         Value {
             parent: node::Value::new(handle, element.clone().into()),
             element,
-            state: AtomicRefCell::new(State { children: vec![] }),
+            state: AtomicRefCell::new(State {}),
         }
     }
     pub fn native(&self) -> &Element {
         &self.element
     }
-    pub fn children(&self) -> Vec<Arc<dyn node::Trait>> {
-        self.state.borrow_mut().children.clone()
-    }
     pub fn invoke_with(
         &self,
-        runtime: &Arc<Runtime>,
+        _runtime: &Arc<Runtime>,
         method: &ElementMethod,
         _handle: HandleId,
     ) -> Option<Arc<dyn peer::Trait>> {
         match method {
-            ElementMethod::AppendChild(node) => {
-                let node = runtime.handle(*node);
-                self.state.borrow_mut().children.push(node.clone());
-                self.native().append_child(node.native()).unwrap();
-                None
-            }
             ElementMethod::SetAttribute(name, value) => {
                 self.native().set_attribute(&name, &value).unwrap();
                 None

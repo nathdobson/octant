@@ -26,7 +26,8 @@ pub mod object;
 pub mod runtime;
 pub mod text;
 pub mod window;
-mod html_input_element;
+pub mod html_input_element;
+pub mod event_loop;
 
 pub type DownMessageSink = Pin<Box<dyn Send + Sync + Sink<DownMessageList, Error = anyhow::Error>>>;
 pub type UpMessageStream = Pin<Box<dyn Send + Sync + Stream<Item = anyhow::Result<UpMessageList>>>>;

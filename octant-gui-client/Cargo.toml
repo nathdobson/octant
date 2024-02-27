@@ -24,3 +24,4 @@ web-sys = { version = "0.3.64", features = [
 ] }
 atomic_refcell = "0.1.13"
 prokio = "0.1.0"
+by_address = "1.1.0"

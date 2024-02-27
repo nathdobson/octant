@@ -12,9 +12,10 @@ use futures::{Stream, StreamExt};
 use web_sys::{console, window};
 
 use octant_gui_core::{
-    DownMessage, DownMessageList, HandleId, Method, TypedHandle, TypeTag, UpMessageList,
+    DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle, UpMessage, UpMessageList,
 };
 use octant_object::cast::Cast;
+use wasm_error::WasmError;
 
 mod document;
 mod element;
@@ -49,15 +50,25 @@ pub trait HasLocalType: TypeTag {
 pub type WindowPeer = Arc<dyn window::Trait>;
 
 impl Runtime {
-    pub fn new(source: DownMessageStream, sink: UpMessageSink) -> Arc<Runtime> {
-        Arc::new(Runtime {
+    pub fn new(source: DownMessageStream, sink: UpMessageSink) -> anyhow::Result<Arc<Runtime>> {
+        let runtime = Arc::new(Runtime {
             state: AtomicRefCell::new(State {
                 source: Some(source),
 
                 handles: HashMap::new(),
             }),
             sink,
-        })
+        });
+        runtime.send(UpMessageList {
+            commands: vec![UpMessage::VisitPage(
+                window()
+                    .unwrap()
+                    .location()
+                    .href()
+                    .map_err(WasmError::new)?,
+            )],
+        })?;
+        Ok(runtime)
     }
     fn invoke(self: &Arc<Self>, assign: HandleId, method: &Method) -> anyhow::Result<()> {
         if let Some(result) = self.invoke_with(method, assign)? {
@@ -99,6 +110,10 @@ impl Runtime {
             Method::HtmlInputElement(element, method) => {
                 self.handle(*element)
                     .invoke_with(self.clone(), method, handle)
+            }
+            Method::Node(node, method) => {
+                self.handle(*node)
+                    .invoke_with(&self.clone(), method, handle)
             }
         })
     }

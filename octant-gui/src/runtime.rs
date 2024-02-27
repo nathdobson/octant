@@ -37,32 +37,6 @@ impl Runtime {
             }),
         })
     }
-    pub async fn handle_events(
-        self: &Arc<Self>,
-        mut events: UpMessageStream,
-    ) -> anyhow::Result<()> {
-        while let Some(events) = events.next().await {
-            for event in events?.commands {
-                self.handle_event(event);
-            }
-            self.flush().await?;
-        }
-        Ok(())
-    }
-    pub fn handle_event(self: &Arc<Self>, event: UpMessage) {
-        match event {
-            // UpMessage::Submit(handle) => {
-            //     self.handle::<html_form_element::Value>(handle).submit();
-            // }
-            // UpMessage::SetInput { handle } => todo!(),
-            UpMessage::HtmlFormElement(form, message) => {
-                self.handle(form).handle_event(message);
-            }
-            UpMessage::HtmlInputElement(input, message) => {
-                self.handle(input).handle_event(message);
-            }
-        }
-    }
     pub fn invoke(self: &Arc<Self>, method: Method) -> handle::Value {
         let ref mut this = *self.state.borrow_mut();
         let handle = HandleId(this.next_handle);

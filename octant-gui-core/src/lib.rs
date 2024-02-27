@@ -13,6 +13,7 @@ use crate::html_form_element::{
     HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage,
 };
 use crate::html_input_element::{HtmlInputElementMethod, HtmlInputElementTag, HtmlInputElementUpMessage};
+use crate::node::{NodeMethod, NodeTag};
 use crate::window::{WindowMethod, WindowTag};
 
 pub mod document;
@@ -37,6 +38,7 @@ pub enum Method {
     Window(TypedHandle<WindowTag>, WindowMethod),
     Document(TypedHandle<DocumentTag>, DocumentMethod),
     Element(TypedHandle<ElementTag>, ElementMethod),
+    Node(TypedHandle<NodeTag>, NodeMethod),
     HtmlFormElement(TypedHandle<HtmlFormElementTag>, HtmlFormElementMethod),
     HtmlInputElement(TypedHandle<HtmlInputElementTag>, HtmlInputElementMethod),
 }
@@ -69,6 +71,7 @@ pub enum DownMessage {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum UpMessage {
+    VisitPage(String),
     HtmlFormElement(TypedHandle<HtmlFormElementTag>, HtmlFormElementUpMessage),
     HtmlInputElement(TypedHandle<HtmlInputElementTag>, HtmlInputElementUpMessage),
 }

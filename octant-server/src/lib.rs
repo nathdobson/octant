@@ -1,18 +1,19 @@
 #![feature(future_join)]
 #![deny(unused_must_use)]
 
-use std::future::Future;
+use std::mem;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use anyhow::anyhow;
 use clap::Parser;
-use futures::SinkExt;
 use futures::stream::{SplitSink, SplitStream, StreamExt};
-use warp::{Filter, Reply};
+use futures::SinkExt;
 use warp::ws::{Message, WebSocket};
+use warp::{Filter, Reply};
 
-use octant_gui::{Global, Runtime};
+use octant_gui::event_loop::{EventLoop, Session};
+use octant_gui::{Global, Node, Runtime};
 use octant_gui_core::{DownMessageList, UpMessageList};
 
 #[derive(Parser, Debug)]
@@ -33,7 +34,7 @@ impl OctantServerOptions {
 }
 
 pub trait Application: 'static + Sync + Send {
-    fn run_handler(&self, root: Arc<Global>) -> impl Future<Output = anyhow::Result<()>> + Send;
+    fn create_session(&self, global: Arc<Global>) -> anyhow::Result<Box<dyn Session>>;
 }
 
 impl<A: Application> OctantServer<A> {
@@ -47,20 +48,16 @@ impl<A: Application> OctantServer<A> {
     }
     pub async fn run_socket(
         self: Arc<Self>,
-        _name: &str,
+        name: &str,
         tx: SplitSink<WebSocket, Message>,
         rx: SplitStream<WebSocket>,
     ) -> anyhow::Result<()> {
         let root = Runtime::new(Box::pin(tx.with(Self::encode)));
         let global = Global::new(root);
-        let events = async {
-            global
-                .root()
-                .handle_events(Box::pin(rx.map(|x| Self::decode(x?))))
-                .await
-        };
-        let app = async { self.application.run_handler(global.clone()).await };
-        tokio::try_join!(app, events)?;
+        let events = Box::pin(rx.map(|x| Self::decode(x?)));
+        let session = self.application.create_session(global.clone())?;
+        let mut event_loop = EventLoop::new(global, events, session);
+        event_loop.handle_events().await?;
         Ok(())
     }
     pub async fn run(self) {
@@ -73,7 +70,13 @@ impl<A: Application> OctantServer<A> {
         let statik = warp::path("static")
             .and(warp::fs::dir("./target/www"))
             .map(Self::add_header);
-        let socket = warp::path("gui")
+        let favicon = warp::path("favicon.ico")
+            .and(warp::fs::file("./target/www/favicon.ico"))
+            .map(Self::add_header);
+        let site = warp::path("site")
+            .and(warp::fs::file("./target/www/index.html"))
+            .map(Self::add_header);
+        let socket = warp::path("socket")
             .and(warp::path::param())
             .and(warp::ws())
             .map({
@@ -91,7 +94,7 @@ impl<A: Application> OctantServer<A> {
                 }
             });
         if let Some(bind_http) = self.options.bind_http {
-            warp::serve(statik.or(socket)).run(bind_http).await;
+            warp::serve(statik.or(site).or(socket)).run(bind_http).await;
         }
     }
 }

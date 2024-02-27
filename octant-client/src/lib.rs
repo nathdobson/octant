@@ -38,7 +38,7 @@ pub async fn main_impl() -> anyhow::Result<()> {
             ));
         }
     };
-    let url = format!("{ws_proto}//{host}/gui/render");
+    let url = format!("{ws_proto}//{host}/socket/render");
     log::info!("Connecting to {:?}", url);
     let (tx, rx) = websocket::connect(&url).await?;
     let rx = rx.map(|x| {
@@ -47,6 +47,6 @@ pub async fn main_impl() -> anyhow::Result<()> {
     let tx = Box::new(move |x: UpMessageList| {
         return Ok(tx.send(WebSocketMessage::Text(serde_json::to_string(&x)?))?);
     });
-    Runtime::new(Box::pin(rx), tx).run().await?;
+    Runtime::new(Box::pin(rx), tx)?.run().await?;
     Ok(())
 }
