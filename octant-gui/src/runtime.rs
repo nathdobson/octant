@@ -5,15 +5,13 @@ use std::ptr::{DynMetadata, Pointee};
 use std::sync::{Arc, Weak};
 
 use atomic_refcell::AtomicRefCell;
-use futures::{SinkExt, StreamExt};
+use futures::SinkExt;
 use weak_table::WeakValueHashMap;
 
-use octant_gui_core::{
-    DownMessage, DownMessageList, HandleId, Method, TypedHandle, TypeTag, UpMessage,
-};
+use octant_gui_core::{DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle};
 use octant_object::cast::Cast;
 
-use crate::{DownMessageSink, handle, UpMessageStream};
+use crate::{handle, DownMessageSink};
 
 struct State {
     buffer: Vec<DownMessage>,

@@ -1,7 +1,6 @@
 #![feature(future_join)]
 #![deny(unused_must_use)]
 
-use std::mem;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -13,7 +12,7 @@ use warp::ws::{Message, WebSocket};
 use warp::{Filter, Reply};
 
 use octant_gui::event_loop::{EventLoop, Session};
-use octant_gui::{Global, Node, Runtime};
+use octant_gui::{Global, Runtime};
 use octant_gui_core::{DownMessageList, UpMessageList};
 
 #[derive(Parser, Debug)]
@@ -48,7 +47,7 @@ impl<A: Application> OctantServer<A> {
     }
     pub async fn run_socket(
         self: Arc<Self>,
-        name: &str,
+        _name: &str,
         tx: SplitSink<WebSocket, Message>,
         rx: SplitStream<WebSocket>,
     ) -> anyhow::Result<()> {
@@ -69,9 +68,6 @@ impl<A: Application> OctantServer<A> {
     pub async fn run_arc(self: Arc<Self>) {
         let statik = warp::path("static")
             .and(warp::fs::dir("./target/www"))
-            .map(Self::add_header);
-        let favicon = warp::path("favicon.ico")
-            .and(warp::fs::file("./target/www/favicon.ico"))
             .map(Self::add_header);
         let site = warp::path("site")
             .and(warp::fs::file("./target/www/index.html"))

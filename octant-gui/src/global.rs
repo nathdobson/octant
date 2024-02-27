@@ -1,11 +1,10 @@
-use futures::StreamExt;
 use std::sync::Arc;
 
 use octant_gui_core::global::GlobalMethod;
-use octant_gui_core::{Method, UpMessage};
+use octant_gui_core::Method;
 
+use crate::{window, Window};
 use crate::runtime::Runtime;
-use crate::{window, UpMessageStream, Window};
 
 pub struct Global {
     runtime: Arc<Runtime>,

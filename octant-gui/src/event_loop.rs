@@ -1,7 +1,10 @@
-use crate::{Global, Node, UpMessageStream};
-use futures::StreamExt;
-use octant_gui_core::UpMessage;
 use std::sync::Arc;
+
+use futures::StreamExt;
+
+use octant_gui_core::UpMessage;
+
+use crate::{Global, Node, UpMessageStream};
 
 pub struct EventLoop {
     global: Arc<Global>,

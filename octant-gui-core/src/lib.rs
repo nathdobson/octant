@@ -12,7 +12,9 @@ use crate::global::GlobalMethod;
 use crate::html_form_element::{
     HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage,
 };
-use crate::html_input_element::{HtmlInputElementMethod, HtmlInputElementTag, HtmlInputElementUpMessage};
+use crate::html_input_element::{
+    HtmlInputElementMethod, HtmlInputElementTag, HtmlInputElementUpMessage,
+};
 use crate::node::{NodeMethod, NodeTag};
 use crate::window::{WindowMethod, WindowTag};
 
@@ -60,7 +62,7 @@ pub trait TypeTag:
 {
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
+#[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct TypedHandle<T: TypeTag>(pub HandleId, pub PhantomData<T>);
 
 #[derive(Serialize, Deserialize)]
@@ -100,5 +102,11 @@ impl Debug for DownMessage {
                 Ok(())
             }
         }
+    }
+}
+
+impl<T: TypeTag> Debug for TypedHandle<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
     }
 }

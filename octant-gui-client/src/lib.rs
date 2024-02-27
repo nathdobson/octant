@@ -9,7 +9,9 @@ use std::sync::Arc;
 
 use atomic_refcell::AtomicRefCell;
 use futures::{Stream, StreamExt};
-use web_sys::{console, window};
+use wasm_bindgen::closure::Closure;
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{console, window, Event, HtmlAnchorElement};
 
 use octant_gui_core::{
     DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle, UpMessage, UpMessageList,
@@ -59,15 +61,59 @@ impl Runtime {
             }),
             sink,
         });
+        let window = window().unwrap();
         runtime.send(UpMessageList {
             commands: vec![UpMessage::VisitPage(
-                window()
-                    .unwrap()
-                    .location()
-                    .href()
-                    .map_err(WasmError::new)?,
+                window.location().href().map_err(WasmError::new)?,
             )],
         })?;
+        let history = window.history().map_err(WasmError::new)?;
+        let document = window.document().unwrap();
+        let click_listener = Closure::wrap(Box::new({
+            let runtime = Arc::downgrade(&runtime);
+            move |e: Event| {
+                if let Some(element) = e.target() {
+                    let element: Result<HtmlAnchorElement, _> = element.dyn_into();
+                    if let Ok(element) = element {
+                        e.prevent_default();
+                        history
+                            .push_state_with_url(&JsValue::NULL, "???", Some(&element.href()))
+                            .unwrap();
+                        if let Some(runtime) = runtime.upgrade() {
+                            runtime
+                                .send(UpMessageList {
+                                    commands: vec![UpMessage::VisitPage(element.href())],
+                                })
+                                .unwrap();
+                        }
+                    }
+                }
+            }
+        }) as Box<dyn FnMut(_)>);
+        document
+            .add_event_listener_with_callback("click", click_listener.as_ref().unchecked_ref())
+            .map_err(WasmError::new)?;
+        click_listener.forget();
+
+        let pop_listener = Closure::wrap(Box::new({
+            let window = window.clone();
+            let runtime = Arc::downgrade(&runtime);
+            move |_: Event| {
+                if let Some(runtime) = runtime.upgrade() {
+                    runtime
+                        .send(UpMessageList {
+                            commands: vec![UpMessage::VisitPage(
+                                window.location().href().map_err(WasmError::new).unwrap(),
+                            )],
+                        })
+                        .unwrap();
+                }
+            }
+        }) as Box<dyn FnMut(_)>);
+        window
+            .add_event_listener_with_callback("popstate", pop_listener.as_ref().unchecked_ref())
+            .map_err(WasmError::new)?;
+        pop_listener.forget();
         Ok(runtime)
     }
     fn invoke(self: &Arc<Self>, assign: HandleId, method: &Method) -> anyhow::Result<()> {
