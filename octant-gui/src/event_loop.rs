@@ -50,10 +50,15 @@ impl EventLoop {
     pub async fn handle_events(&mut self) -> anyhow::Result<()> {
         self.global.runtime().flush().await?;
         while let Some(events) = self.events.next().await {
-            for event in events?.commands {
-                self.handle_event(event)?;
+            let events = events?;
+            if let Some(events) = events {
+                for event in events.commands {
+                    self.handle_event(event)?;
+                }
+                self.global.runtime().flush().await?;
+            } else {
+                break;
             }
-            self.global.runtime().flush().await?;
         }
         Ok(())
     }

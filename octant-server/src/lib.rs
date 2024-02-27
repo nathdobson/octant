@@ -40,10 +40,14 @@ impl<A: Application> OctantServer<A> {
     async fn encode(x: DownMessageList) -> anyhow::Result<Message> {
         Ok(Message::binary(serde_json::to_vec(&x)?))
     }
-    fn decode(x: Message) -> anyhow::Result<UpMessageList> {
-        Ok(serde_json::from_str(
-            x.to_str().map_err(|_| anyhow!("not text"))?,
-        )?)
+    fn decode(x: Message) -> anyhow::Result<Option<UpMessageList>> {
+        if x.is_close() {
+            Ok(None)
+        } else {
+            Ok(serde_json::from_str(
+                x.to_str().map_err(|_| anyhow!("not text"))?,
+            )?)
+        }
     }
     pub async fn run_socket(
         self: Arc<Self>,
