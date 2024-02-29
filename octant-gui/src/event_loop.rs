@@ -1,8 +1,12 @@
+use anyhow::anyhow;
+use std::any::Any;
+use std::panic::{catch_unwind, AssertUnwindSafe, RefUnwindSafe, UnwindSafe};
 use std::sync::Arc;
 
 use futures::StreamExt;
 
-use octant_gui_core::UpMessage;
+use octant_gui_core::{DownMessage, UpMessage};
+use octant_panic::catch_error;
 
 use crate::{Global, Node, UpMessageStream};
 
@@ -38,6 +42,7 @@ impl Drop for Page {
             .remove_child(self.node.clone());
     }
 }
+
 impl EventLoop {
     pub fn new(global: Arc<Global>, events: UpMessageStream, session: Box<dyn Session>) -> Self {
         EventLoop {
@@ -48,12 +53,22 @@ impl EventLoop {
         }
     }
     pub async fn handle_events(&mut self) -> anyhow::Result<()> {
+        if let Err(e) = self.handle_events_impl().await {
+            self.global
+                .runtime()
+                .send(DownMessage::Fail(format!("{:?}", e)));
+            self.global.runtime().flush().await?;
+            return Err(e);
+        }
+        Ok(())
+    }
+    pub async fn handle_events_impl(&mut self) -> anyhow::Result<()> {
         self.global.runtime().flush().await?;
         while let Some(events) = self.events.next().await {
             let events = events?;
             if let Some(events) = events {
                 for event in events.commands {
-                    self.handle_event(event)?;
+                    catch_error(AssertUnwindSafe(|| self.handle_event(event)))??
                 }
                 self.global.runtime().flush().await?;
             } else {

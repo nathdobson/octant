@@ -69,6 +69,7 @@ pub struct TypedHandle<T: TypeTag>(pub HandleId, pub PhantomData<T>);
 pub enum DownMessage {
     Invoke { assign: HandleId, method: Method },
     Delete(HandleId),
+    Fail(String),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -100,6 +101,9 @@ impl Debug for DownMessage {
             DownMessage::Delete(handle) => {
                 write!(f, "delete {:?}", handle)?;
                 Ok(())
+            }
+            DownMessage::Fail(message) => {
+                write!(f, "fail")
             }
         }
     }

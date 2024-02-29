@@ -88,7 +88,7 @@ impl<A: Application> OctantServer<A> {
                         log::info!("Upgraded");
                         let (tx, rx) = websocket.split();
                         if let Err(e) = this.run_socket(&name, tx, rx).await {
-                            log::error!("Websocket error: {:?}", e);
+                            log::error!("Error handling websocket: {:?}", e);
                         }
                     })
                 }

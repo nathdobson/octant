@@ -1,7 +1,9 @@
 #![deny(unused_must_use)]
 #![feature(trait_upcasting)]
 #![feature(ptr_metadata)]
+#![feature(never_type)]
 
+use anyhow::anyhow;
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::ptr::{DynMetadata, Pointee};
@@ -166,7 +168,7 @@ impl Runtime {
     fn delete(self: &Arc<Self>, handle: HandleId) {
         self.state.borrow_mut().handles.remove(&handle);
     }
-    pub async fn run(self: &Arc<Self>) -> anyhow::Result<()> {
+    pub async fn run(self: &Arc<Self>) -> anyhow::Result<!> {
         let mut source = self.state.borrow_mut().source.take().unwrap();
         while let Some(commands) = source.next().await {
             let commands = commands?;
@@ -177,10 +179,11 @@ impl Runtime {
                         self.invoke(assign, &method)?;
                     }
                     DownMessage::Delete(handle) => self.delete(handle),
+                    DownMessage::Fail(msg) => return Err(anyhow::Error::msg(msg)),
                 }
             }
         }
-        Ok(())
+        Err(anyhow!("Websocket terminated."))
     }
     pub fn send(&self, message: UpMessageList) -> anyhow::Result<()> {
         (self.sink)(message)

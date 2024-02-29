@@ -1,5 +1,5 @@
 #![deny(unused_must_use)]
-
+#![feature(never_type)]
 use anyhow::anyhow;
 use futures::StreamExt;
 use wasm_bindgen::prelude::*;
@@ -15,16 +15,26 @@ use crate::websocket::WebSocketMessage;
 mod error;
 mod websocket;
 
+#[wasm_bindgen(module = "index.js")]
+extern "C" {
+    #[wasm_bindgen(js_name=displayError)]
+    fn display_error(message: &str);
+}
+
 #[wasm_bindgen(start)]
 pub async fn main() {
     console_error_panic_hook::set_once();
     wasm_logger::init(wasm_logger::Config::default());
-    if let Err(e) = main_impl().await {
-        log_error(&e);
+    match main_impl().await {
+        Ok(x) => match x {},
+        Err(e) => {
+            log_error(&e);
+            display_error(&format!("{:?}", e));
+        }
     }
 }
 
-pub async fn main_impl() -> anyhow::Result<()> {
+pub async fn main_impl() -> anyhow::Result<!> {
     let location = window().expect("no window").location();
     let http_proto = location.protocol().map_err(WasmError::new)?;
     let host = location.host().map_err(WasmError::new)?;
@@ -48,5 +58,4 @@ pub async fn main_impl() -> anyhow::Result<()> {
         return Ok(tx.send(WebSocketMessage::Text(serde_json::to_string(&x)?))?);
     });
     Runtime::new(Box::pin(rx), tx)?.run().await?;
-    Ok(())
 }

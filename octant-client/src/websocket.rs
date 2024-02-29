@@ -5,11 +5,11 @@ use std::str::Utf8Error;
 use std::sync::Arc;
 use std::task::Poll;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use futures::Stream;
 use tokio::sync::mpsc;
-use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen::closure::Closure;
+use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{CloseEvent, ErrorEvent, Event, MessageEvent, WebSocket};
 
 use wasm_error::WasmError;
@@ -36,6 +36,7 @@ enum WebSocketEvent {
     Connect,
     Error(ErrorEvent),
     Message(WebSocketMessage),
+    Close,
 }
 
 impl Drop for WebSocketStream {
@@ -81,6 +82,7 @@ impl Stream for WebSocketReceiver {
             }
             Poll::Ready(None) => Poll::Ready(None),
             Poll::Pending => Poll::Pending,
+            Poll::Ready(Some(WebSocketEvent::Close)) => Poll::Ready(None),
         }
     }
 }
@@ -141,6 +143,7 @@ pub async fn connect(address: &str) -> anyhow::Result<(WebSocketSender, WebSocke
     socket.set_onmessage(Some(onmessage_callback.as_ref().unchecked_ref()));
 
     let onclose_callback = Closure::once_into_js(move |_: CloseEvent| {
+        recv_tx.send(WebSocketEvent::Close).ok();
         mem::drop(onerror_callback);
         mem::drop(onopen_callback);
         mem::drop(onmessage_callback);
@@ -154,6 +157,9 @@ pub async fn connect(address: &str) -> anyhow::Result<(WebSocketSender, WebSocke
             return Err(WasmError::new_anyhow(JsValue::from(e)).context("Failed to connect."));
         }
         WebSocketEvent::Message(_) => unreachable!(),
+        WebSocketEvent::Close => {
+            return Err(anyhow!("Connection closed."));
+        }
     }
 
     let stream = Arc::new(WebSocketStream { socket });

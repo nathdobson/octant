@@ -9,6 +9,7 @@ futures = "0.3.28"
 anyhow = "1.0.75"
 octant-gui-core = { path = "../octant-gui-core" }
 octant-object = { path = "../octant-object" }
+octant-panic = { path = "../octant-panic" }
 serde_json = "1.0.105"
 tokio = "1.36.0"
 log = "0.4.20"
