@@ -3,20 +3,20 @@
 #![feature(ptr_metadata)]
 #![feature(never_type)]
 
-use anyhow::anyhow;
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::ptr::{DynMetadata, Pointee};
 use std::sync::Arc;
 
+use anyhow::anyhow;
 use atomic_refcell::AtomicRefCell;
 use futures::{Stream, StreamExt};
-use wasm_bindgen::closure::Closure;
 use wasm_bindgen::{JsCast, JsValue};
-use web_sys::{console, window, Event, HtmlAnchorElement};
+use wasm_bindgen::closure::Closure;
+use web_sys::{console, Event, HtmlAnchorElement, window};
 
 use octant_gui_core::{
-    DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle, UpMessage, UpMessageList,
+    DownMessage, DownMessageList, HandleId, Method, TypedHandle, TypeTag, UpMessage, UpMessageList,
 };
 use octant_object::cast::Cast;
 use wasm_error::WasmError;

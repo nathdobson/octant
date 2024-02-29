@@ -8,10 +8,10 @@ use atomic_refcell::AtomicRefCell;
 use futures::SinkExt;
 use weak_table::WeakValueHashMap;
 
-use octant_gui_core::{DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle};
+use octant_gui_core::{DownMessage, DownMessageList, HandleId, Method, TypedHandle, TypeTag};
 use octant_object::cast::Cast;
 
-use crate::{handle, DownMessageSink};
+use crate::{DownMessageSink, handle};
 
 struct State {
     buffer: Vec<DownMessage>,

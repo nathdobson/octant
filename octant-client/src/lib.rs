@@ -1,5 +1,6 @@
 #![deny(unused_must_use)]
 #![feature(never_type)]
+
 use anyhow::anyhow;
 use futures::StreamExt;
 use wasm_bindgen::prelude::*;

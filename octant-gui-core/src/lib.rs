@@ -102,7 +102,7 @@ impl Debug for DownMessage {
                 write!(f, "delete {:?}", handle)?;
                 Ok(())
             }
-            DownMessage::Fail(message) => {
+            DownMessage::Fail(_) => {
                 write!(f, "fail")
             }
         }

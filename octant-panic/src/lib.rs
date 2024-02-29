@@ -1,8 +1,8 @@
-use anyhow::anyhow;
-use std::cell::{Cell, RefCell};
-use std::panic;
+use std::cell::Cell;
 use std::panic::{catch_unwind, set_hook, PanicInfo, UnwindSafe};
-use std::sync::{Once, OnceLock};
+use std::sync::Once;
+
+use anyhow::anyhow;
 
 thread_local! {
     static LAST_ERROR:Cell<Option<anyhow::Error>> = Cell::new(None);
@@ -16,7 +16,7 @@ pub fn catch_error<T>(f: impl UnwindSafe + FnOnce() -> T) -> anyhow::Result<T> {
             Ok(e) => return anyhow::Error::msg(*e),
             Err(e) => e,
         };
-        let e = match e.downcast::<&str>() {
+        let _ = match e.downcast::<&str>() {
             Ok(e) => return anyhow::Error::msg(*e),
             Err(e) => e,
         };

@@ -1,6 +1,4 @@
-use anyhow::anyhow;
-use std::any::Any;
-use std::panic::{catch_unwind, AssertUnwindSafe, RefUnwindSafe, UnwindSafe};
+use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
 
 use futures::StreamExt;
