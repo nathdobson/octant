@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
 
-members = [
+members = [ "octant-build",
     "octant-client", "octant-gui", "octant-gui-client", "octant-gui-core", "octant-object", "octant-panic", "octant-scoreboard",
     "octant-server"
-    , "wasm-error"]
+    , "wasm-error","octant-build"]
 
 [profile.release]
 opt-level = "s"
