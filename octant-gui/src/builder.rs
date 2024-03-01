@@ -1,4 +1,4 @@
-use crate::{element, html_form_element, HtmlFormElement, Node};
+use crate::{element, html_form_element, Node};
 use std::sync::Arc;
 
 pub trait ElementExt {

@@ -3,13 +3,9 @@
 
 mod app;
 
-use std::sync::Arc;
-
-use octant_gui::event_loop::{Page, Session};
-use octant_gui::Global;
-use octant_panic::register_handler;
-use octant_server::{Application, OctantServer, OctantServerOptions};
 use crate::app::ScoreBoardApplication;
+use octant_panic::register_handler;
+use octant_server::{OctantServer, OctantServerOptions};
 
 #[tokio::main]
 async fn main() {
