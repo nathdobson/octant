@@ -43,7 +43,6 @@ impl dyn Trait {
                 let closure: Box<dyn FnMut(_)> = Box::new({
                     let form = self.clone();
                     move |e: InputEvent| {
-                        console::info_2(&"submitted".to_string().into(), &e);
                         e.prevent_default();
                         let mut commands: Vec<UpMessage> = vec![];
                         let children = form.children();

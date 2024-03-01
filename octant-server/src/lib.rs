@@ -1,18 +1,22 @@
 #![feature(future_join)]
 #![deny(unused_must_use)]
 
+pub mod session;
+
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use anyhow::anyhow;
+use atomic_refcell::AtomicRefCell;
 use clap::Parser;
-use futures::SinkExt;
 use futures::stream::{SplitSink, SplitStream, StreamExt};
-use warp::{Filter, Reply};
+use futures::SinkExt;
 use warp::ws::{Message, WebSocket};
+use warp::{Filter, Reply};
 
+use crate::session::Session;
+use octant_gui::event_loop::{Application, EventLoop, Page};
 use octant_gui::{Global, Runtime};
-use octant_gui::event_loop::{EventLoop, Session};
 use octant_gui_core::{DownMessageList, UpMessageList};
 
 #[derive(Parser, Debug)]
@@ -21,9 +25,9 @@ pub struct OctantServerOptions {
     pub bind_http: Option<SocketAddr>,
 }
 
-pub struct OctantServer<A> {
+pub struct OctantServer<H> {
     pub options: OctantServerOptions,
-    pub application: A,
+    pub handler: H,
 }
 
 impl OctantServerOptions {
@@ -32,11 +36,22 @@ impl OctantServerOptions {
     }
 }
 
-pub trait Application: 'static + Sync + Send {
-    fn create_session(&self, global: Arc<Global>) -> anyhow::Result<Box<dyn Session>>;
+pub trait Handler: 'static + Sync + Send {
+    fn handle(&self, url: &str, session: Arc<Session>) -> anyhow::Result<Page>;
 }
 
-impl<A: Application> OctantServer<A> {
+struct OctantApplication<H> {
+    server: Arc<OctantServer<H>>,
+    session: Arc<Session>,
+}
+
+impl<H: Handler> Application for OctantApplication<H> {
+    fn create_page(&self, url: &str, global: Arc<Global>) -> anyhow::Result<Page> {
+        self.server.handler.handle(url, self.session.clone())
+    }
+}
+
+impl<H: Handler> OctantServer<H> {
     async fn encode(x: DownMessageList) -> anyhow::Result<Message> {
         Ok(Message::binary(serde_json::to_vec(&x)?))
     }
@@ -58,8 +73,15 @@ impl<A: Application> OctantServer<A> {
         let root = Runtime::new(Box::pin(tx.with(Self::encode)));
         let global = Global::new(root);
         let events = Box::pin(rx.map(|x| Self::decode(x?)));
-        let session = self.application.create_session(global.clone())?;
-        let mut event_loop = EventLoop::new(global, events, session);
+        let session = Arc::new(Session::new(global.clone()));
+        let mut event_loop = EventLoop::new(
+            global,
+            events,
+            Arc::new(OctantApplication {
+                server: self,
+                session,
+            }),
+        );
         event_loop.handle_events().await?;
         Ok(())
     }

@@ -3,12 +3,12 @@ use std::collections::HashSet;
 use atomic_refcell::AtomicRefCell;
 use by_address::ByAddress;
 
-use octant_gui_core::Method;
 use octant_gui_core::node::{NodeMethod, NodeTag};
+use octant_gui_core::Method;
 use octant_object::define_class;
 
-use crate::{handle, Node, object};
 use crate::runtime::HasTypedHandle;
+use crate::{handle, object, Node};
 
 #[derive(Debug)]
 struct State {
@@ -46,5 +46,9 @@ impl Value {
     pub fn remove_child(&self, child: Node) {
         self.invoke(NodeMethod::RemoveChild(child.typed_handle()));
         self.state.borrow_mut().children.remove(&ByAddress(child));
+    }
+
+    pub fn set_node_value(&self, value: Option<String>) {
+        self.invoke(NodeMethod::SetNodeValue(value));
     }
 }

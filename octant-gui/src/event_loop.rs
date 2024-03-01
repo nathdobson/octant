@@ -10,13 +10,13 @@ use crate::{Global, Node, UpMessageStream};
 
 pub struct EventLoop {
     global: Arc<Global>,
-    session: Box<dyn Session>,
+    app: Arc<dyn Application>,
     events: UpMessageStream,
     page: Option<Page>,
 }
 
-pub trait Session: 'static + Sync + Send {
-    fn create_page(&mut self, url: &str, global: Arc<Global>) -> anyhow::Result<Page>;
+pub trait Application: 'static + Sync + Send {
+    fn create_page(&self, url: &str, global: Arc<Global>) -> anyhow::Result<Page>;
 }
 
 pub struct Page {
@@ -42,10 +42,10 @@ impl Drop for Page {
 }
 
 impl EventLoop {
-    pub fn new(global: Arc<Global>, events: UpMessageStream, session: Box<dyn Session>) -> Self {
+    pub fn new(global: Arc<Global>, events: UpMessageStream, app: Arc<dyn Application>) -> Self {
         EventLoop {
             global,
-            session,
+            app,
             events,
             page: None,
         }
@@ -85,7 +85,7 @@ impl EventLoop {
             }
             UpMessage::VisitPage(page) => {
                 self.page = None;
-                self.page = Some(self.session.create_page(&page, self.global.clone())?);
+                self.page = Some(self.app.create_page(&page, self.global.clone())?);
             }
         }
         Ok(())

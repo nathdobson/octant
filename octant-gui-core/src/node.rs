@@ -11,4 +11,5 @@ impl TypeTag for NodeTag {}
 pub enum NodeMethod {
     AppendChild(TypedHandle<NodeTag>),
     RemoveChild(TypedHandle<NodeTag>),
+    SetNodeValue(Option<String>),
 }

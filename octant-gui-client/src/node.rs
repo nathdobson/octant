@@ -71,6 +71,10 @@ impl dyn Trait {
                 self.native().remove_child(node.native()).unwrap();
                 None
             }
+            NodeMethod::SetNodeValue(value) => {
+                self.native().set_node_value(value.as_deref());
+                None
+            }
         }
     }
 }

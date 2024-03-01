@@ -3,18 +3,18 @@
 
 mod app;
 
-use crate::app::ScoreBoardApplication;
 use octant_panic::register_handler;
 use octant_server::{OctantServer, OctantServerOptions};
+use crate::app::ScoreHandler;
 
 #[tokio::main]
 async fn main() {
     simple_logger::SimpleLogger::new().env().init().unwrap();
     register_handler();
-    let application = ScoreBoardApplication {};
+    let handler = ScoreHandler {};
     OctantServer {
         options: OctantServerOptions::from_command_line(),
-        application,
+        handler,
     }
     .run()
     .await;
