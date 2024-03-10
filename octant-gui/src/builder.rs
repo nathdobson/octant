@@ -1,5 +1,6 @@
-use crate::{element, html_form_element, Node};
 use std::sync::Arc;
+
+use crate::{element, html_form_element, Node};
 
 pub trait ElementExt {
     fn child(self, child: Node) -> Self;

@@ -1,23 +1,23 @@
 #![feature(future_join)]
 #![deny(unused_must_use)]
 
-pub mod session;
-
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use atomic_refcell::AtomicRefCell;
 use clap::Parser;
-use futures::stream::{SplitSink, SplitStream, StreamExt};
 use futures::SinkExt;
-use warp::ws::{Message, WebSocket};
+use futures::stream::{SplitSink, SplitStream, StreamExt};
 use warp::{Filter, Reply};
+use warp::ws::{Message, WebSocket};
+
+use octant_gui::{Global, Runtime};
+use octant_gui::event_loop::{Application, EventLoop, Page};
+use octant_gui_core::{DownMessageList, UpMessageList};
 
 use crate::session::Session;
-use octant_gui::event_loop::{Application, EventLoop, Page};
-use octant_gui::{Global, Runtime};
-use octant_gui_core::{DownMessageList, UpMessageList};
+
+pub mod session;
 
 #[derive(Parser, Debug)]
 pub struct OctantServerOptions {
@@ -46,7 +46,7 @@ struct OctantApplication<H> {
 }
 
 impl<H: Handler> Application for OctantApplication<H> {
-    fn create_page(&self, url: &str, global: Arc<Global>) -> anyhow::Result<Page> {
+    fn create_page(&self, url: &str, _global: Arc<Global>) -> anyhow::Result<Page> {
         self.server.handler.handle(url, self.session.clone())
     }
 }

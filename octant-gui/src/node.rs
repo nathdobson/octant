@@ -3,12 +3,12 @@ use std::collections::HashSet;
 use atomic_refcell::AtomicRefCell;
 use by_address::ByAddress;
 
-use octant_gui_core::node::{NodeMethod, NodeTag};
 use octant_gui_core::Method;
+use octant_gui_core::node::{NodeMethod, NodeTag};
 use octant_object::define_class;
 
+use crate::{handle, Node, object};
 use crate::runtime::HasTypedHandle;
-use crate::{handle, object, Node};
 
 #[derive(Debug)]
 struct State {

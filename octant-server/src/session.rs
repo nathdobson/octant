@@ -1,8 +1,9 @@
-use atomic_refcell::AtomicRefCell;
-use memo_map::MemoMap;
-use octant_gui::Global;
 use std::any::{Any, TypeId};
 use std::sync::Arc;
+
+use memo_map::MemoMap;
+
+use octant_gui::Global;
 
 pub struct Session {
     global: Arc<Global>,

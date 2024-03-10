@@ -1,10 +1,11 @@
-use atomic_refcell::AtomicRefCell;
-use octant_gui::builder::{ElementExt, HtmlFormElementExt};
-use octant_gui::event_loop::{Application, Page};
-use octant_gui::Global;
-use octant_server::session::{Session, SessionData};
-use octant_server::Handler;
 use std::sync::Arc;
+
+use atomic_refcell::AtomicRefCell;
+
+use octant_gui::builder::{ElementExt, HtmlFormElementExt};
+use octant_gui::event_loop::Page;
+use octant_server::Handler;
+use octant_server::session::{Session, SessionData};
 
 pub struct ScoreHandler {}
 

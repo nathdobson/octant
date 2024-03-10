@@ -3,10 +3,12 @@ use std::sync::Arc;
 
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
-use web_sys::{console, HtmlFormElement, InputEvent};
+use web_sys::{HtmlFormElement, InputEvent};
 
 use octant_gui_core::{HandleId, TypedHandle, UpMessage, UpMessageList};
-use octant_gui_core::html_form_element::{HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage};
+use octant_gui_core::html_form_element::{
+    HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage,
+};
 use octant_gui_core::html_input_element::HtmlInputElementUpMessage;
 use octant_object::cast::Cast;
 use octant_object::define_class;
@@ -59,7 +61,10 @@ impl dyn Trait {
                                 ))
                             }
                         }
-                        commands.push(UpMessage::HtmlFormElement(this.handle(),HtmlFormElementUpMessage::Submit));
+                        commands.push(UpMessage::HtmlFormElement(
+                            this.handle(),
+                            HtmlFormElementUpMessage::Submit,
+                        ));
                         if let Err(err) = runtime.send(UpMessageList { commands }) {
                             log::error!("Cannot send event {:?}", err);
                         }

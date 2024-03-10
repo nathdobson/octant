@@ -1,11 +1,12 @@
 #![deny(unused_must_use)]
 #![feature(trait_upcasting)]
 
-mod app;
-
 use octant_panic::register_handler;
 use octant_server::{OctantServer, OctantServerOptions};
+
 use crate::app::ScoreHandler;
+
+mod app;
 
 #[tokio::main]
 async fn main() {

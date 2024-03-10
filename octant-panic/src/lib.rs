@@ -1,5 +1,5 @@
 use std::cell::Cell;
-use std::panic::{catch_unwind, set_hook, PanicInfo, UnwindSafe};
+use std::panic::{catch_unwind, PanicInfo, set_hook, UnwindSafe};
 use std::sync::Once;
 
 use anyhow::anyhow;
