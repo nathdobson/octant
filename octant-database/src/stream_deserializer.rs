@@ -9,8 +9,3 @@ pub trait StreamDeserializer<'de, R> {
         seed: D,
     ) -> impl Send + Future<Output = Result<Option<D::Value>, anyhow::Error>>;
 }
-//
-// pub trait ReadStreamDeserializer<'de, R>: StreamDeserializer<'de> {
-//     fn from_write(w: R) -> Self;
-//     fn into_write(self) -> R;
-// }

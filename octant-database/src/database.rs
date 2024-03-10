@@ -4,6 +4,7 @@ use std::ops::Deref;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::DeserializeSeed;
 
+use crate::seed::UpdateSeed;
 use crate::stream_deserialize::StreamDeserialize;
 use crate::stream_deserializer::StreamDeserializer;
 use crate::stream_serialize::StreamSerialize;
@@ -53,25 +54,13 @@ impl<'de, R, D: StreamDeserializer<'de, R>> DatabaseReader<D, R> {
         } else {
             return Ok(None);
         };
-        struct UpdateSeed<'a, T> {
-            value: &'a mut T,
-        }
-        impl<'a, 'de, T: StreamDeserialize<'de>> DeserializeSeed<'de> for UpdateSeed<'a, T> {
-            type Value = ();
-            fn deserialize<D>(self, deserializer: D) -> Result<(), D::Error>
-            where
-                D: Deserializer<'de>,
-            {
-                self.value.deserialize_stream(deserializer)?;
-                Ok(())
-            }
-        }
         while self
             .des
-            .deserialize_one(&mut self.read, UpdateSeed { value: &mut value })
+            .deserialize_one(&mut self.read, UpdateSeed::new(&mut value))
             .await?
             .is_some()
-        {}
+        {
+        }
         Ok(Some(value))
     }
     pub fn into_inner(self) -> R {

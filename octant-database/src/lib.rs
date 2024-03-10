@@ -21,3 +21,4 @@ mod tack;
 #[cfg(test)]
 mod test;
 mod tester;
+mod seed;

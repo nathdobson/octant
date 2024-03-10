@@ -28,6 +28,9 @@ impl<T> Field<T> {
         this.modified = true;
         Tack::new(&mut this.value)
     }
+    pub fn modified(&self) -> bool {
+        self.modified
+    }
 }
 
 impl<T> Deref for Field<T> {
@@ -86,6 +89,9 @@ impl<T: StreamSerialize> StreamSerialize for Field<T> {
     }
 
     fn build_target(&mut self) -> bool {
+        if self.modified {
+            self.modified = self.value.build_target();
+        }
         self.modified
     }
 

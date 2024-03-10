@@ -29,7 +29,7 @@ impl<'a, T: ?Sized> Tack<'a, T> {
     pub fn get_ref(self) -> &'a T {
         self.0
     }
-    pub fn as_mut(&mut self) -> Tack<T> {
+    pub fn reborrow(&mut self) -> Tack<T> {
         Tack::new(&mut *self.0)
     }
     pub fn as_ref(&self) -> &T {
@@ -66,6 +66,6 @@ impl<'a, T: ?Sized> Deref for Tack<'a, T> {
 
 impl<'a, T: ?Sized + Untack> DerefMut for Tack<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.as_mut().get_mut()
+        self.reborrow().get_mut()
     }
 }
