@@ -1,9 +1,10 @@
 use std::fmt::Formatter;
 
 use serde::de::{DeserializeSeed, Error, Visitor};
-use serde::Deserializer;
+use serde::{Deserializer, Serialize, Serializer};
 
 use crate::stream_deserialize::StreamDeserialize;
+use crate::stream_serialize::StreamSerialize;
 
 pub struct UpdateSeed<'a, T> {
     value: &'a mut T,
@@ -63,5 +64,20 @@ impl<'de, S: DeserializeSeed<'de>> DeserializeSeed<'de> for OptionSeed<S> {
             }
         }
         deserializer.deserialize_option(V(self.inner))
+    }
+}
+
+pub struct SerializeUpdate<'a, T>(&'a T);
+impl<'a, T> SerializeUpdate<'a, T> {
+    pub fn new(x: &'a T) -> Self {
+        SerializeUpdate(x)
+    }
+}
+impl<'a, T: StreamSerialize> Serialize for SerializeUpdate<'a, T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.0.serialize_update(serializer)
     }
 }

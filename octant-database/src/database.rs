@@ -4,7 +4,7 @@ use std::ops::Deref;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::DeserializeSeed;
 
-use crate::seed::UpdateSeed;
+use crate::seed::{SerializeUpdate, UpdateSeed};
 use crate::stream_deserialize::StreamDeserialize;
 use crate::stream_deserializer::StreamDeserializer;
 use crate::stream_serialize::StreamSerialize;
@@ -80,17 +80,9 @@ impl<W, S: StreamSerializer<W>, T: Sync + Send + StreamSerialize> DatabaseWriter
     }
     pub async fn write_update(&mut self) -> anyhow::Result<()> {
         if self.value.build_target() {
-            struct S<'a, T>(&'a T);
-            impl<'a, T: StreamSerialize> Serialize for S<'a, T> {
-                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                where
-                    S: Serializer,
-                {
-                    self.0.serialize_update(serializer)
-                }
-            }
+
             self.ser
-                .serialize_one(&mut self.write, S(&self.value))
+                .serialize_one(&mut self.write, SerializeUpdate::new(&self.value))
                 .await?;
         }
         Ok(())

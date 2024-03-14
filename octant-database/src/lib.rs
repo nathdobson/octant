@@ -3,6 +3,7 @@
 #![feature(coerce_unsized)]
 #![feature(unsize)]
 #![feature(arbitrary_self_types)]
+#![feature(hash_raw_entry)]
 
 pub mod field;
 mod hash_map;
