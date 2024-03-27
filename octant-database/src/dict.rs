@@ -1,19 +1,24 @@
-use std::collections::{BTreeMap, HashSet};
-use std::collections::btree_map::Entry;
-use std::fmt::{Debug, Formatter};
-
-use serde::{Deserialize, Deserializer, Serializer};
-use serde::de::{DeserializeSeed, MapAccess, Visitor};
-use serde::ser::SerializeMap;
-
-use crate::arc::ArcOrWeak;
-use crate::de::{
-    DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate, DeserializeUpdateAdapter,
+use std::{
+    collections::{btree_map::Entry, BTreeMap, HashSet},
+    fmt::{Debug, Formatter},
 };
-use crate::map_combinator::{DeserializeEntry, MapCombinator};
-use crate::row::Row;
-use crate::RowTableState;
-use crate::ser::{SerializeUpdate, SerializeUpdateAdapter};
+
+use serde::{
+    de::{DeserializeSeed, MapAccess, Visitor},
+    ser::SerializeMap,
+    Deserialize, Deserializer, Serializer,
+};
+
+use crate::{
+    arc::ArcOrWeak,
+    de::{
+        DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate, DeserializeUpdateAdapter,
+    },
+    row::Row,
+    ser::{SerializeUpdate, SerializeUpdateAdapter},
+    util::{deserialize_pair::DeserializePair, map_seed::MapSeed},
+    RowTableState,
+};
 
 pub struct Dict {
     entries: BTreeMap<String, ArcOrWeak<Row>>,
@@ -58,22 +63,22 @@ impl<'de> DeserializeUpdate<'de> for Dict {
         struct V<'a> {
             table: DeserializeContext<'a>,
         }
-        impl<'a, 'de> DeserializeEntry<'de> for V<'a> {
-            type Key = String;
-            type Value = (String, ArcOrWeak<Row>);
+        impl<'a, 'de> DeserializePair<'de> for V<'a> {
+            type First = String;
+            type Second = (String, ArcOrWeak<Row>);
 
-            fn deserialize_key<D: Deserializer<'de>>(
+            fn deserialize_first<D: Deserializer<'de>>(
                 &mut self,
                 d: D,
-            ) -> Result<Self::Key, D::Error> {
+            ) -> Result<Self::First, D::Error> {
                 String::deserialize(d)
             }
 
-            fn deserialize_value<D: Deserializer<'de>>(
+            fn deserialize_second<D: Deserializer<'de>>(
                 &mut self,
-                key: Self::Key,
+                key: Self::First,
                 value: D,
-            ) -> Result<Self::Value, D::Error> {
+            ) -> Result<Self::Second, D::Error> {
                 Ok((
                     key,
                     ArcOrWeak::deserialize_snapshot(self.table.reborrow(), value)?,
@@ -81,7 +86,7 @@ impl<'de> DeserializeUpdate<'de> for Dict {
             }
         }
         Ok(Dict {
-            entries: MapCombinator::new(V { table }).deserialize(d)?,
+            entries: MapSeed::new(V { table }).deserialize(d)?,
             modified: None,
         })
     }
@@ -102,8 +107,8 @@ impl<'de> DeserializeUpdate<'de> for Dict {
                 write!(f, "map")
             }
             fn visit_map<A>(mut self, mut map: A) -> Result<Self::Value, A::Error>
-                where
-                    A: MapAccess<'de>,
+            where
+                A: MapAccess<'de>,
             {
                 while let Some(key) = map.next_key::<String>()? {
                     match self.dict.entries.entry(key) {

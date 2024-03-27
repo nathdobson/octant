@@ -11,34 +11,32 @@
 
 use std::{
     mem,
-    panic::{catch_unwind, resume_unwind, AssertUnwindSafe},
+    panic::{AssertUnwindSafe, catch_unwind, resume_unwind},
     sync::{Arc, Weak},
 };
 
 use parking_lot::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use serde::{de::DeserializeSeed, ser::SerializeSeq, Deserialize, Deserializer, Serializer};
+use serde::{de::DeserializeSeed, Deserialize, Deserializer, ser::SerializeSeq, Serializer};
 use weak_table::PtrWeakHashSet;
 
 use arc::ArcOrWeak;
 use de::{DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate};
 use dict::Dict;
-use option_combinator::OptionCombinator;
-use pair_combinator::{DeserializePair, PairStructCombinator};
+use util::option_seed::OptionSeed;
 
 use crate::row::{Row, RowId};
+use crate::util::deserialize_pair::DeserializePair;
+use crate::util::pair_struct_seed::PairStructSeed;
 
 mod arc;
 mod de;
 mod dict;
-mod map_combinator;
-mod option_combinator;
-mod pair_combinator;
 mod row;
-mod seq_combinator;
 mod ser;
 pub mod tack;
 #[cfg(test)]
 mod test;
+mod util;
 
 struct RowTableQueue {
     next_id: u64,
@@ -46,7 +44,6 @@ struct RowTableQueue {
 }
 
 pub struct RowTableState {
-    this: Weak<RowTable>,
     queue: Mutex<RowTableQueue>,
 }
 
@@ -99,9 +96,8 @@ impl RowTableState {
 
 impl RowTable {
     pub fn new() -> Arc<Self> {
-        let result = Arc::new_cyclic(|this| RowTable {
+        let result = Arc::new(RowTable {
             state: RwLock::new(RowTableState {
-                this: this.clone(),
                 queue: Mutex::new(RowTableQueue {
                     next_id: 0,
                     map: PtrWeakHashSet::new(),
@@ -178,7 +174,7 @@ impl<'de> DeserializeUpdate<'de> for Arc<Row> {
                 } else {
                     let row = arc_try_new_cyclic(|row: &Weak<Row>| {
                         des.entries.insert(key, ArcOrWeak::Weak(row.clone()));
-                        let _dict = OptionCombinator::new(DeserializeSnapshotAdapter::<Dict>::new(
+                        let _dict = OptionSeed::new(DeserializeSnapshotAdapter::<Dict>::new(
                             DeserializeContext { table, des },
                         ))
                         .deserialize(d)?;
@@ -189,7 +185,7 @@ impl<'de> DeserializeUpdate<'de> for Arc<Row> {
                 }
             }
         }
-        PairStructCombinator {
+        PairStructSeed {
             name: "Arc",
             fields: &["id", "value"],
             inner: V { table },

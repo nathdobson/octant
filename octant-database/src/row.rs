@@ -15,7 +15,7 @@ use crate::{
     de::{DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate},
     dict::Dict,
     ser::{SerializeUpdate, SerializeUpdateAdapter},
-    RowTable, RowTableState,
+     RowTableState,
 };
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Debug, Copy, Clone, Serialize, Deserialize)]

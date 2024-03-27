@@ -1,54 +1,50 @@
-use std::fmt::Formatter;
-use std::marker::PhantomData;
+use std::{fmt::Formatter, marker::PhantomData};
 
-use serde::de::{DeserializeSeed, SeqAccess, Visitor};
-use serde::Deserializer;
+use crate::util::deserialize_item::DeserializeItem;
+use serde::{
+    de::{DeserializeSeed, SeqAccess, Visitor},
+    Deserializer,
+};
 
-pub struct SeqCombinator<T, O>(T, PhantomData<O>);
+pub struct SeqSeed<T, O>(T, PhantomData<O>);
 
-pub trait DeserializeItem<'de> {
-    type Value;
-    fn deserialize<D: Deserializer<'de>>(&mut self, d: D) -> Result<Self::Value, D::Error>;
-}
-
-impl<T, O> SeqCombinator<T, O> {
+impl<T, O> SeqSeed<T, O> {
     pub fn new(t: T) -> Self {
-        SeqCombinator(t, PhantomData)
+        SeqSeed(t, PhantomData)
     }
 }
 
 impl<'de, T: DeserializeItem<'de>, O: FromIterator<T::Value>> DeserializeSeed<'de>
-for SeqCombinator<T, O>
+    for SeqSeed<T, O>
 {
     type Value = O;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_seq(self)
     }
 }
 
-impl<'de, T: DeserializeItem<'de>, O: FromIterator<T::Value>> Visitor<'de> for SeqCombinator<T, O> {
+impl<'de, T: DeserializeItem<'de>, O: FromIterator<T::Value>> Visitor<'de> for SeqSeed<T, O> {
     type Value = O;
 
     fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "seq")
     }
     fn visit_seq<A>(self, seq: A) -> Result<Self::Value, A::Error>
-        where
-            A: SeqAccess<'de>,
+    where
+        A: SeqAccess<'de>,
     {
         SeqIterator {
             value: self.0,
             seq,
             de: PhantomData,
         }
-            .collect()
+        .collect()
     }
 }
-
 
 struct SeqIterator<'de, S, T> {
     value: T,
@@ -64,6 +60,13 @@ impl<'de, S: SeqAccess<'de>, T: DeserializeItem<'de>> Iterator for SeqIterator<'
             .next_element_seed(DeserializeItemSeed(&mut self.value))
             .transpose()
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if let Some(size) = self.seq.size_hint() {
+            (size, Some(size))
+        } else {
+            (0, None)
+        }
+    }
 }
 
 struct DeserializeItemSeed<'a, T>(&'a mut T);
@@ -72,8 +75,8 @@ impl<'de, 'a, T: DeserializeItem<'de>> DeserializeSeed<'de> for DeserializeItemS
     type Value = T::Value;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         self.0.deserialize(deserializer)
     }
