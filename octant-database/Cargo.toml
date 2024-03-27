@@ -16,3 +16,4 @@ weak-table = "0.3.2"
 
 [dev-dependencies]
 serde-value ="0.7.0"
+parking_lot = {version="0.12.1",features = ["deadlock_detection"]}

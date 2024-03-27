@@ -7,7 +7,8 @@ use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use crate::{Row, RowId, RowTableState};
+use crate::{  RowTableState};
+use crate::row::{Row, RowId};
 
 pub struct DeserializeTable {
     pub entries: HashMap<RowId, ArcOrWeak<Row>>,
@@ -46,7 +47,7 @@ impl DeserializeTable {
         };
         result
             .entries
-            .insert(table.try_init(&root).0.id(), ArcOrWeak::Arc(root));
+            .insert(root.id(), ArcOrWeak::Arc(root));
         result
     }
     pub fn deserialize_log<'de, D: Deserializer<'de>>(

@@ -1,8 +1,12 @@
 use crate::arc::ArcOrWeak;
 use crate::de::DeserializeTable;
+use crate::row::Row;
+use crate::RowTable;
 use serde_json::ser::PrettyFormatter;
 use std::sync::Arc;
-use crate::{Row, RowTable};
+use std::thread;
+use std::time::Duration;
+use parking_lot::deadlock;
 
 const EXPECTED: &str = r#"[
   {
@@ -25,14 +29,35 @@ const EXPECTED: &str = r#"[
 ]"#;
 #[test]
 fn test_ser() {
-    let root = Row::new();
-    let table = RowTable::new(root.clone());
+    thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_secs(1));
+            let deadlocks = deadlock::check_deadlock();
+            if deadlocks.is_empty() {
+                continue;
+            }
+
+            println!("{} deadlocks detected", deadlocks.len());
+            for (i, threads) in deadlocks.iter().enumerate() {
+                println!("Deadlock #{}", i);
+                for t in threads {
+                    println!("Thread Id {:#?}", t.thread_id());
+                    println!("{:#?}", t.backtrace());
+                }
+            }
+        }
+    });
+
+    let table = RowTable::new();
+    let root;
     {
         let table = table.read();
+        root = table.add();
+        table.try_enqueue(&root);
         {
             let mut root_lock = table.write(&root);
             root_lock.insert("x".to_string(), ArcOrWeak::Weak(Arc::downgrade(&root)));
-            root_lock.insert("y".to_string(), ArcOrWeak::Arc(Row::new()));
+            root_lock.insert("y".to_string(), ArcOrWeak::Arc(table.add()));
         }
     }
     let mut data = vec![];
@@ -50,9 +75,9 @@ fn test_ser() {
 
 #[test]
 fn test_de() {
-    let root = Row::new();
-    let table = RowTable::new(root.clone());
+    let table = RowTable::new();
     let mut read = table.write();
+    let root = read.add();
     let mut de = DeserializeTable::new(&mut *read, root.clone());
     de.deserialize_log(
         &mut *read,

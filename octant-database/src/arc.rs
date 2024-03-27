@@ -7,7 +7,7 @@ use serde::{Deserialize, Deserializer, Serializer};
 use std::borrow::Cow;
 use std::fmt::Formatter;
 use std::sync::{Arc, Weak};
-use crate::{Row, RowTableState};
+use crate::{ RowTableState};
 //
 // pub struct UniqueWeak<T>(Weak<T>);
 //
@@ -56,82 +56,3 @@ impl<T: ?Sized> ArcOrWeak<T> {
     }
 }
 
-impl SerializeUpdate for ArcOrWeak<Row> {
-    fn begin_stream(&mut self) {}
-
-    fn begin_update(&mut self) -> bool {
-        true
-    }
-
-    fn serialize_update<S: Serializer>(
-        &self,
-        state: &RowTableState,
-        s: S,
-    ) -> Result<S::Ok, S::Error> {
-        match self {
-            ArcOrWeak::Arc(x) => s.serialize_newtype_variant(
-                "ArcOrWeak",
-                0,
-                "Arc",
-                &SerializeUpdateAdapter::new(x, state),
-            ),
-            ArcOrWeak::Weak(x) => s.serialize_newtype_variant(
-                "ArcOrWeak",
-                0,
-                "Weak",
-                &SerializeUpdateAdapter::new(x, state),
-            ),
-        }
-    }
-
-    fn end_update(&mut self) {
-        todo!()
-    }
-}
-
-impl<'de> DeserializeUpdate<'de> for ArcOrWeak<Row> {
-    fn deserialize_snapshot<D: Deserializer<'de>>(
-        table: DeserializeContext,
-        d: D,
-    ) -> Result<Self, D::Error> {
-        #[derive(Deserialize)]
-        enum Tag {
-            Arc,
-            Weak,
-        }
-        struct V<'a> {
-            table: DeserializeContext<'a>,
-        }
-        impl<'a, 'de> Visitor<'de> for V<'a> {
-            type Value = ArcOrWeak<Row>;
-
-            fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
-            where
-                A: EnumAccess<'de>,
-            {
-                let (tag, access) = data.variant::<Tag>()?;
-                match tag {
-                    Tag::Arc => Ok(ArcOrWeak::Arc(
-                        access.newtype_variant_seed(DeserializeSnapshotAdapter::new(self.table))?,
-                    )),
-                    Tag::Weak => Ok(ArcOrWeak::Weak(
-                        access.newtype_variant_seed(DeserializeSnapshotAdapter::new(self.table))?,
-                    )),
-                }
-            }
-            fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
-                todo!()
-            }
-        }
-        d.deserialize_enum("ArcOrWeak", &["Weak", "Arc"], V { table })
-    }
-
-    fn deserialize_update<D: Deserializer<'de>>(
-        &mut self,
-        table: DeserializeContext,
-        d: D,
-    ) -> Result<(), D::Error> {
-        // d.deserialize_
-        todo!()
-    }
-}

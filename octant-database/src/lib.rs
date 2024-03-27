@@ -11,16 +11,18 @@
 
 mod arc;
 mod de;
-mod option_combinator;
-mod pair_combinator;
-mod ser;
-mod tack;
 mod dict;
 mod map_combinator;
+mod option_combinator;
+mod pair_combinator;
+mod row;
 mod seq_combinator;
+mod ser;
+mod tack;
 #[cfg(test)]
 mod test;
 
+use crate::row::{Row, RowId};
 use arc::ArcOrWeak;
 use de::{DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate};
 use dict::Dict;
@@ -34,22 +36,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::hash_map::Entry;
 use std::fmt::{Debug, Formatter};
 use std::mem;
+use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::sync::{Arc, OnceLock, Weak};
 use weak_table::PtrWeakHashSet;
-
-#[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Debug, Copy, Clone, Serialize, Deserialize)]
-struct RowId(u64);
-
-#[derive(Debug)]
-struct RowHeader {
-    id: RowId,
-    table: Weak<RowTable>,
-}
-
-pub struct Row {
-    header: OnceLock<RowHeader>,
-    state: RwLock<Dict>,
-}
 
 struct RowTableQueue {
     next_id: u64,
@@ -65,44 +54,21 @@ pub struct RowTable {
     state: RwLock<RowTableState>,
 }
 
-impl Row {
-    pub fn new() -> Arc<Self> {
-        Arc::new(Row {
-            header: OnceLock::new(),
-            state: RwLock::new(Dict::new()),
-        })
-    }
-}
-
-impl Default for Row {
-    fn default() -> Self {
-        Row {
-            header: Default::default(),
-            state: RwLock::new(Dict::new()),
-        }
-    }
-}
-
-impl RowHeader {
-    pub fn id(&self) -> RowId {
-        self.id
-    }
-}
-
 impl RowTableQueue {
-    fn try_init<'a>(&mut self, table: &Arc<RowTable>, row: &'a Arc<Row>) -> (&'a RowHeader, bool) {
-        let mut inited = false;
-        let header = row.header.get_or_init(|| {
-            let next_id = self.next_id;
-            self.next_id += 1;
-            inited = true;
-            RowHeader {
-                id: RowId(next_id),
-                table: Arc::downgrade(table),
-            }
-        });
-        (header, inited)
-    }
+    // fn try_init<'a>(&mut self, table: &Arc<RowTable>, row: &'a Arc<Row>) -> (&'a RowHeader, bool) {
+    //     todo!();
+    //     // let mut inited = false;
+    //     // let header = row.header.get_or_init(|| {
+    //     //     let next_id = self.next_id;
+    //     //     self.next_id += 1;
+    //     //     inited = true;
+    //     //     RowHeader {
+    //     //         id: RowId(next_id),
+    //     //         table: Arc::downgrade(table),
+    //     //     }
+    //     // });
+    //     // (header, inited)
+    // }
     fn try_enqueue(&mut self, row: &Arc<Row>) {
         self.map.insert(row.clone());
     }
@@ -121,11 +87,11 @@ impl RowTableQueue {
 }
 
 impl RowTableState {
-    pub fn try_init<'b>(&self, row: &'b Arc<Row>) -> (&'b RowHeader, bool) {
-        self.queue
-            .lock()
-            .try_init(&self.this.upgrade().unwrap(), row)
-    }
+    // pub fn try_init<'b>(&self, row: &'b Arc<Row>) -> (&'b RowHeader, bool) {
+    //     self.queue
+    //         .lock()
+    //         .try_init(&self.this.upgrade().unwrap(), row)
+    // }
     pub fn try_enqueue<'b>(&self, row: &Arc<Row>) {
         self.queue.lock().try_enqueue(row);
     }
@@ -141,58 +107,47 @@ impl RowTableState {
     // }
     pub fn serialize_log<S: Serializer>(&mut self, s: S) -> Result<S::Ok, S::Error> {
         let mut s = s.serialize_seq(None)?;
-
-        while !self.queue.get_mut().map.is_empty() {
-            let frontier = mem::replace(&mut self.queue.get_mut().map, PtrWeakHashSet::new());
-            for row in frontier.into_iter() {
-                let ref mut row_state = *row.state.write();
-                let key = row.header.get().expect("uninitialized").id;
-                if row_state.begin_update() {
-                    #[derive(Serialize)]
-                    struct Entry<A, B> {
-                        key: A,
-                        value: B,
-                    }
-                    s.serialize_element(&Entry {
-                        key,
-                        value: Some(SerializeUpdateAdapter::new(row_state, self)),
-                    })?;
-                } else {
-                    s.serialize_element(&(key, Option::<!>::None))?;
-                }
-            }
+        for row in mem::replace(&mut self.queue.get_mut().map, PtrWeakHashSet::new()) {
+            row.serialize_tree(&mut s,self)?;
+            // struct TreeUpdater<'a> {
+            //     row: &'a Arc<Row>,
+            // }
+            // impl<'a> Serialize for TreeUpdater<'a> {
+            //     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            //     where
+            //         S: Serializer,
+            //     {
+            //         self.row.serialize_tree(serializer)
+            //     }
+            // }
+            // s.serialize_element(&TreeUpdater { row: &row })?;
         }
         s.end()
     }
-    // pub fn add(&self) -> Arc<Row> {
-    //     let mut queue = self.state.queue.lock();
-    //     let next_id = queue.next_id;
-    //     queue.next_id += 1;
-    //     let row = Arc::new(Row {
-    //         id: RowId(next_id),
-    //         table: Arc::downgrade(self.this),
-    //         anchored: AtomicBool::new(false),
-    //         state: RwLock::new(Dict::new()),
-    //     });
-    //     assert!(!queue.map.insert(row.clone()));
-    //     row
-    // }
-    // pub fn add_root(&self) -> Arc<Row> {
-    //     let root = self.add();
-    //     root.anchored.store(true, Ordering::Relaxed);
-    //     root
-    // }
     pub fn read<'b>(&'b self, row: &'b Arc<Row>) -> RwLockReadGuard<'b, Dict> {
-        row.state.read()
+        row.read()
+    }
+    pub fn try_read<'b>(&'b self, row: &'b Arc<Row>) -> Option<RwLockReadGuard<'b, Dict>> {
+        row.try_read()
     }
     pub fn write<'b>(&'b self, row: &'b Arc<Row>) -> RwLockWriteGuard<'b, Dict> {
         self.queue.lock().map.insert(row.clone());
-        row.state.write()
+        row.write()
+    }
+    pub fn try_write<'b>(&'b self, row: &'b Arc<Row>) -> Option<RwLockWriteGuard<'b, Dict>> {
+        self.queue.lock().map.insert(row.clone());
+        row.try_write()
+    }
+    pub fn add(&self) -> Arc<Row> {
+        let ref mut lock = *self.queue.lock();
+        let id = lock.next_id;
+        lock.next_id += 1;
+        Row::new(RowId::new(id), self.this.clone())
     }
 }
 
 impl RowTable {
-    pub fn new(root: Arc<Row>) -> Arc<Self> {
+    pub fn new() -> Arc<Self> {
         let result = Arc::new_cyclic(|this| RowTable {
             state: RwLock::new(RowTableState {
                 this: this.clone(),
@@ -202,9 +157,6 @@ impl RowTable {
                 }),
             }),
         });
-        result.read().try_init(&root);
-        result.read().try_enqueue(&root);
-
         result
     }
     pub fn read<'a>(self: &'a Arc<Self>) -> RwLockReadGuard<'a, RowTableState> {
@@ -219,30 +171,27 @@ impl RowTable {
     }
 }
 
-impl Debug for Row {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Row")
-            .field("header", &self.header)
-            .field("state", &self.state)
-            .finish()
-    }
-}
-
-fn arc_try_new_cyclic<T: Default, E>(
+fn arc_try_new_cyclic<T, E>(
     f: impl for<'a> FnOnce(&'a Weak<T>) -> Result<T, E>,
 ) -> Result<Arc<T>, E> {
     let mut err = None;
-    let x = Arc::new_cyclic(|x| match f(x) {
-        Err(e) => {
-            err = Some(e);
-            T::default()
+    match catch_unwind(AssertUnwindSafe(|| {
+        Arc::new_cyclic(|x| match f(x) {
+            Err(e) => {
+                err = Some(e);
+                panic!("unwinding from failed arc");
+            }
+            Ok(x) => x,
+        })
+    })) {
+        Err(p) => {
+            if let Some(err) = err {
+                return Err(err);
+            } else {
+                resume_unwind(p)
+            }
         }
-        Ok(x) => x,
-    });
-    if let Some(err) = err {
-        Err(err)
-    } else {
-        Ok(x)
+        Ok(x) => Ok(x),
     }
 }
 
@@ -289,15 +238,7 @@ impl<'de> DeserializeUpdate<'de> for Arc<Row> {
                                     DeserializeContext { table, des },
                                 ))
                                 .deserialize(d)?;
-                            Ok(Row {
-                                header: OnceLock::from(RowHeader {
-                                    id: first,
-                                    table: table.this.clone(),
-                                }),
-                                state: RwLock::new(
-                                    dict.ok_or_else(|| D::Error::custom("missing definition"))?,
-                                ),
-                            })
+                            todo!();
                         })?;
                         des.entries.insert(first, ArcOrWeak::Arc(row.clone()));
                         Ok(row)
@@ -335,61 +276,6 @@ impl<'de> DeserializeUpdate<'de> for Weak<Row> {
         table: DeserializeContext,
         d: D,
     ) -> Result<(), D::Error> {
-        todo!()
-    }
-}
-
-impl SerializeUpdate for Arc<Row> {
-    fn begin_stream(&mut self) {}
-
-    fn begin_update(&mut self) -> bool {
-        true
-    }
-
-    fn serialize_update<S: Serializer>(
-        &self,
-        state: &RowTableState,
-        s: S,
-    ) -> Result<S::Ok, S::Error> {
-        let (header, new) = state.try_init(self);
-        let mut s = s.serialize_struct("Arc", 2)?;
-        s.serialize_field("id", &header.id())?;
-        if new {
-            s.serialize_field(
-                "value",
-                &Some(SerializeUpdateAdapter::new(&*state.read(self), state)),
-            )?;
-        } else {
-            s.serialize_field("value", &Option::<()>::None)?;
-        }
-        s.end()
-    }
-
-    fn end_update(&mut self) {
-        todo!()
-    }
-}
-
-impl SerializeUpdate for Weak<Row> {
-    fn begin_stream(&mut self) {}
-
-    fn begin_update(&mut self) -> bool {
-        true
-    }
-
-    fn serialize_update<S: Serializer>(
-        &self,
-        state: &RowTableState,
-        s: S,
-    ) -> Result<S::Ok, S::Error> {
-        if let Some(mut this) = self.upgrade() {
-            s.serialize_some(&SerializeUpdateAdapter::new(&mut this, state))
-        } else {
-            s.serialize_none()
-        }
-    }
-
-    fn end_update(&mut self) {
         todo!()
     }
 }

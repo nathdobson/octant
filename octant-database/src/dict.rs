@@ -4,13 +4,14 @@ use crate::de::{
 };
 use crate::map_combinator::{DeserializeEntry, MapCombinator};
 use crate::ser::{SerializeUpdate, SerializeUpdateAdapter};
-use crate::{Row, RowTableState};
+use crate::RowTableState;
 use serde::de::{DeserializeSeed, MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serializer};
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, HashSet};
 use std::fmt::{Debug, Formatter};
+use crate::row::Row;
 
 pub struct Dict {
     entries: BTreeMap<String, ArcOrWeak<Row>>,
