@@ -1,39 +1,6 @@
 use std::borrow::Cow;
+use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 use std::sync::{Arc, Weak};
-
-//
-// pub struct UniqueWeak<T>(Weak<T>);
-//
-// impl<T> UniqueWeak<T> {
-//     pub fn new() -> UniqueWeak<T> {
-//         unsafe {
-//             let arc = Arc::new_uninit();
-//             let weak: Weak<MaybeUninit<T>> = Arc::downgrade(&arc);
-//             mem::drop(arc);
-//             let weak_cast = mem::transmute::<Weak<MaybeUninit<T>>, Weak<T>>(weak);
-//             UniqueWeak(weak_cast)
-//         }
-//     }
-//     pub fn as_weak(&self) -> Weak<T> {
-//         self.0.clone()
-//     }
-//     pub fn init(self, value: T) -> Arc<T> {
-//         unsafe {
-//             let weak = ManuallyDrop::new(self.0);
-//             let mut ptr = Weak::as_ptr(&weak) as *mut T;
-//             ptr.write(value);
-//             Arc::increment_strong_count(ptr);
-//             let result = Arc::from_raw(ptr);
-//             result
-//         }
-//     }
-// }
-// #[test]
-// fn test() {
-//     let mut x = UniqueWeak::new();
-//     let x = x.init(12);
-//     assert_eq!(*x, 12);
-// }
 
 #[derive(Debug)]
 pub enum ArcOrWeak<T: ?Sized> {
@@ -50,3 +17,26 @@ impl<T: ?Sized> ArcOrWeak<T> {
     }
 }
 
+pub fn arc_try_new_cyclic<T, E>(
+    f: impl for<'a> FnOnce(&'a Weak<T>) -> Result<T, E>,
+) -> Result<Arc<T>, E> {
+    let mut err = None;
+    match catch_unwind(AssertUnwindSafe(|| {
+        Arc::new_cyclic(|x| match f(x) {
+            Err(e) => {
+                err = Some(e);
+                panic!("unwinding from failed arc");
+            }
+            Ok(x) => x,
+        })
+    })) {
+        Err(p) => {
+            if let Some(err) = err {
+                return Err(err);
+            } else {
+                resume_unwind(p)
+            }
+        }
+        Ok(x) => Ok(x),
+    }
+}

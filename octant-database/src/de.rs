@@ -8,12 +8,12 @@ use serde::{
 use crate::{
     arc::ArcOrWeak,
     row::{Row, RowId},
-    util::deserialize_pair::DeserializePair,
-    RowTableState,
+    util::{
+        deserialize_item::DeserializeItem, deserialize_pair::DeserializePair,
+        pair_struct_seed::PairStructSeed, seq_seed::SeqSeed,
+    },
 };
-use crate::util::deserialize_item::DeserializeItem;
-use crate::util::pair_struct_seed::PairStructSeed;
-use crate::util::seq_seed::{ SeqSeed};
+use crate::table::RowTableState;
 
 pub struct DeserializeTable {
     pub entries: HashMap<RowId, ArcOrWeak<Row>>,
@@ -64,12 +64,8 @@ impl DeserializeTable {
             type Value = ();
 
             fn deserialize<D: Deserializer<'de>>(&mut self, d: D) -> Result<Self::Value, D::Error> {
-                PairStructSeed {
-                    name: "Entry",
-                    fields: &["key", "value"],
-                    inner: LogEntry(self.0.reborrow()),
-                }
-                .deserialize(d)
+                PairStructSeed::new("Entry", &["key", "value"], LogEntry(self.0.reborrow()))
+                    .deserialize(d)
             }
         }
         struct LogEntry<'a>(DeserializeContext<'a>);

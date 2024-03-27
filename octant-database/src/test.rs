@@ -7,7 +7,7 @@ use serde_json::ser::PrettyFormatter;
 
 use crate::arc::ArcOrWeak;
 use crate::de::DeserializeTable;
-use crate::RowTable;
+use crate::table::RowTable;
 
 const EXPECTED: &str = r#"[
   {

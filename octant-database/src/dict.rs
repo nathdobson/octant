@@ -17,8 +17,8 @@ use crate::{
     row::Row,
     ser::{SerializeUpdate, SerializeUpdateAdapter},
     util::{deserialize_pair::DeserializePair, map_seed::MapSeed},
-    RowTableState,
 };
+use crate::table::RowTableState;
 
 pub struct Dict {
     entries: BTreeMap<String, ArcOrWeak<Row>>,

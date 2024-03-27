@@ -9,9 +9,19 @@ use serde::{
 use std::fmt::Formatter;
 
 pub struct PairStructSeed<T> {
-    pub name: &'static str,
-    pub fields: &'static [&'static str; 2],
-    pub inner: T,
+    name: &'static str,
+    fields: &'static [&'static str; 2],
+    inner: T,
+}
+
+impl<T> PairStructSeed<T> {
+    pub fn new(name: &'static str, fields: &'static [&'static str; 2], inner: T) -> Self {
+        PairStructSeed {
+            name,
+            fields,
+            inner,
+        }
+    }
 }
 
 impl<T> PairStructSeed<T> {

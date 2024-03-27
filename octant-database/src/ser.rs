@@ -1,6 +1,6 @@
 use serde::{Serialize, Serializer};
+use crate::table::RowTableState;
 
-use crate::RowTableState;
 
 pub trait SerializeUpdate {
     fn begin_stream(&mut self);
