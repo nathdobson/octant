@@ -1,7 +1,5 @@
-use crate::object::dict::Dict;
-use crate::object::{RowTable, RowTableState};
 use serde::{Serialize, Serializer};
-use std::cell::Cell;
+use crate::RowTableState;
 
 pub trait SerializeUpdate {
     fn begin_stream(&mut self);

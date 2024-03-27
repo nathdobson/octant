@@ -1,19 +1,16 @@
-use crate::object::arc::ArcOrWeak;
-use crate::object::de::{
-    DeserializeContext, DeserializeSnapshotAdapter, DeserializeTable, DeserializeUpdate,
-    DeserializeUpdateAdapter,
+use crate::arc::ArcOrWeak;
+use crate::de::{
+    DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate, DeserializeUpdateAdapter,
 };
-use crate::object::map_combinator::{DeserializeEntry, MapCombinator};
-use crate::object::ser::{SerializeUpdate, SerializeUpdateAdapter};
-use crate::object::{Row, RowId, RowTableState};
+use crate::map_combinator::{DeserializeEntry, MapCombinator};
+use crate::ser::{SerializeUpdate, SerializeUpdateAdapter};
+use crate::{Row, RowTableState};
 use serde::de::{DeserializeSeed, MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serializer};
-use std::borrow::Cow;
 use std::collections::btree_map::Entry;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::fmt::{Debug, Formatter};
-use std::sync::{Arc, Weak};
 
 pub struct Dict {
     entries: BTreeMap<String, ArcOrWeak<Row>>,

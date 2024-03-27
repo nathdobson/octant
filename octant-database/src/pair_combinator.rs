@@ -1,4 +1,4 @@
-use crate::object::map_combinator::DeserializeEntry;
+use crate::map_combinator::DeserializeEntry;
 use serde::de::{DeserializeSeed, Error, MapAccess, SeqAccess, Visitor};
 use serde::Deserializer;
 use std::fmt::Formatter;
