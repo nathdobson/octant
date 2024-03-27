@@ -36,7 +36,7 @@ impl<'de, T: DeserializeItem<'de>, O: FromIterator<T::Value>> Visitor<'de> for S
     fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "seq")
     }
-    fn visit_seq<A>(mut self, mut seq: A) -> Result<Self::Value, A::Error>
+    fn visit_seq<A>(self, seq: A) -> Result<Self::Value, A::Error>
         where
             A: SeqAccess<'de>,
     {

@@ -43,7 +43,7 @@ impl<'de, T> Visitor<'de> for OptionCombinator<T>
     {
         Ok(Some(self.0.deserialize(deserializer)?))
     }
-    fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+    fn expecting(&self, _formatter: &mut Formatter) -> std::fmt::Result {
         todo!()
     }
 }

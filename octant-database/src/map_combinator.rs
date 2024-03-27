@@ -1,10 +1,10 @@
 use std::fmt::Formatter;
 use std::marker::PhantomData;
 
-use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
+use serde::de::{DeserializeSeed, MapAccess, Visitor};
 use serde::Deserializer;
 
-use crate::seq_combinator::DeserializeItem;
+
 
 pub struct MapCombinator<T, O>(T, PhantomData<O>);
 
@@ -46,7 +46,7 @@ for MapCombinator<T, O>
     fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "map")
     }
-    fn visit_map<A>(mut self, mut seq: A) -> Result<Self::Value, A::Error>
+    fn visit_map<A>(self, seq: A) -> Result<Self::Value, A::Error>
         where
             A: MapAccess<'de>,
     {

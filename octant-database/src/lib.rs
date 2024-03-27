@@ -9,14 +9,14 @@
 #![feature(never_type)]
 #![feature(unboxed_closures)]
 
-use std::mem;
-use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
-use std::sync::{Arc, Weak};
+use std::{
+    mem,
+    panic::{catch_unwind, resume_unwind, AssertUnwindSafe},
+    sync::{Arc, Weak},
+};
 
 use parking_lot::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use serde::{Deserialize, Deserializer, Serializer};
-use serde::de::DeserializeSeed;
-use serde::ser::SerializeSeq;
+use serde::{de::DeserializeSeed, ser::SerializeSeq, Deserialize, Deserializer, Serializer};
 use weak_table::PtrWeakHashSet;
 
 use arc::ArcOrWeak;
@@ -36,7 +36,7 @@ mod pair_combinator;
 mod row;
 mod seq_combinator;
 mod ser;
-mod tack;
+pub mod tack;
 #[cfg(test)]
 mod test;
 
@@ -78,18 +78,22 @@ impl RowTableState {
         row.try_read()
     }
     pub fn write<'b>(&'b self, row: &'b Arc<Row>) -> RwLockWriteGuard<'b, Dict> {
-        self.queue.lock().map.insert(row.clone());
+        if row.is_written() {
+            self.queue.lock().map.insert(row.clone());
+        }
         row.write()
     }
     pub fn try_write<'b>(&'b self, row: &'b Arc<Row>) -> Option<RwLockWriteGuard<'b, Dict>> {
-        self.queue.lock().map.insert(row.clone());
+        if row.is_written() {
+            self.queue.lock().map.insert(row.clone());
+        }
         row.try_write()
     }
     pub fn add(&self) -> Arc<Row> {
         let ref mut lock = *self.queue.lock();
         let id = lock.next_id;
         lock.next_id += 1;
-        Row::new(RowId::new(id), self.this.clone())
+        Row::new(RowId::new(id))
     }
 }
 
@@ -170,17 +174,14 @@ impl<'de> DeserializeUpdate<'de> for Arc<Row> {
                 let des = &mut *self.table.des;
                 if let Some(x) = des.entries.get(&key) {
                     Option::<!>::deserialize(d)?;
-                    Ok(x
-                        .upgrade_cow()
-                        .expect("uninitialized row")
-                        .into_owned())
+                    Ok(x.upgrade_cow().expect("uninitialized row").into_owned())
                 } else {
                     let row = arc_try_new_cyclic(|row: &Weak<Row>| {
                         des.entries.insert(key, ArcOrWeak::Weak(row.clone()));
-                        let dict = OptionCombinator::new(DeserializeSnapshotAdapter::<Dict>::new(
+                        let _dict = OptionCombinator::new(DeserializeSnapshotAdapter::<Dict>::new(
                             DeserializeContext { table, des },
                         ))
-                            .deserialize(d)?;
+                        .deserialize(d)?;
                         todo!();
                     })?;
                     des.entries.insert(key, ArcOrWeak::Arc(row.clone()));
@@ -193,7 +194,7 @@ impl<'de> DeserializeUpdate<'de> for Arc<Row> {
             fields: &["id", "value"],
             inner: V { table },
         }
-            .deserialize(d)
+        .deserialize(d)
     }
 
     fn deserialize_update<D: Deserializer<'de>>(

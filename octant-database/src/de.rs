@@ -1,13 +1,12 @@
 use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
 use serde::{
-    de::{DeserializeSeed, Error, SeqAccess, Visitor},
+    de::{DeserializeSeed, Error},
     Deserialize, Deserializer,
 };
 
 use crate::{
     arc::ArcOrWeak,
-    map_combinator::DeserializeEntry,
     pair_combinator::{DeserializePair, PairStructCombinator},
     row::{Row, RowId},
     RowTableState,
@@ -45,7 +44,7 @@ pub trait DeserializeUpdate<'de>: Sized {
 }
 
 impl DeserializeTable {
-    pub fn new(table: &RowTableState, root: Arc<Row>) -> Self {
+    pub fn new(_table: &RowTableState, root: Arc<Row>) -> Self {
         let mut result = DeserializeTable {
             entries: HashMap::new(),
         };
