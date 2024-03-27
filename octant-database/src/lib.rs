@@ -4,7 +4,10 @@
 #![feature(unsize)]
 #![feature(arbitrary_self_types)]
 #![feature(hash_raw_entry)]
-
+#![feature(map_try_insert)]
+#![feature(new_uninit)]
+#![feature(never_type)]
+#![feature(unboxed_closures)]
 pub mod field;
 mod hash_map;
 // mod id;
@@ -23,3 +26,4 @@ mod tack;
 mod test;
 mod tester;
 mod seed;
+mod object;
