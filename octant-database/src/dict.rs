@@ -14,14 +14,14 @@ use crate::{
     de::{
         DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate, DeserializeUpdateAdapter,
     },
-    row::Row,
+    tree::Tree,
     ser::{SerializeUpdate, SerializeUpdateAdapter},
     util::{deserialize_pair::DeserializePair, map_seed::MapSeed},
 };
-use crate::table::RowTableState;
+use crate::forest::ForestState;
 
 pub struct Dict {
-    entries: BTreeMap<String, ArcOrWeak<Row>>,
+    entries: BTreeMap<String, ArcOrWeak<Tree>>,
     modified: Option<HashSet<String>>,
 }
 
@@ -32,7 +32,7 @@ impl Dict {
             modified: None,
         }
     }
-    pub fn insert(&mut self, key: String, value: ArcOrWeak<Row>) {
+    pub fn insert(&mut self, key: String, value: ArcOrWeak<Tree>) {
         self.entries.insert(key.clone(), value);
         if let Some(modified) = &mut self.modified {
             modified.insert(key);
@@ -44,10 +44,10 @@ impl Dict {
             modified.insert(key.to_string());
         }
     }
-    pub fn get(&self, key: &str) -> Option<&ArcOrWeak<Row>> {
+    pub fn get(&self, key: &str) -> Option<&ArcOrWeak<Tree>> {
         self.entries.get(key)
     }
-    pub fn get_mut(&mut self, key: &str) -> Option<&mut ArcOrWeak<Row>> {
+    pub fn get_mut(&mut self, key: &str) -> Option<&mut ArcOrWeak<Tree>> {
         if let Some(modified) = &mut self.modified {
             modified.insert(key.to_string());
         }
@@ -65,7 +65,7 @@ impl<'de> DeserializeUpdate<'de> for Dict {
         }
         impl<'a, 'de> DeserializePair<'de> for V<'a> {
             type First = String;
-            type Second = (String, ArcOrWeak<Row>);
+            type Second = (String, ArcOrWeak<Tree>);
 
             fn deserialize_first<D: Deserializer<'de>>(
                 &mut self,
@@ -154,7 +154,7 @@ impl SerializeUpdate for Dict {
 
     fn serialize_update<S: Serializer>(
         &self,
-        state: &RowTableState,
+        state: &ForestState,
         s: S,
     ) -> Result<S::Ok, S::Error> {
         if let Some(modified) = &self.modified {

@@ -21,32 +21,32 @@ use crate::{
     },
 };
 use crate::arc::arc_try_new_cyclic;
-use crate::table::RowTableState;
+use crate::forest::ForestState;
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Debug, Copy, Clone, Serialize, Deserialize)]
-pub struct RowId(u64);
+pub struct TreeId(u64);
 
-pub struct Row {
-    id: RowId,
+pub struct Tree {
+    id: TreeId,
     written: Once,
     state: RwLock<Dict>,
 }
 
-impl RowId {
+impl TreeId {
     pub fn new(x: u64) -> Self {
-        RowId(x)
+        TreeId(x)
     }
 }
 
-impl Row {
-    pub fn new(id: RowId) -> Arc<Self> {
-        Arc::new(Row {
+impl Tree {
+    pub fn new(id: TreeId) -> Arc<Self> {
+        Arc::new(Tree {
             id,
             written: Once::new(),
             state: RwLock::new(Dict::new()),
         })
     }
-    pub fn id(&self) -> RowId {
+    pub fn id(&self) -> TreeId {
         self.id
     }
     pub(crate) fn write(&self) -> RwLockWriteGuard<Dict> {
@@ -64,7 +64,7 @@ impl Row {
     pub fn serialize_tree<S: SerializeSeq>(
         &self,
         s: &mut S,
-        table: &mut RowTableState,
+        table: &mut ForestState,
     ) -> Result<(), S::Error> {
         self.written.call_once(|| ());
         let ref mut dict = *self
@@ -94,7 +94,7 @@ impl Row {
     }
 }
 
-impl SerializeUpdate for ArcOrWeak<Row> {
+impl SerializeUpdate for ArcOrWeak<Tree> {
     fn begin_stream(&mut self) {}
 
     fn begin_update(&mut self) -> bool {
@@ -103,7 +103,7 @@ impl SerializeUpdate for ArcOrWeak<Row> {
 
     fn serialize_update<S: Serializer>(
         &self,
-        state: &RowTableState,
+        state: &ForestState,
         s: S,
     ) -> Result<S::Ok, S::Error> {
         match self {
@@ -127,7 +127,7 @@ impl SerializeUpdate for ArcOrWeak<Row> {
     }
 }
 
-impl<'de> DeserializeUpdate<'de> for ArcOrWeak<Row> {
+impl<'de> DeserializeUpdate<'de> for ArcOrWeak<Tree> {
     fn deserialize_snapshot<D: Deserializer<'de>>(
         table: DeserializeContext,
         d: D,
@@ -141,7 +141,7 @@ impl<'de> DeserializeUpdate<'de> for ArcOrWeak<Row> {
             table: DeserializeContext<'a>,
         }
         impl<'a, 'de> Visitor<'de> for V<'a> {
-            type Value = ArcOrWeak<Row>;
+            type Value = ArcOrWeak<Tree>;
 
             fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
             where
@@ -174,7 +174,7 @@ impl<'de> DeserializeUpdate<'de> for ArcOrWeak<Row> {
     }
 }
 
-impl Debug for Row {
+impl Debug for Tree {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Row")
             .field("id", &self.id)
@@ -183,7 +183,7 @@ impl Debug for Row {
     }
 }
 
-impl SerializeUpdate for Arc<Row> {
+impl SerializeUpdate for Arc<Tree> {
     fn begin_stream(&mut self) {}
 
     fn begin_update(&mut self) -> bool {
@@ -192,7 +192,7 @@ impl SerializeUpdate for Arc<Row> {
 
     fn serialize_update<S: Serializer>(
         &self,
-        state: &RowTableState,
+        state: &ForestState,
         s: S,
     ) -> Result<S::Ok, S::Error> {
         let mut s = s.serialize_struct("Arc", 2)?;
@@ -218,7 +218,7 @@ impl SerializeUpdate for Arc<Row> {
     }
 }
 
-impl SerializeUpdate for Weak<Row> {
+impl SerializeUpdate for Weak<Tree> {
     fn begin_stream(&mut self) {}
 
     fn begin_update(&mut self) -> bool {
@@ -227,7 +227,7 @@ impl SerializeUpdate for Weak<Row> {
 
     fn serialize_update<S: Serializer>(
         &self,
-        state: &RowTableState,
+        state: &ForestState,
         s: S,
     ) -> Result<S::Ok, S::Error> {
         if let Some(mut this) = self.upgrade() {
@@ -242,7 +242,7 @@ impl SerializeUpdate for Weak<Row> {
     }
 }
 
-impl<'de> DeserializeUpdate<'de> for Arc<Row> {
+impl<'de> DeserializeUpdate<'de> for Arc<Tree> {
     fn deserialize_snapshot<D: Deserializer<'de>>(
         table: DeserializeContext,
         d: D,
@@ -251,14 +251,14 @@ impl<'de> DeserializeUpdate<'de> for Arc<Row> {
             table: DeserializeContext<'a>,
         }
         impl<'a, 'de> DeserializePair<'de> for V<'a> {
-            type First = RowId;
-            type Second = Arc<Row>;
+            type First = TreeId;
+            type Second = Arc<Tree>;
 
             fn deserialize_first<D: Deserializer<'de>>(
                 &mut self,
                 d: D,
             ) -> Result<Self::First, D::Error> {
-                RowId::deserialize(d)
+                TreeId::deserialize(d)
             }
 
             fn deserialize_second<D: Deserializer<'de>>(
@@ -272,7 +272,7 @@ impl<'de> DeserializeUpdate<'de> for Arc<Row> {
                     Option::<!>::deserialize(d)?;
                     Ok(x.upgrade_cow().expect("uninitialized row").into_owned())
                 } else {
-                    let row = arc_try_new_cyclic(|row: &Weak<Row>| {
+                    let row = arc_try_new_cyclic(|row: &Weak<Tree>| {
                         des.entries.insert(key, ArcOrWeak::Weak(row.clone()));
                         let _dict = OptionSeed::new(DeserializeSnapshotAdapter::<Dict>::new(
                             DeserializeContext { table, des },
@@ -298,12 +298,12 @@ impl<'de> DeserializeUpdate<'de> for Arc<Row> {
     }
 }
 
-impl<'de> DeserializeUpdate<'de> for Weak<Row> {
+impl<'de> DeserializeUpdate<'de> for Weak<Tree> {
     fn deserialize_snapshot<D: Deserializer<'de>>(
         table: DeserializeContext,
         d: D,
     ) -> Result<Self, D::Error> {
-        Ok(Arc::downgrade(&Arc::<Row>::deserialize_snapshot(table, d)?))
+        Ok(Arc::downgrade(&Arc::<Tree>::deserialize_snapshot(table, d)?))
     }
 
     fn deserialize_update<D: Deserializer<'de>>(

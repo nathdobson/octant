@@ -7,7 +7,7 @@ use serde_json::ser::PrettyFormatter;
 
 use crate::arc::ArcOrWeak;
 use crate::de::DeserializeTable;
-use crate::table::RowTable;
+use crate::forest::Forest;
 
 const EXPECTED: &str = r#"[
   {
@@ -50,12 +50,12 @@ fn test_ser() {
         }
     });
 
-    let table = RowTable::new();
+    let table = Forest::new();
     let root;
     {
         let table = table.read();
         root = table.add();
-        table.try_enqueue(&root);
+        table.enqueue(&root);
         {
             let mut root_lock = table.write(&root);
             root_lock.insert("x".to_string(), ArcOrWeak::Weak(Arc::downgrade(&root)));
@@ -77,7 +77,7 @@ fn test_ser() {
 
 #[test]
 fn test_de() {
-    let table = RowTable::new();
+    let table = Forest::new();
     let mut read = table.write();
     let root = read.add();
     let mut de = DeserializeTable::new(&mut *read, root.clone());

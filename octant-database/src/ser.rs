@@ -1,5 +1,5 @@
 use serde::{Serialize, Serializer};
-use crate::table::RowTableState;
+use crate::forest::ForestState;
 
 
 pub trait SerializeUpdate {
@@ -7,16 +7,16 @@ pub trait SerializeUpdate {
     fn begin_update(&mut self) -> bool;
     fn serialize_update<S: Serializer>(
         &self,
-        state: &RowTableState,
+        state: &ForestState,
         s: S,
     ) -> Result<S::Ok, S::Error>;
     fn end_update(&mut self);
 }
 
-pub struct SerializeUpdateAdapter<'a, T>(&'a T, &'a RowTableState);
+pub struct SerializeUpdateAdapter<'a, T>(&'a T, &'a ForestState);
 
 impl<'a, T> SerializeUpdateAdapter<'a, T> {
-    pub fn new(x: &'a T, state: &'a RowTableState) -> Self {
+    pub fn new(x: &'a T, state: &'a ForestState) -> Self {
         SerializeUpdateAdapter(x, state)
     }
 }

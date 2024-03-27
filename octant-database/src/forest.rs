@@ -1,6 +1,6 @@
 use crate::{
     dict::Dict,
-    row::{Row, RowId},
+    tree::{Tree, TreeId},
 };
 use parking_lot::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::Serializer;
@@ -11,27 +11,27 @@ use std::{
 use serde::ser::SerializeSeq;
 use weak_table::PtrWeakHashSet;
 
-struct RowTableQueue {
+struct ForestGlobalState {
     next_id: u64,
-    map: PtrWeakHashSet<Weak<Row>>,
+    map: PtrWeakHashSet<Weak<Tree>>,
 }
 
-pub struct RowTableState {
-    queue: Mutex<RowTableQueue>,
+pub struct ForestState {
+    queue: Mutex<ForestGlobalState>,
 }
 
-pub struct RowTable {
-    state: RwLock<RowTableState>,
+pub struct Forest {
+    state: RwLock<ForestState>,
 }
 
-impl RowTableQueue {
-    fn try_enqueue(&mut self, row: &Arc<Row>) {
+impl ForestGlobalState {
+    fn try_enqueue(&mut self, row: &Arc<Tree>) {
         self.map.insert(row.clone());
     }
 }
 
-impl RowTableState {
-    pub fn try_enqueue<'b>(&self, row: &Arc<Row>) {
+impl ForestState {
+    pub fn enqueue<'b>(&self, row: &Arc<Tree>) {
         self.queue.lock().try_enqueue(row);
     }
     pub fn serialize_log<S: Serializer>(&mut self, s: S) -> Result<S::Ok, S::Error> {
@@ -41,37 +41,37 @@ impl RowTableState {
         }
         s.end()
     }
-    pub fn read<'b>(&'b self, row: &'b Arc<Row>) -> RwLockReadGuard<'b, Dict> {
+    pub fn read<'b>(&'b self, row: &'b Arc<Tree>) -> RwLockReadGuard<'b, Dict> {
         row.read()
     }
-    pub fn try_read<'b>(&'b self, row: &'b Arc<Row>) -> Option<RwLockReadGuard<'b, Dict>> {
+    pub fn try_read<'b>(&'b self, row: &'b Arc<Tree>) -> Option<RwLockReadGuard<'b, Dict>> {
         row.try_read()
     }
-    pub fn write<'b>(&'b self, row: &'b Arc<Row>) -> RwLockWriteGuard<'b, Dict> {
+    pub fn write<'b>(&'b self, row: &'b Arc<Tree>) -> RwLockWriteGuard<'b, Dict> {
         if row.is_written() {
             self.queue.lock().map.insert(row.clone());
         }
         row.write()
     }
-    pub fn try_write<'b>(&'b self, row: &'b Arc<Row>) -> Option<RwLockWriteGuard<'b, Dict>> {
+    pub fn try_write<'b>(&'b self, row: &'b Arc<Tree>) -> Option<RwLockWriteGuard<'b, Dict>> {
         if row.is_written() {
             self.queue.lock().map.insert(row.clone());
         }
         row.try_write()
     }
-    pub fn add(&self) -> Arc<Row> {
+    pub fn add(&self) -> Arc<Tree> {
         let ref mut lock = *self.queue.lock();
         let id = lock.next_id;
         lock.next_id += 1;
-        Row::new(RowId::new(id))
+        Tree::new(TreeId::new(id))
     }
 }
 
-impl RowTable {
+impl Forest {
     pub fn new() -> Arc<Self> {
-        let result = Arc::new(RowTable {
-            state: RwLock::new(RowTableState {
-                queue: Mutex::new(RowTableQueue {
+        let result = Arc::new(Forest {
+            state: RwLock::new(ForestState {
+                queue: Mutex::new(ForestGlobalState {
                     next_id: 0,
                     map: PtrWeakHashSet::new(),
                 }),
@@ -79,15 +79,11 @@ impl RowTable {
         });
         result
     }
-    pub fn read<'a>(self: &'a Arc<Self>) -> RwLockReadGuard<'a, RowTableState> {
-        // RowTableReadGuard {
+    pub fn read<'a>(self: &'a Arc<Self>) -> RwLockReadGuard<'a, ForestState> {
         self.state.read()
-        // }
     }
-    pub fn write<'a>(self: &'a Arc<Self>) -> RwLockWriteGuard<'a, RowTableState> {
-        // RowTableWriteGuard {
+    pub fn write<'a>(self: &'a Arc<Self>) -> RwLockWriteGuard<'a, ForestState> {
         self.state.write()
-        // }
     }
 }
 

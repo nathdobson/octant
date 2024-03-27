@@ -7,20 +7,20 @@ use serde::{
 
 use crate::{
     arc::ArcOrWeak,
-    row::{Row, RowId},
+    tree::{Tree, TreeId},
     util::{
         deserialize_item::DeserializeItem, deserialize_pair::DeserializePair,
         pair_struct_seed::PairStructSeed, seq_seed::SeqSeed,
     },
 };
-use crate::table::RowTableState;
+use crate::forest::ForestState;
 
 pub struct DeserializeTable {
-    pub entries: HashMap<RowId, ArcOrWeak<Row>>,
+    pub entries: HashMap<TreeId, ArcOrWeak<Tree>>,
 }
 
 pub struct DeserializeContext<'t> {
-    pub table: &'t RowTableState,
+    pub table: &'t ForestState,
     pub des: &'t mut DeserializeTable,
 }
 
@@ -46,7 +46,7 @@ pub trait DeserializeUpdate<'de>: Sized {
 }
 
 impl DeserializeTable {
-    pub fn new(_table: &RowTableState, root: Arc<Row>) -> Self {
+    pub fn new(_table: &ForestState, root: Arc<Tree>) -> Self {
         let mut result = DeserializeTable {
             entries: HashMap::new(),
         };
@@ -55,7 +55,7 @@ impl DeserializeTable {
     }
     pub fn deserialize_log<'de, D: Deserializer<'de>>(
         &mut self,
-        table: &RowTableState,
+        table: &ForestState,
         d: D,
     ) -> Result<(), D::Error> {
         return SeqSeed::new(LogSeq(DeserializeContext { table, des: self })).deserialize(d);
@@ -70,14 +70,14 @@ impl DeserializeTable {
         }
         struct LogEntry<'a>(DeserializeContext<'a>);
         impl<'a, 't, 'de> DeserializePair<'de> for LogEntry<'a> {
-            type First = RowId;
+            type First = TreeId;
             type Second = ();
 
             fn deserialize_first<D: Deserializer<'de>>(
                 &mut self,
                 d: D,
             ) -> Result<Self::First, D::Error> {
-                RowId::deserialize(d)
+                TreeId::deserialize(d)
             }
 
             fn deserialize_second<D: Deserializer<'de>>(
