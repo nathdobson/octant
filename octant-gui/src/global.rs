@@ -26,6 +26,4 @@ impl Global {
     pub fn window(&self) -> &Window {
         &self.window
     }
-
-
 }

@@ -1,10 +1,12 @@
-use crate::map_combinator::DeserializeEntry;
+use std::fmt::Formatter;
+
 use serde::de::{DeserializeSeed, Error, MapAccess, SeqAccess, Visitor};
 use serde::Deserializer;
-use std::fmt::Formatter;
-use std::marker::PhantomData;
+
+use crate::map_combinator::DeserializeEntry;
 
 pub struct PairCombinator<T>(T);
+
 pub struct PairStructCombinator<T> {
     pub name: &'static str,
     pub fields: &'static [&'static str; 2],
@@ -21,8 +23,8 @@ impl<'de, T: DeserializePair<'de>> DeserializeSeed<'de> for PairCombinator<T> {
     type Value = T::Second;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         deserializer.deserialize_tuple(2, self)
     }
@@ -34,8 +36,8 @@ impl<'de, T: DeserializePair<'de>> Visitor<'de> for PairCombinator<T> {
         write!(f, "pair")
     }
     fn visit_seq<A>(mut self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-        A: SeqAccess<'de>,
+        where
+            A: SeqAccess<'de>,
     {
         let first = seq
             .next_element_seed(DeserializeFirstSeed(&mut self.0))?
@@ -51,8 +53,8 @@ impl<'de, T: DeserializePair<'de>> DeserializeSeed<'de> for PairStructCombinator
     type Value = T::Second;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         println!("A");
         deserializer.deserialize_struct(self.name, self.fields, self)
@@ -65,8 +67,8 @@ impl<'de, T: DeserializePair<'de>> Visitor<'de> for PairStructCombinator<T> {
         write!(f, "pair struct")
     }
     fn visit_map<A>(mut self, mut map: A) -> Result<Self::Value, A::Error>
-    where
-        A: MapAccess<'de>,
+        where
+            A: MapAccess<'de>,
     {
         if map.next_key::<String>()?.as_deref() != Some(self.fields[0]) {
             return Err(A::Error::custom("first field name is incorrect"));
@@ -80,8 +82,8 @@ impl<'de, T: DeserializePair<'de>> Visitor<'de> for PairStructCombinator<T> {
         Ok(second)
     }
     fn visit_seq<A>(mut self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-        A: SeqAccess<'de>,
+        where
+            A: SeqAccess<'de>,
     {
         println!("B");
         let first = seq
@@ -111,8 +113,8 @@ impl<'de, 'a, T: DeserializePair<'de>> DeserializeSeed<'de> for DeserializeFirst
     type Value = T::First;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         self.0.deserialize_first(deserializer)
     }
@@ -121,13 +123,13 @@ impl<'de, 'a, T: DeserializePair<'de>> DeserializeSeed<'de> for DeserializeFirst
 struct DeserializeSecondSeed<'a, T, F>(&'a mut T, F);
 
 impl<'de, 'a, T: DeserializePair<'de>> DeserializeSeed<'de>
-    for DeserializeSecondSeed<'a, T, T::First>
+for DeserializeSecondSeed<'a, T, T::First>
 {
     type Value = T::Second;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         self.0.deserialize_second(self.1, deserializer)
     }

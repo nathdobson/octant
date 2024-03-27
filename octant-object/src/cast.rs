@@ -11,18 +11,25 @@ use crate::stackbox::{StackBox, TraitObjectStorage};
 trait A: 'static + Any {}
 
 trait B: A {}
+
 trait C: B {}
 
 struct X;
+
 impl A for X {}
 
 struct Y;
+
 impl A for Y {}
+
 impl B for Y {}
 
 struct Z;
+
 impl A for Z {}
+
 impl B for Z {}
+
 impl C for Z {}
 
 pub trait CastValue: 'static + Any {
@@ -53,8 +60,8 @@ pub trait CastObject: Any {
 }
 
 impl<T: 'static + Deref> CastObject for T
-where
-    T::Target: CastTrait,
+    where
+        T::Target: CastTrait,
 {
     fn into_parent_object(
         &self,
@@ -76,13 +83,13 @@ pub trait Cast<O: 'static> {
 
 pub fn coerce_unsized<
     'a,
-    A: ?Sized + 'static + Pointee<Metadata = DynMetadata<A>>,
-    B: ?Sized + 'static + Pointee<Metadata = DynMetadata<B>> + CastTrait,
+    A: ?Sized + 'static + Pointee<Metadata=DynMetadata<A>>,
+    B: ?Sized + 'static + Pointee<Metadata=DynMetadata<B>> + CastTrait,
 >(
     this: StackBox<'a, dyn CastObject>,
 ) -> StackBox<'a, dyn CastObject>
-where
-    A: Unsize<B>,
+    where
+        A: Unsize<B>,
 {
     let this = this as StackBox<'a, dyn Any>;
     let this = match this.downcast::<Rc<A>>() {

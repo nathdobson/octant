@@ -1,14 +1,16 @@
+use std::fmt::{Debug, Formatter};
+use std::sync::{Arc, Weak};
+
+use parking_lot::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{EnumAccess, VariantAccess, Visitor};
+use serde::ser::{SerializeSeq, SerializeStruct};
+
+use crate::{RowTable, RowTableState};
 use crate::arc::ArcOrWeak;
 use crate::de::{DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate};
 use crate::dict::Dict;
 use crate::ser::{SerializeUpdate, SerializeUpdateAdapter};
-use crate::{RowTable, RowTableQueue, RowTableState};
-use parking_lot::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use serde::de::{EnumAccess, VariantAccess, Visitor};
-use serde::ser::{SerializeSeq, SerializeStruct};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt::{Debug, Formatter};
-use std::sync::{Arc, OnceLock, Weak};
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct RowId(u64);
@@ -50,8 +52,8 @@ impl Row {
     pub(crate) fn try_read(&self) -> Option<RwLockReadGuard<Dict>> {
         self.state.try_read()
     }
-    pub fn serialize_tree<S:SerializeSeq>(&self, s: &mut S, table: &mut RowTableState) ->Result<(),S::Error>{
-        self.written.call_once(||());
+    pub fn serialize_tree<S: SerializeSeq>(&self, s: &mut S, table: &mut RowTableState) -> Result<(), S::Error> {
+        self.written.call_once(|| ());
         let ref mut dict = *self
             .try_write()
             .expect("lock should succeed because global lock is held");
@@ -121,8 +123,8 @@ impl<'de> DeserializeUpdate<'de> for ArcOrWeak<Row> {
             type Value = ArcOrWeak<Row>;
 
             fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
-            where
-                A: EnumAccess<'de>,
+                where
+                    A: EnumAccess<'de>,
             {
                 let (tag, access) = data.variant::<Tag>()?;
                 match tag {

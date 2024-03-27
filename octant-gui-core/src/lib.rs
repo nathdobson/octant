@@ -49,18 +49,17 @@ pub enum Method {
 pub struct HandleId(pub usize);
 
 pub trait TypeTag:
-    'static
-    + Serialize
-    + for<'de> Deserialize<'de>
-    + Copy
-    + Clone
-    + Eq
-    + Ord
-    + PartialEq
-    + PartialOrd
-    + Hash
-{
-}
+'static
++ Serialize
++ for<'de> Deserialize<'de>
++ Copy
++ Clone
++ Eq
++ Ord
++ PartialEq
++ PartialOrd
++ Hash
+{}
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct TypedHandle<T: TypeTag>(pub HandleId, pub PhantomData<T>);

@@ -1,9 +1,11 @@
 use std::fmt::Formatter;
-use serde::Deserializer;
 use std::marker::PhantomData;
+
 use serde::de::{DeserializeSeed, SeqAccess, Visitor};
+use serde::Deserializer;
 
 pub struct SeqCombinator<T, O>(T, PhantomData<O>);
+
 pub trait DeserializeItem<'de> {
     type Value;
     fn deserialize<D: Deserializer<'de>>(&mut self, d: D) -> Result<Self::Value, D::Error>;
@@ -46,7 +48,6 @@ impl<'de, T: DeserializeItem<'de>, O: FromIterator<T::Value>> Visitor<'de> for S
             .collect()
     }
 }
-
 
 
 struct SeqIterator<'de, S, T> {

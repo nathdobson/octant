@@ -50,6 +50,7 @@ impl<'a, T: ?Sized + Debug> Debug for Tack<'a, T> {
         self.0.fmt(f)
     }
 }
+
 impl<'a, T: ?Sized + Display> Display for Tack<'a, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         self.0.fmt(f)

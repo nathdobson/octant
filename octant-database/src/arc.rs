@@ -1,13 +1,6 @@
-use crate::de::{
-    DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate,
-};
-use crate::ser::{SerializeUpdate, SerializeUpdateAdapter};
-use serde::de::{DeserializeSeed, EnumAccess, VariantAccess, Visitor};
-use serde::{Deserialize, Deserializer, Serializer};
 use std::borrow::Cow;
-use std::fmt::Formatter;
 use std::sync::{Arc, Weak};
-use crate::{ RowTableState};
+
 //
 // pub struct UniqueWeak<T>(Weak<T>);
 //
@@ -42,7 +35,8 @@ use crate::{ RowTableState};
 //     assert_eq!(*x, 12);
 // }
 
-#[derive(Debug)]pub enum ArcOrWeak<T: ?Sized> {
+#[derive(Debug)]
+pub enum ArcOrWeak<T: ?Sized> {
     Arc(Arc<T>),
     Weak(Weak<T>),
 }

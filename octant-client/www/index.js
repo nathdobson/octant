@@ -1,5 +1,5 @@
-export function displayError(message){
+export function displayError(message) {
     console.log("error = ", message);
     document.getElementById("message").appendChild(document.createTextNode(message))
-    document.getElementById("notification").style.display="block"
+    document.getElementById("notification").style.display = "block"
 }

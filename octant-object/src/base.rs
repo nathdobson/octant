@@ -60,15 +60,17 @@ impl CastTrait for dyn Trait {
         into_parent_object_impl
     }
 }
+
 impl Trait for Value {
     fn value(&self) -> &Value {
         self
     }
 }
+
 impl<T: ::std::ops::Deref + 'static> Trait for T
-where
-    <T as ::std::ops::Deref>::Target: Trait,
-    T: CastValue,
+    where
+        <T as ::std::ops::Deref>::Target: Trait,
+        T: CastValue,
 {
     fn value(&self) -> &Value {
         T::deref(self).value()

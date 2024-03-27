@@ -9,6 +9,24 @@
 #![feature(never_type)]
 #![feature(unboxed_closures)]
 
+use std::mem;
+use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+use std::sync::{Arc, Weak};
+
+use parking_lot::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use serde::{Deserialize, Deserializer, Serializer};
+use serde::de::DeserializeSeed;
+use serde::ser::SerializeSeq;
+use weak_table::PtrWeakHashSet;
+
+use arc::ArcOrWeak;
+use de::{DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate};
+use dict::Dict;
+use option_combinator::OptionCombinator;
+use pair_combinator::{DeserializePair, PairStructCombinator};
+
+use crate::row::{Row, RowId};
+
 mod arc;
 mod de;
 mod dict;
@@ -21,24 +39,6 @@ mod ser;
 mod tack;
 #[cfg(test)]
 mod test;
-
-use crate::row::{Row, RowId};
-use arc::ArcOrWeak;
-use de::{DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate};
-use dict::Dict;
-use option_combinator::OptionCombinator;
-use pair_combinator::{DeserializePair, PairStructCombinator};
-use parking_lot::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use ser::{SerializeUpdate, SerializeUpdateAdapter};
-use serde::de::{DeserializeSeed, Error};
-use serde::ser::{SerializeSeq, SerializeStruct};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::collections::hash_map::Entry;
-use std::fmt::{Debug, Formatter};
-use std::mem;
-use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
-use std::sync::{Arc, OnceLock, Weak};
-use weak_table::PtrWeakHashSet;
 
 struct RowTableQueue {
     next_id: u64,
@@ -55,72 +55,19 @@ pub struct RowTable {
 }
 
 impl RowTableQueue {
-    // fn try_init<'a>(&mut self, table: &Arc<RowTable>, row: &'a Arc<Row>) -> (&'a RowHeader, bool) {
-    //     todo!();
-    //     // let mut inited = false;
-    //     // let header = row.header.get_or_init(|| {
-    //     //     let next_id = self.next_id;
-    //     //     self.next_id += 1;
-    //     //     inited = true;
-    //     //     RowHeader {
-    //     //         id: RowId(next_id),
-    //     //         table: Arc::downgrade(table),
-    //     //     }
-    //     // });
-    //     // (header, inited)
-    // }
     fn try_enqueue(&mut self, row: &Arc<Row>) {
         self.map.insert(row.clone());
     }
-    // fn create(&mut self, table: &Arc<RowTable>, id: RowId) -> Arc<Row> {
-    //     if self.next_id <= id.0 {
-    //         self.next_id = id.0 + 1;
-    //     }
-    //     Arc::new(Row {
-    //         header: OnceLock::from(RowHeader {
-    //             id,
-    //             table: Arc::downgrade(table),
-    //         }),
-    //         state: RwLock::new(Dict::new()),
-    //     })
-    // }
 }
 
 impl RowTableState {
-    // pub fn try_init<'b>(&self, row: &'b Arc<Row>) -> (&'b RowHeader, bool) {
-    //     self.queue
-    //         .lock()
-    //         .try_init(&self.this.upgrade().unwrap(), row)
-    // }
     pub fn try_enqueue<'b>(&self, row: &Arc<Row>) {
         self.queue.lock().try_enqueue(row);
     }
-    // pub fn try_add_mut<'b>(&mut self, row: &'b Arc<Row>) -> &'b RowHeader {
-    //     self.queue
-    //         .get_mut()
-    //         .try_add(&self.this.upgrade().unwrap(), row)
-    // }
-    // pub fn create(&mut self, id: RowId) -> Arc<Row> {
-    //     self.queue
-    //         .get_mut()
-    //         .create(&self.this.upgrade().unwrap(), id)
-    // }
     pub fn serialize_log<S: Serializer>(&mut self, s: S) -> Result<S::Ok, S::Error> {
         let mut s = s.serialize_seq(None)?;
         for row in mem::replace(&mut self.queue.get_mut().map, PtrWeakHashSet::new()) {
-            row.serialize_tree(&mut s,self)?;
-            // struct TreeUpdater<'a> {
-            //     row: &'a Arc<Row>,
-            // }
-            // impl<'a> Serialize for TreeUpdater<'a> {
-            //     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            //     where
-            //         S: Serializer,
-            //     {
-            //         self.row.serialize_tree(serializer)
-            //     }
-            // }
-            // s.serialize_element(&TreeUpdater { row: &row })?;
+            row.serialize_tree(&mut s, self)?;
         }
         s.end()
     }
@@ -202,7 +149,7 @@ impl<'de> DeserializeUpdate<'de> for Arc<Row> {
     ) -> Result<Self, D::Error> {
         struct V<'a> {
             table: DeserializeContext<'a>,
-        };
+        }
         impl<'a, 'de> DeserializePair<'de> for V<'a> {
             type First = RowId;
             type Second = Arc<Row>;
@@ -216,33 +163,28 @@ impl<'de> DeserializeUpdate<'de> for Arc<Row> {
 
             fn deserialize_second<D: Deserializer<'de>>(
                 &mut self,
-                first: Self::First,
+                key: Self::First,
                 d: D,
             ) -> Result<Self::Second, D::Error> {
                 let table = &*self.table.table;
                 let des = &mut *self.table.des;
-                match des.entries.entry(first) {
-                    Entry::Occupied(x) => {
-                        Option::<!>::deserialize(d)?;
-                        Ok(x.get()
-                            .upgrade_cow()
-                            .expect("uninitialized row")
-                            .into_owned())
-                    }
-                    Entry::Vacant(entry) => {
-                        mem::drop(entry);
-                        let row = arc_try_new_cyclic(|row: &Weak<Row>| {
-                            des.entries.insert(first, ArcOrWeak::Weak(row.clone()));
-                            let dict =
-                                OptionCombinator::new(DeserializeSnapshotAdapter::<Dict>::new(
-                                    DeserializeContext { table, des },
-                                ))
-                                .deserialize(d)?;
-                            todo!();
-                        })?;
-                        des.entries.insert(first, ArcOrWeak::Arc(row.clone()));
-                        Ok(row)
-                    }
+                if let Some(x) = des.entries.get(&key) {
+                    Option::<!>::deserialize(d)?;
+                    Ok(x
+                        .upgrade_cow()
+                        .expect("uninitialized row")
+                        .into_owned())
+                } else {
+                    let row = arc_try_new_cyclic(|row: &Weak<Row>| {
+                        des.entries.insert(key, ArcOrWeak::Weak(row.clone()));
+                        let dict = OptionCombinator::new(DeserializeSnapshotAdapter::<Dict>::new(
+                            DeserializeContext { table, des },
+                        ))
+                            .deserialize(d)?;
+                        todo!();
+                    })?;
+                    des.entries.insert(key, ArcOrWeak::Arc(row.clone()));
+                    Ok(row)
                 }
             }
         }
@@ -251,7 +193,7 @@ impl<'de> DeserializeUpdate<'de> for Arc<Row> {
             fields: &["id", "value"],
             inner: V { table },
         }
-        .deserialize(d)
+            .deserialize(d)
     }
 
     fn deserialize_update<D: Deserializer<'de>>(
@@ -259,7 +201,8 @@ impl<'de> DeserializeUpdate<'de> for Arc<Row> {
         table: DeserializeContext,
         d: D,
     ) -> Result<(), D::Error> {
-        todo!()
+        *self = Self::deserialize_snapshot(table, d)?;
+        Ok(())
     }
 }
 
@@ -276,6 +219,7 @@ impl<'de> DeserializeUpdate<'de> for Weak<Row> {
         table: DeserializeContext,
         d: D,
     ) -> Result<(), D::Error> {
-        todo!()
+        *self = Self::deserialize_snapshot(table, d)?;
+        Ok(())
     }
 }

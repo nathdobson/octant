@@ -1,12 +1,13 @@
-use crate::arc::ArcOrWeak;
-use crate::de::DeserializeTable;
-use crate::row::Row;
-use crate::RowTable;
-use serde_json::ser::PrettyFormatter;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
+
 use parking_lot::deadlock;
+use serde_json::ser::PrettyFormatter;
+
+use crate::arc::ArcOrWeak;
+use crate::de::DeserializeTable;
+use crate::RowTable;
 
 const EXPECTED: &str = r#"[
   {
@@ -27,6 +28,7 @@ const EXPECTED: &str = r#"[
     }
   }
 ]"#;
+
 #[test]
 fn test_ser() {
     thread::spawn(move || {
@@ -83,6 +85,6 @@ fn test_de() {
         &mut *read,
         &mut serde_json::Deserializer::new(serde_json::de::SliceRead::new(EXPECTED.as_bytes())),
     )
-    .unwrap();
+        .unwrap();
     panic!("{:#?}", root);
 }

@@ -31,6 +31,7 @@ impl Value {
         TypedHandle(self.raw_handle(), PhantomData)
     }
 }
+
 impl dyn Trait {
     pub fn invoke_with(
         self: Arc<Self>,

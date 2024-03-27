@@ -17,6 +17,6 @@ async fn main() {
         options: OctantServerOptions::from_command_line(),
         handler,
     }
-    .run()
-    .await;
+        .run()
+        .await;
 }

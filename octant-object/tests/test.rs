@@ -8,6 +8,7 @@ use std::rc::Rc;
 use octant_object::cast::Cast;
 
 trait Parent = Send + Sync + Any;
+
 pub mod a {
     use octant_object::base;
     use octant_object::define_class;

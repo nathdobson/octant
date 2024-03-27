@@ -24,7 +24,7 @@ impl Session {
     }
     pub fn data<T: SessionData>(&self) -> &T {
         self.data
-            .get_or_insert(&TypeId::of::<T>(), ||Box::<T>::default())
+            .get_or_insert(&TypeId::of::<T>(), || Box::<T>::default())
             .downcast_ref()
             .unwrap()
     }

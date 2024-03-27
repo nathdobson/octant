@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-serde={version="1.0.197",features = ["derive","unstable"]}
+serde = { version = "1.0.197", features = ["derive", "unstable"] }
 serde_assert = "0.7.1"
-tokio={version="1.36.0",features = ["io-util","rt","macros"]}
+tokio = { version = "1.36.0", features = ["io-util", "rt", "macros"] }
 serde_json = "1.0.114"
 anyhow = "1.0.80"
 tmpdir = "1.0.0"
@@ -15,5 +15,5 @@ by_address = "1.1.0"
 weak-table = "0.3.2"
 
 [dev-dependencies]
-serde-value ="0.7.0"
-parking_lot = {version="0.12.1",features = ["deadlock_detection"]}
+serde-value = "0.7.0"
+parking_lot = { version = "0.12.1", features = ["deadlock_detection"] }

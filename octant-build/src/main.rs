@@ -45,7 +45,7 @@ fn copy_dir_all<'a>(src: &'a Path, dst: &'a Path) -> BoxFuture<'a, anyhow::Resul
         }
         Ok(())
     }
-    .boxed()
+        .boxed()
 }
 
 #[tokio::main]
@@ -54,6 +54,7 @@ async fn main() {
         eprintln!("Error: {:?}", e);
     }
 }
+
 async fn main_impl() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let profile = cli.profile.unwrap_or(Profile::Dev);

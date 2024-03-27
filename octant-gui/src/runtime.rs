@@ -91,5 +91,5 @@ pub trait HasTypedHandle: handle::Trait {
 }
 
 pub trait HasLocalType: TypeTag {
-    type Local: ?Sized + Pointee<Metadata = DynMetadata<Self::Local>>;
+    type Local: ?Sized + Pointee<Metadata=DynMetadata<Self::Local>>;
 }

@@ -1,17 +1,19 @@
+use std::collections::{BTreeMap, HashSet};
+use std::collections::btree_map::Entry;
+use std::fmt::{Debug, Formatter};
+
+use serde::{Deserialize, Deserializer, Serializer};
+use serde::de::{DeserializeSeed, MapAccess, Visitor};
+use serde::ser::SerializeMap;
+
 use crate::arc::ArcOrWeak;
 use crate::de::{
     DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate, DeserializeUpdateAdapter,
 };
 use crate::map_combinator::{DeserializeEntry, MapCombinator};
-use crate::ser::{SerializeUpdate, SerializeUpdateAdapter};
-use crate::RowTableState;
-use serde::de::{DeserializeSeed, MapAccess, Visitor};
-use serde::ser::SerializeMap;
-use serde::{Deserialize, Deserializer, Serializer};
-use std::collections::btree_map::Entry;
-use std::collections::{BTreeMap, HashSet};
-use std::fmt::{Debug, Formatter};
 use crate::row::Row;
+use crate::RowTableState;
+use crate::ser::{SerializeUpdate, SerializeUpdateAdapter};
 
 pub struct Dict {
     entries: BTreeMap<String, ArcOrWeak<Row>>,
@@ -47,6 +49,7 @@ impl Dict {
         self.entries.get_mut(key)
     }
 }
+
 impl<'de> DeserializeUpdate<'de> for Dict {
     fn deserialize_snapshot<D: Deserializer<'de>>(
         table: DeserializeContext,
@@ -99,8 +102,8 @@ impl<'de> DeserializeUpdate<'de> for Dict {
                 write!(f, "map")
             }
             fn visit_map<A>(mut self, mut map: A) -> Result<Self::Value, A::Error>
-            where
-                A: MapAccess<'de>,
+                where
+                    A: MapAccess<'de>,
             {
                 while let Some(key) = map.next_key::<String>()? {
                     match self.dict.entries.entry(key) {

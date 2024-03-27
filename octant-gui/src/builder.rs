@@ -21,6 +21,7 @@ impl<T: ?Sized + element::Trait> ElementExt for Arc<T> {
 pub trait HtmlFormElementExt {
     fn handler(self, handler: impl 'static + Send + Sync + Fn()) -> Self;
 }
+
 impl<T: ?Sized + html_form_element::Trait> HtmlFormElementExt for Arc<T> {
     fn handler(self, handler: impl 'static + Send + Sync + Fn()) -> Self {
         html_form_element::Trait::value(&*self).set_handler(handler);

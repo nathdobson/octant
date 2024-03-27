@@ -1,14 +1,18 @@
-use crate::arc::ArcOrWeak;
-use crate::map_combinator::DeserializeEntry;
-use crate::pair_combinator::{DeserializePair, PairStructCombinator};
-use crate::seq_combinator::{DeserializeItem, SeqCombinator};
-use serde::de::{DeserializeSeed, Error, SeqAccess, Visitor};
-use serde::{Deserialize, Deserializer};
-use std::collections::HashMap;
-use std::marker::PhantomData;
-use std::sync::Arc;
-use crate::{  RowTableState};
-use crate::row::{Row, RowId};
+use std::{collections::HashMap, marker::PhantomData, sync::Arc};
+
+use serde::{
+    de::{DeserializeSeed, Error, SeqAccess, Visitor},
+    Deserialize, Deserializer,
+};
+
+use crate::{
+    arc::ArcOrWeak,
+    map_combinator::DeserializeEntry,
+    pair_combinator::{DeserializePair, PairStructCombinator},
+    row::{Row, RowId},
+    RowTableState,
+    seq_combinator::{DeserializeItem, SeqCombinator},
+};
 
 pub struct DeserializeTable {
     pub entries: HashMap<RowId, ArcOrWeak<Row>>,
@@ -45,9 +49,7 @@ impl DeserializeTable {
         let mut result = DeserializeTable {
             entries: HashMap::new(),
         };
-        result
-            .entries
-            .insert(root.id(), ArcOrWeak::Arc(root));
+        result.entries.insert(root.id(), ArcOrWeak::Arc(root));
         result
     }
     pub fn deserialize_log<'de, D: Deserializer<'de>>(
@@ -66,7 +68,7 @@ impl DeserializeTable {
                     fields: &["key", "value"],
                     inner: LogEntry(self.0.reborrow()),
                 }
-                .deserialize(d)
+                    .deserialize(d)
             }
         }
         struct LogEntry<'a>(DeserializeContext<'a>);
@@ -152,8 +154,8 @@ impl<'a, 'de, T: DeserializeUpdate<'de>> DeserializeSeed<'de> for DeserializeUpd
     type Value = ();
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         self.0.deserialize_update(self.1, deserializer)
     }
@@ -168,13 +170,13 @@ impl<'a, T> DeserializeSnapshotAdapter<'a, T> {
 }
 
 impl<'a, 'de, T: DeserializeUpdate<'de>> DeserializeSeed<'de>
-    for DeserializeSnapshotAdapter<'a, T>
+for DeserializeSnapshotAdapter<'a, T>
 {
     type Value = T;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         T::deserialize_snapshot(self.0, deserializer)
     }

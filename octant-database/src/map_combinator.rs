@@ -1,10 +1,13 @@
-use crate::seq_combinator::DeserializeItem;
-use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
-use serde::Deserializer;
 use std::fmt::Formatter;
 use std::marker::PhantomData;
 
+use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
+use serde::Deserializer;
+
+use crate::seq_combinator::DeserializeItem;
+
 pub struct MapCombinator<T, O>(T, PhantomData<O>);
+
 impl<T, O> MapCombinator<T, O> {
     pub fn new(t: T) -> Self {
         MapCombinator(t, PhantomData)
@@ -23,20 +26,20 @@ pub trait DeserializeEntry<'de> {
 }
 
 impl<'de, T: DeserializeEntry<'de>, O: FromIterator<T::Value>> DeserializeSeed<'de>
-    for MapCombinator<T, O>
+for MapCombinator<T, O>
 {
     type Value = O;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         deserializer.deserialize_map(self)
     }
 }
 
 impl<'de, T: DeserializeEntry<'de>, O: FromIterator<T::Value>> Visitor<'de>
-    for MapCombinator<T, O>
+for MapCombinator<T, O>
 {
     type Value = O;
 
@@ -44,15 +47,15 @@ impl<'de, T: DeserializeEntry<'de>, O: FromIterator<T::Value>> Visitor<'de>
         write!(f, "map")
     }
     fn visit_map<A>(mut self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-        A: MapAccess<'de>,
+        where
+            A: MapAccess<'de>,
     {
         MapIterator {
             value: self.0,
             seq,
             de: PhantomData,
         }
-        .collect()
+            .collect()
     }
 }
 
@@ -87,8 +90,8 @@ impl<'de, 'a, T: DeserializeEntry<'de>> DeserializeSeed<'de> for DeserializeKeyS
     type Value = T::Key;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         self.0.deserialize_key(deserializer)
     }
@@ -97,13 +100,13 @@ impl<'de, 'a, T: DeserializeEntry<'de>> DeserializeSeed<'de> for DeserializeKeyS
 struct DeserializeValueSeed<'a, T, K>(&'a mut T, K);
 
 impl<'de, 'a, T: DeserializeEntry<'de>> DeserializeSeed<'de>
-    for DeserializeValueSeed<'a, T, T::Key>
+for DeserializeValueSeed<'a, T, T::Key>
 {
     type Value = T::Value;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         self.0.deserialize_value(self.1, deserializer)
     }

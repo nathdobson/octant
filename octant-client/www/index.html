@@ -4,9 +4,9 @@
     <title>a</title>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
     <link rel="icon" type="image/svg+xml"
-          href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2PYLuP5HwAExgIcqJCrjgAAAABJRU5ErkJggg==" />
+          href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2PYLuP5HwAExgIcqJCrjgAAAABJRU5ErkJggg=="/>
     <style>
-        #notification{
+        #notification {
             position: fixed;
             width: 100%;
             display: none;
@@ -14,6 +14,7 @@
             bottom: 25%;
             overflow-y: scroll;
         }
+
         #center {
             position: absolute;
             top: 0;
@@ -23,7 +24,8 @@
             transform: translate(-50%, 0%);
             text-align: center;
         }
-        #message{
+
+        #message {
             white-space: pre-wrap;
             text-align: left;
         }
@@ -39,10 +41,11 @@
 </script>
 <script type="module">
     import init, {} from '../static/octant_client.js';
+
     init();
 </script>
 <div id="notification">
-    <div id = "center">
+    <div id="center">
         Connection lost. <a href="">Click to reload page</a>
         <pre id="message"></pre>
     </div>

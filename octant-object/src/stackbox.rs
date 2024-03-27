@@ -20,22 +20,22 @@ pub trait Storage: Sized {
 }
 
 impl<T> Storage for Arc<T>
-where
-    T: ?Sized + Pointee<Metadata = DynMetadata<T>>,
+    where
+        T: ?Sized + Pointee<Metadata=DynMetadata<T>>,
 {
     type Store = TraitObjectStorage;
 }
 
 impl<T> Storage for Rc<T>
-where
-    T: ?Sized + Pointee<Metadata = DynMetadata<T>>,
+    where
+        T: ?Sized + Pointee<Metadata=DynMetadata<T>>,
 {
     type Store = TraitObjectStorage;
 }
 
 impl<T> Storage for Box<T>
     where
-        T: ?Sized + Pointee<Metadata = DynMetadata<T>>,
+        T: ?Sized + Pointee<Metadata=DynMetadata<T>>,
 {
     type Store = TraitObjectStorage;
 }
@@ -46,8 +46,8 @@ impl<'a, T: ?Sized, U: ?Sized> CoerceUnsized<StackBox<'a, U>> for StackBox<'a, T
 
 impl<'a, T: ?Sized> StackBox<'a, T> {
     pub fn new(value: T, storage: &'a mut MaybeUninit<T::Store>) -> Self
-    where
-        T: Storage,
+        where
+            T: Storage,
     {
         unsafe {
             let storage = storage.as_ptr() as *mut () as *mut T;
@@ -56,8 +56,8 @@ impl<'a, T: ?Sized> StackBox<'a, T> {
         }
     }
     pub fn into_inner(self) -> T
-    where
-        T: Sized,
+        where
+            T: Sized,
     {
         unsafe {
             let result = ptr::read(self.0.as_ptr());
@@ -66,8 +66,8 @@ impl<'a, T: ?Sized> StackBox<'a, T> {
         }
     }
     pub fn into_inner_with(self) -> (T, &'a mut MaybeUninit<T::Store>)
-    where
-        T: Storage,
+        where
+            T: Storage,
     {
         unsafe {
             let result = ptr::read(self.0.as_ptr());
@@ -88,8 +88,8 @@ impl<'a, T: ?Sized> StackBox<'a, T> {
 
 impl<'a> StackBox<'a, dyn 'static + Any> {
     pub fn downcast<T>(self) -> Result<StackBox<'a, T>, Self>
-    where
-        T: 'static + Sized,
+        where
+            T: 'static + Sized,
     {
         unsafe {
             if self.is::<T>() {

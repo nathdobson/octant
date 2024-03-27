@@ -18,7 +18,7 @@ mod websocket;
 
 #[wasm_bindgen(module = "index.js")]
 extern "C" {
-    #[wasm_bindgen(js_name=displayError)]
+    #[wasm_bindgen(js_name = displayError)]
     fn display_error(message: &str);
 }
 

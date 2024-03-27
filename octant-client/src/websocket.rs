@@ -62,8 +62,8 @@ impl WebSocketStream {
             WebSocketMessage::Text(x) => self.socket.send_with_str(&x),
             WebSocketMessage::Binary(x) => self.socket.send_with_u8_array(&x),
         }
-        .map_err(WasmError::new)
-        .context("Failed to send.")
+            .map_err(WasmError::new)
+            .context("Failed to send.")
     }
 }
 

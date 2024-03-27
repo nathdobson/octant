@@ -8,8 +8,7 @@ use crate::{handle, node};
 use crate::runtime::HasTypedHandle;
 
 #[derive(Debug)]
-struct State {
-}
+struct State {}
 
 define_class! {
     #[derive(Debug)]
@@ -26,7 +25,7 @@ impl Value {
     pub fn new(handle: handle::Value) -> Self {
         Value {
             parent: node::Value::new(handle),
-            state: AtomicRefCell::new(State {  }),
+            state: AtomicRefCell::new(State {}),
         }
     }
 }

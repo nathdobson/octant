@@ -34,7 +34,7 @@ mod peer;
 mod text;
 mod window;
 
-pub type DownMessageStream = Pin<Box<dyn Stream<Item = anyhow::Result<DownMessageList>>>>;
+pub type DownMessageStream = Pin<Box<dyn Stream<Item=anyhow::Result<DownMessageList>>>>;
 pub type UpMessageSink = Box<dyn Fn(UpMessageList) -> anyhow::Result<()>>;
 
 struct State {
@@ -48,7 +48,7 @@ pub struct Runtime {
 }
 
 pub trait HasLocalType: TypeTag {
-    type Local: ?Sized + Pointee<Metadata = DynMetadata<Self::Local>>;
+    type Local: ?Sized + Pointee<Metadata=DynMetadata<Self::Local>>;
 }
 
 pub type WindowPeer = Arc<dyn window::Trait>;
