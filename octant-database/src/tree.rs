@@ -1,9 +1,9 @@
 use std::{
     fmt::{Debug, Formatter},
-    sync::{Arc, Weak},
+    sync::{Arc, OnceLock, Weak},
 };
 
-use parking_lot::{Once, OnceState, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{
     de::{DeserializeSeed, Error},
     ser::{SerializeSeq, SerializeStruct},
@@ -14,7 +14,7 @@ use crate::{
     arc::{arc_try_new_cyclic, ArcOrWeak},
     de::{DeserializeContext, DeserializeSnapshotSeed, DeserializeUpdate},
     dict::Dict,
-    forest::ForestState,
+    forest::{Forest, ForestState},
     ser::{SerializeUpdate, SerializeUpdateAdapter},
     util::{
         deserialize_pair::DeserializePair, option_seed::OptionSeed,
@@ -22,12 +22,16 @@ use crate::{
     },
 };
 
-#[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Copy, Clone, Serialize, Deserialize)]
 pub struct TreeId(u64);
 
-pub struct Tree {
+#[derive(Debug)]
+struct TreeHeader {
     id: TreeId,
-    written: Once,
+    forest: Weak<Forest>,
+}
+pub struct Tree {
+    header: OnceLock<TreeHeader>,
     state: RwLock<Dict>,
 }
 
@@ -38,15 +42,11 @@ impl TreeId {
 }
 
 impl Tree {
-    pub fn new(id: TreeId) -> Self {
-        Tree {
-            id,
-            written: Once::new(),
+    pub fn new() -> Arc<Self> {
+        Arc::new(Tree {
+            header: OnceLock::new(),
             state: RwLock::new(Dict::new()),
-        }
-    }
-    pub fn id(&self) -> TreeId {
-        self.id
+        })
     }
     pub(crate) fn write(&self) -> RwLockWriteGuard<Dict> {
         self.state.write()
@@ -65,7 +65,10 @@ impl Tree {
         s: &mut S,
         table: &mut ForestState,
     ) -> Result<(), S::Error> {
-        self.written.call_once(|| ());
+        let header = self.header.get_or_init(|| TreeHeader {
+            id: table.next_id(),
+            forest: table.get_arc(),
+        });
         let ref mut dict = *self
             .try_write()
             .expect("lock should succeed because global lock is held");
@@ -76,29 +79,31 @@ impl Tree {
                 value: B,
             }
             s.serialize_element(&Entry {
-                key: self.id(),
+                key: header.id,
                 value: Some(SerializeUpdateAdapter::new(dict, table)),
             })?;
             dict.end_update();
         }
         Ok(())
     }
-    pub fn is_written(&self) -> bool {
-        match self.written.state() {
-            OnceState::New => false,
-            OnceState::Poisoned => panic!(),
-            OnceState::InProgress => panic!(),
-            OnceState::Done => true,
-        }
+    pub(crate) fn mark_written(&self, forest: Weak<Forest>, id: TreeId) {
+        self.header.get_or_init(|| TreeHeader { id, forest });
+    }
+    pub(crate) fn is_written(&self) -> bool {
+        self.header.get().is_some()
     }
 }
 
 impl Debug for Tree {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Row")
-            .field("id", &self.id)
-            .field("state", &self.state)
-            .finish()
+        let mut f = f.debug_struct("Tree");
+        if let Some(header) = self.header.get() {
+            f.field("id", &header.id);
+        }
+        if let Some(state) = self.state.try_read() {
+            f.field("state", &*state);
+        }
+        f.finish()
     }
 }
 
@@ -114,10 +119,16 @@ impl SerializeUpdate for Arc<Tree> {
         state: &ForestState,
         s: S,
     ) -> Result<S::Ok, S::Error> {
-        let mut s = s.serialize_struct("Arc", 2)?;
-        s.serialize_field("id", &self.id())?;
         let mut new = false;
-        self.written.call_once(|| new = true);
+        let header = self.header.get_or_init(|| {
+            new = true;
+            TreeHeader {
+                id: state.next_id(),
+                forest: state.get_arc(),
+            }
+        });
+        let mut s = s.serialize_struct("Arc", 2)?;
+        s.serialize_field("id", &header.id)?;
         if new {
             s.serialize_field(
                 "value",
@@ -202,7 +213,15 @@ impl<'de> DeserializeUpdate<'de> for Arc<Tree> {
                         .ok_or_else(|| {
                             D::Error::custom("missing definition for uninitialized row")
                         })?;
-                        Ok(Tree::new(key))
+                        let tree = Tree {
+                            header: OnceLock::new(),
+                            state: RwLock::new(dict),
+                        };
+                        tree.header.get_or_init(|| TreeHeader {
+                            id: key,
+                            forest: table.get_arc(),
+                        });
+                        Ok(tree)
                     })?;
                     des.entries.insert(key, ArcOrWeak::Arc(row.clone()));
                     Ok(row)
@@ -239,5 +258,11 @@ impl<'de> DeserializeUpdate<'de> for Weak<Tree> {
     ) -> Result<(), D::Error> {
         *self = Self::deserialize_snapshot(table, d)?;
         Ok(())
+    }
+}
+
+impl Debug for TreeId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "${}", self.0)
     }
 }

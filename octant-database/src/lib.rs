@@ -8,6 +8,7 @@
 #![feature(new_uninit)]
 #![feature(never_type)]
 #![feature(unboxed_closures)]
+#![allow(dead_code)]
 
 mod arc;
 mod de;

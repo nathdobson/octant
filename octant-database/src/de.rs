@@ -1,4 +1,8 @@
-use std::{collections::HashMap, marker::PhantomData, sync::Arc};
+use std::{
+    collections::HashMap,
+    marker::PhantomData,
+    sync::{Arc, Weak},
+};
 
 use serde::{
     de::{DeserializeSeed, Error},
@@ -7,13 +11,13 @@ use serde::{
 
 use crate::{
     arc::ArcOrWeak,
+    forest::{Forest, ForestState},
     tree::{Tree, TreeId},
     util::{
         deserialize_item::DeserializeItem, deserialize_pair::DeserializePair,
         pair_struct_seed::PairStructSeed, seq_seed::SeqSeed,
     },
 };
-use crate::forest::ForestState;
 
 pub struct DeserializeForest {
     pub entries: HashMap<TreeId, ArcOrWeak<Tree>>,
@@ -46,11 +50,13 @@ pub trait DeserializeUpdate<'de>: Sized {
 }
 
 impl DeserializeForest {
-    pub fn new(_table: &ForestState, root: Arc<Tree>) -> Self {
+    pub fn new(forest: Weak<Forest>, root: Arc<Tree>) -> Self {
         let mut result = DeserializeForest {
             entries: HashMap::new(),
         };
-        result.entries.insert(root.id(), ArcOrWeak::Arc(root));
+        let id = TreeId::new(0);
+        root.mark_written(forest, id);
+        result.entries.insert(id, ArcOrWeak::Arc(root));
         result
     }
     pub fn deserialize_log<'de, D: Deserializer<'de>>(
@@ -135,9 +141,7 @@ impl<'a, T> DeserializeSnapshotSeed<'a, T> {
     }
 }
 
-impl<'a, 'de, T: DeserializeUpdate<'de>> DeserializeSeed<'de>
-    for DeserializeSnapshotSeed<'a, T>
-{
+impl<'a, 'de, T: DeserializeUpdate<'de>> DeserializeSeed<'de> for DeserializeSnapshotSeed<'a, T> {
     type Value = T;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>

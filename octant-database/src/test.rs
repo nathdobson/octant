@@ -1,13 +1,9 @@
-use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
+use std::{sync::Arc, thread, time::Duration};
 
 use parking_lot::deadlock;
 use serde_json::ser::PrettyFormatter;
 
-use crate::arc::ArcOrWeak;
-use crate::de::DeserializeForest;
-use crate::forest::Forest;
+use crate::{arc::ArcOrWeak, de::DeserializeForest, forest::Forest, tree::Tree};
 
 const EXPECTED: &str = r#"[
   {
@@ -29,23 +25,32 @@ const EXPECTED: &str = r#"[
   }
 ]"#;
 
+const EXPECTED_STATE: &str = r#"Tree {
+    id: $0,
+    state: {
+        "x": (Weak),
+        "y": Tree {
+            id: $1,
+            state: {},
+        },
+    },
+}"#;
+
 #[test]
 fn test_ser() {
-    thread::spawn(move || {
-        loop {
-            thread::sleep(Duration::from_secs(1));
-            let deadlocks = deadlock::check_deadlock();
-            if deadlocks.is_empty() {
-                continue;
-            }
+    thread::spawn(move || loop {
+        thread::sleep(Duration::from_secs(1));
+        let deadlocks = deadlock::check_deadlock();
+        if deadlocks.is_empty() {
+            continue;
+        }
 
-            println!("{} deadlocks detected", deadlocks.len());
-            for (i, threads) in deadlocks.iter().enumerate() {
-                println!("Deadlock #{}", i);
-                for t in threads {
-                    println!("Thread Id {:#?}", t.thread_id());
-                    println!("{:#?}", t.backtrace());
-                }
+        println!("{} deadlocks detected", deadlocks.len());
+        for (i, threads) in deadlocks.iter().enumerate() {
+            println!("Deadlock #{}", i);
+            for t in threads {
+                println!("Thread Id {:#?}", t.thread_id());
+                println!("{:#?}", t.backtrace());
             }
         }
     });
@@ -54,12 +59,12 @@ fn test_ser() {
     let root;
     {
         let table = table.read();
-        root = table.add();
+        root = Tree::new();
         table.enqueue(&root);
         {
             let mut root_lock = table.write(&root);
             root_lock.insert("x".to_string(), ArcOrWeak::Weak(Arc::downgrade(&root)));
-            root_lock.insert("y".to_string(), ArcOrWeak::Arc(table.add()));
+            root_lock.insert("y".to_string(), ArcOrWeak::Arc(Tree::new()));
         }
     }
     let mut data = vec![];
@@ -77,14 +82,14 @@ fn test_ser() {
 
 #[test]
 fn test_de() {
-    let table = Forest::new();
-    let mut read = table.write();
-    let root = read.add();
-    let mut de = DeserializeForest::new(&mut *read, root.clone());
+    let forest = Forest::new();
+    let mut read = forest.write();
+    let root = Tree::new();
+    let mut de = DeserializeForest::new(Arc::downgrade(&forest), root.clone());
     de.deserialize_log(
         &mut *read,
         &mut serde_json::Deserializer::new(serde_json::de::SliceRead::new(EXPECTED.as_bytes())),
     )
-        .unwrap();
-    panic!("{:#?}", root);
+    .unwrap();
+    assert_eq!(format!("{:#?}", root), EXPECTED_STATE);
 }

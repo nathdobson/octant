@@ -3,12 +3,11 @@ use crate::{
     tree::{Tree, TreeId},
 };
 use parking_lot::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use serde::Serializer;
+use serde::{ser::SerializeSeq, Serializer};
 use std::{
     mem,
     sync::{Arc, Weak},
 };
-use serde::ser::SerializeSeq;
 use weak_table::PtrWeakHashSet;
 
 struct ForestGlobalState {
@@ -17,6 +16,7 @@ struct ForestGlobalState {
 }
 
 pub struct ForestState {
+    this: Weak<Forest>,
     queue: Mutex<ForestGlobalState>,
 }
 
@@ -25,14 +25,14 @@ pub struct Forest {
 }
 
 impl ForestGlobalState {
-    fn try_enqueue(&mut self, row: &Arc<Tree>) {
+    fn enqueue(&mut self, row: &Arc<Tree>) {
         self.map.insert(row.clone());
     }
 }
 
 impl ForestState {
     pub fn enqueue<'b>(&self, row: &Arc<Tree>) {
-        self.queue.lock().try_enqueue(row);
+        self.queue.lock().enqueue(row);
     }
     pub fn serialize_log<S: Serializer>(&mut self, s: S) -> Result<S::Ok, S::Error> {
         let mut s = s.serialize_seq(None)?;
@@ -59,18 +59,22 @@ impl ForestState {
         }
         row.try_write()
     }
-    pub fn add(&self) -> Arc<Tree> {
-        let ref mut lock = *self.queue.lock();
-        let id = lock.next_id;
-        lock.next_id += 1;
-        Arc::new(Tree::new(TreeId::new(id)))
+    pub fn next_id(&self) -> TreeId {
+        let ref mut queue = *self.queue.lock();
+        let id = queue.next_id;
+        queue.next_id += 1;
+        TreeId::new(id)
+    }
+    pub fn get_arc(&self) -> Weak<Forest> {
+        self.this.clone()
     }
 }
 
 impl Forest {
     pub fn new() -> Arc<Self> {
-        let result = Arc::new(Forest {
+        let result = Arc::new_cyclic(|this| Forest {
             state: RwLock::new(ForestState {
+                this: this.clone(),
                 queue: Mutex::new(ForestGlobalState {
                     next_id: 0,
                     map: PtrWeakHashSet::new(),
@@ -86,5 +90,3 @@ impl Forest {
         self.state.write()
     }
 }
-
-

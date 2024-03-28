@@ -10,12 +10,11 @@ use serde::{
 };
 use std::{
     borrow::Cow,
-    fmt::Formatter,
+    fmt::{Debug, Formatter},
     panic::{catch_unwind, resume_unwind, AssertUnwindSafe},
     sync::{Arc, Weak},
 };
 
-#[derive(Debug)]
 pub enum ArcOrWeak<T: ?Sized> {
     Arc(Arc<T>),
     Weak(Weak<T>),
@@ -131,5 +130,14 @@ pub fn arc_try_new_cyclic<T, E>(
             }
         }
         Ok(x) => Ok(x),
+    }
+}
+
+impl<T: Debug> Debug for ArcOrWeak<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ArcOrWeak::Arc(x) => x.fmt(f),
+            ArcOrWeak::Weak(x) => x.fmt(f),
+        }
     }
 }
