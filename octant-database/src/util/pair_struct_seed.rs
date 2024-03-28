@@ -76,7 +76,7 @@ impl<'de, T: DeserializePair<'de>> Visitor<'de> for PairStructSeed<T> {
             .ok_or_else(|| self.missing(0))?;
         let ((), second) = map
             .next_entry_seed(
-                FieldKeySeed::new(self.fields[0]),
+                FieldKeySeed::new(self.fields[1]),
                 DeserializePairSecond::new(&mut self.inner, first),
             )?
             .ok_or_else(|| self.missing(1))?;

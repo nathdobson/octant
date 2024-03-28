@@ -12,7 +12,7 @@ use serde::{
 use crate::{
     arc::ArcOrWeak,
     de::{
-        DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate, DeserializeUpdateAdapter,
+        DeserializeContext, DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed,
     },
     tree::Tree,
     ser::{SerializeUpdate, SerializeUpdateAdapter},
@@ -113,12 +113,12 @@ impl<'de> DeserializeUpdate<'de> for Dict {
                 while let Some(key) = map.next_key::<String>()? {
                     match self.dict.entries.entry(key) {
                         Entry::Vacant(x) => {
-                            x.insert(map.next_value_seed(DeserializeSnapshotAdapter::new(
+                            x.insert(map.next_value_seed(DeserializeSnapshotSeed::new(
                                 self.table.reborrow(),
                             ))?);
                         }
                         Entry::Occupied(mut x) => map.next_value_seed(
-                            DeserializeUpdateAdapter::new(x.get_mut(), self.table.reborrow()),
+                            DeserializeUpdateSeed::new(x.get_mut(), self.table.reborrow()),
                         )?,
                     }
                 }

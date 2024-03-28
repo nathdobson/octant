@@ -5,23 +5,22 @@ use std::{
 
 use parking_lot::{Once, OnceState, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{
-    de::{DeserializeSeed, EnumAccess, VariantAccess, Visitor},
+    de::{DeserializeSeed, Error},
     ser::{SerializeSeq, SerializeStruct},
     Deserialize, Deserializer, Serialize, Serializer,
 };
 
 use crate::{
-    arc::ArcOrWeak,
-    de::{DeserializeContext, DeserializeSnapshotAdapter, DeserializeUpdate},
+    arc::{arc_try_new_cyclic, ArcOrWeak},
+    de::{DeserializeContext, DeserializeSnapshotSeed, DeserializeUpdate},
     dict::Dict,
+    forest::ForestState,
     ser::{SerializeUpdate, SerializeUpdateAdapter},
     util::{
         deserialize_pair::DeserializePair, option_seed::OptionSeed,
         pair_struct_seed::PairStructSeed,
     },
 };
-use crate::arc::arc_try_new_cyclic;
-use crate::forest::ForestState;
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct TreeId(u64);
@@ -39,12 +38,12 @@ impl TreeId {
 }
 
 impl Tree {
-    pub fn new(id: TreeId) -> Arc<Self> {
-        Arc::new(Tree {
+    pub fn new(id: TreeId) -> Self {
+        Tree {
             id,
             written: Once::new(),
             state: RwLock::new(Dict::new()),
-        })
+        }
     }
     pub fn id(&self) -> TreeId {
         self.id
@@ -91,86 +90,6 @@ impl Tree {
             OnceState::InProgress => panic!(),
             OnceState::Done => true,
         }
-    }
-}
-
-impl SerializeUpdate for ArcOrWeak<Tree> {
-    fn begin_stream(&mut self) {}
-
-    fn begin_update(&mut self) -> bool {
-        true
-    }
-
-    fn serialize_update<S: Serializer>(
-        &self,
-        state: &ForestState,
-        s: S,
-    ) -> Result<S::Ok, S::Error> {
-        match self {
-            ArcOrWeak::Arc(x) => s.serialize_newtype_variant(
-                "ArcOrWeak",
-                0,
-                "Arc",
-                &SerializeUpdateAdapter::new(x, state),
-            ),
-            ArcOrWeak::Weak(x) => s.serialize_newtype_variant(
-                "ArcOrWeak",
-                0,
-                "Weak",
-                &SerializeUpdateAdapter::new(x, state),
-            ),
-        }
-    }
-
-    fn end_update(&mut self) {
-        todo!()
-    }
-}
-
-impl<'de> DeserializeUpdate<'de> for ArcOrWeak<Tree> {
-    fn deserialize_snapshot<D: Deserializer<'de>>(
-        table: DeserializeContext,
-        d: D,
-    ) -> Result<Self, D::Error> {
-        #[derive(Deserialize)]
-        enum Tag {
-            Arc,
-            Weak,
-        }
-        struct V<'a> {
-            table: DeserializeContext<'a>,
-        }
-        impl<'a, 'de> Visitor<'de> for V<'a> {
-            type Value = ArcOrWeak<Tree>;
-
-            fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
-            where
-                A: EnumAccess<'de>,
-            {
-                let (tag, access) = data.variant::<Tag>()?;
-                match tag {
-                    Tag::Arc => Ok(ArcOrWeak::Arc(
-                        access.newtype_variant_seed(DeserializeSnapshotAdapter::new(self.table))?,
-                    )),
-                    Tag::Weak => Ok(ArcOrWeak::Weak(
-                        access.newtype_variant_seed(DeserializeSnapshotAdapter::new(self.table))?,
-                    )),
-                }
-            }
-            fn expecting(&self, _formatter: &mut Formatter) -> std::fmt::Result {
-                todo!()
-            }
-        }
-        d.deserialize_enum("ArcOrWeak", &["Weak", "Arc"], V { table })
-    }
-
-    fn deserialize_update<D: Deserializer<'de>>(
-        &mut self,
-        _table: DeserializeContext,
-        _d: D,
-    ) -> Result<(), D::Error> {
-        // d.deserialize_
-        todo!()
     }
 }
 
@@ -270,15 +189,20 @@ impl<'de> DeserializeUpdate<'de> for Arc<Tree> {
                 let des = &mut *self.table.des;
                 if let Some(x) = des.entries.get(&key) {
                     Option::<!>::deserialize(d)?;
-                    Ok(x.upgrade_cow().expect("uninitialized row").into_owned())
+                    Ok(x.upgrade_cow()
+                        .expect("received update for weak row")
+                        .into_owned())
                 } else {
                     let row = arc_try_new_cyclic(|row: &Weak<Tree>| {
                         des.entries.insert(key, ArcOrWeak::Weak(row.clone()));
-                        let _dict = OptionSeed::new(DeserializeSnapshotAdapter::<Dict>::new(
+                        let dict = OptionSeed::new(DeserializeSnapshotSeed::<Dict>::new(
                             DeserializeContext { table, des },
                         ))
-                        .deserialize(d)?;
-                        todo!();
+                        .deserialize(d)?
+                        .ok_or_else(|| {
+                            D::Error::custom("missing definition for uninitialized row")
+                        })?;
+                        Ok(Tree::new(key))
                     })?;
                     des.entries.insert(key, ArcOrWeak::Arc(row.clone()));
                     Ok(row)
@@ -303,7 +227,9 @@ impl<'de> DeserializeUpdate<'de> for Weak<Tree> {
         table: DeserializeContext,
         d: D,
     ) -> Result<Self, D::Error> {
-        Ok(Arc::downgrade(&Arc::<Tree>::deserialize_snapshot(table, d)?))
+        Ok(Arc::downgrade(&Arc::<Tree>::deserialize_snapshot(
+            table, d,
+        )?))
     }
 
     fn deserialize_update<D: Deserializer<'de>>(

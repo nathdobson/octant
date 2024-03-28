@@ -15,13 +15,13 @@ use crate::{
 };
 use crate::forest::ForestState;
 
-pub struct DeserializeTable {
+pub struct DeserializeForest {
     pub entries: HashMap<TreeId, ArcOrWeak<Tree>>,
 }
 
 pub struct DeserializeContext<'t> {
     pub table: &'t ForestState,
-    pub des: &'t mut DeserializeTable,
+    pub des: &'t mut DeserializeForest,
 }
 
 impl<'t> DeserializeContext<'t> {
@@ -45,9 +45,9 @@ pub trait DeserializeUpdate<'de>: Sized {
     ) -> Result<(), D::Error>;
 }
 
-impl DeserializeTable {
+impl DeserializeForest {
     pub fn new(_table: &ForestState, root: Arc<Tree>) -> Self {
-        let mut result = DeserializeTable {
+        let mut result = DeserializeForest {
             entries: HashMap::new(),
         };
         result.entries.insert(root.id(), ArcOrWeak::Arc(root));
@@ -105,49 +105,18 @@ impl DeserializeTable {
                 Ok(())
             }
         }
-        // return MapCombinator::new(LogMap(self)).deserialize(d);
-        //
-        // struct LogMap<'a, 't>(&'a mut DeserializeTable<'t>);
-        // impl<'a, 'de, 't> DeserializeEntry<'de> for LogMap<'a, 't> {
-        //     type Key = RowId;
-        //     type Value = ();
-        //
-        //     fn deserialize_key<D: Deserializer<'de>>(
-        //         &mut self,
-        //         d: D,
-        //     ) -> Result<Self::Key, D::Error> {
-        //         RowId::deserialize(d)
-        //     }
-        //
-        //     fn deserialize_value<D: Deserializer<'de>>(
-        //         &mut self,
-        //         key: Self::Key,
-        //         value: D,
-        //     ) -> Result<Self::Value, D::Error> {
-        //         let row = self
-        //             .0
-        //             .entries
-        //             .entry(key)
-        //             .or_insert_with(|| self.0.table.add());
-        //         self.0
-        //             .table
-        //             .write(row)
-        //             .deserialize_update(&self.0.table, value)?;
-        //         Ok(())
-        //     }
-        // }
     }
 }
 
-pub struct DeserializeUpdateAdapter<'a, T>(&'a mut T, DeserializeContext<'a>);
+pub struct DeserializeUpdateSeed<'a, T>(&'a mut T, DeserializeContext<'a>);
 
-impl<'a, T> DeserializeUpdateAdapter<'a, T> {
+impl<'a, T> DeserializeUpdateSeed<'a, T> {
     pub fn new(x: &'a mut T, table: DeserializeContext<'a>) -> Self {
-        DeserializeUpdateAdapter(x, table)
+        DeserializeUpdateSeed(x, table)
     }
 }
 
-impl<'a, 'de, T: DeserializeUpdate<'de>> DeserializeSeed<'de> for DeserializeUpdateAdapter<'a, T> {
+impl<'a, 'de, T: DeserializeUpdate<'de>> DeserializeSeed<'de> for DeserializeUpdateSeed<'a, T> {
     type Value = ();
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -158,16 +127,16 @@ impl<'a, 'de, T: DeserializeUpdate<'de>> DeserializeSeed<'de> for DeserializeUpd
     }
 }
 
-pub struct DeserializeSnapshotAdapter<'a, T>(DeserializeContext<'a>, PhantomData<T>);
+pub struct DeserializeSnapshotSeed<'a, T>(DeserializeContext<'a>, PhantomData<T>);
 
-impl<'a, T> DeserializeSnapshotAdapter<'a, T> {
+impl<'a, T> DeserializeSnapshotSeed<'a, T> {
     pub fn new(table: DeserializeContext<'a>) -> Self {
-        DeserializeSnapshotAdapter(table, PhantomData)
+        DeserializeSnapshotSeed(table, PhantomData)
     }
 }
 
 impl<'a, 'de, T: DeserializeUpdate<'de>> DeserializeSeed<'de>
-    for DeserializeSnapshotAdapter<'a, T>
+    for DeserializeSnapshotSeed<'a, T>
 {
     type Value = T;
 

@@ -6,7 +6,7 @@ use parking_lot::deadlock;
 use serde_json::ser::PrettyFormatter;
 
 use crate::arc::ArcOrWeak;
-use crate::de::DeserializeTable;
+use crate::de::DeserializeForest;
 use crate::forest::Forest;
 
 const EXPECTED: &str = r#"[
@@ -80,7 +80,7 @@ fn test_de() {
     let table = Forest::new();
     let mut read = table.write();
     let root = read.add();
-    let mut de = DeserializeTable::new(&mut *read, root.clone());
+    let mut de = DeserializeForest::new(&mut *read, root.clone());
     de.deserialize_log(
         &mut *read,
         &mut serde_json::Deserializer::new(serde_json::de::SliceRead::new(EXPECTED.as_bytes())),

@@ -63,7 +63,7 @@ impl ForestState {
         let ref mut lock = *self.queue.lock();
         let id = lock.next_id;
         lock.next_id += 1;
-        Tree::new(TreeId::new(id))
+        Arc::new(Tree::new(TreeId::new(id)))
     }
 }
 
