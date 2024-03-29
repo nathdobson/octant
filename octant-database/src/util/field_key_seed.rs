@@ -1,8 +1,9 @@
+use std::fmt::Formatter;
+
 use serde::{
     de::{DeserializeSeed, Error, Visitor},
     Deserializer,
 };
-use std::fmt::Formatter;
 
 pub struct FieldKeySeed(&'static str);
 

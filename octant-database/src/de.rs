@@ -1,17 +1,10 @@
-use std::{
-    collections::HashMap,
-    marker::PhantomData,
-    sync::{Arc, Weak},
-};
+use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
-use serde::{
-    de::{DeserializeSeed, Error},
-    Deserialize, Deserializer,
-};
+use serde::{de::DeserializeSeed, Deserialize, Deserializer};
 
 use crate::{
     arc::ArcOrWeak,
-    forest::{Forest, ForestState},
+    forest::ForestState,
     tree::{Tree, TreeId},
     util::{
         deserialize_item::DeserializeItem, deserialize_pair::DeserializePair,
@@ -50,16 +43,19 @@ pub trait DeserializeUpdate<'de>: Sized {
 }
 
 impl DeserializeForest {
-    pub fn new(forest: Weak<Forest>, root: Arc<Tree>) -> Self {
-        let mut result = DeserializeForest {
+    pub fn new() -> Self {
+        DeserializeForest {
             entries: HashMap::new(),
-        };
-        let id = TreeId::new(0);
-        root.mark_written(forest, id);
-        result.entries.insert(id, ArcOrWeak::Arc(root));
-        result
+        }
     }
-    pub fn deserialize_log<'de, D: Deserializer<'de>>(
+    pub fn deserialize_snapshot<'de, D: Deserializer<'de>>(
+        &mut self,
+        table: &ForestState,
+        d: D,
+    ) -> Result<Arc<Tree>, D::Error> {
+        Arc::<Tree>::deserialize_snapshot(DeserializeContext { table, des: self }, d)
+    }
+    pub fn deserialize_update<'de, D: Deserializer<'de>>(
         &mut self,
         table: &ForestState,
         d: D,
@@ -91,23 +87,15 @@ impl DeserializeForest {
                 first: Self::First,
                 d: D,
             ) -> Result<Self::Second, D::Error> {
-                let row = self
-                    .0
-                    .des
-                    .entries
-                    .get(&first)
-                    .ok_or_else(|| {
-                        D::Error::custom(format!("received update for unknown row {:?}", first))
-                    })?
-                    .upgrade_cow()
-                    .expect("uninitialized row")
-                    .into_owned();
                 let table = &*self.0.table;
                 let des = &mut *self.0.des;
-                self.0
-                    .table
-                    .write(&row)
-                    .deserialize_update(DeserializeContext { table, des }, d)?;
+
+                if let Some(row) = des.entries.get(&first) {
+                    let row = row.upgrade_cow().expect("uninitialized row").into_owned();
+                    table
+                        .write(&row)
+                        .deserialize_update(DeserializeContext { table, des }, d)?;
+                }
                 Ok(())
             }
         }

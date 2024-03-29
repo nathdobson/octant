@@ -1,12 +1,14 @@
-use crate::util::{
-    deserialize_pair::{DeserializePair, DeserializePairFirst, DeserializePairSecond},
-    field_key_seed::FieldKeySeed,
-};
+use std::fmt::Formatter;
+
 use serde::{
     de::{DeserializeSeed, Error, MapAccess, SeqAccess, Visitor},
     Deserializer,
 };
-use std::fmt::Formatter;
+
+use crate::util::{
+    deserialize_pair::{DeserializePair, DeserializePairFirst, DeserializePairSecond},
+    field_key_seed::FieldKeySeed,
+};
 
 pub struct PairStructSeed<T> {
     name: &'static str,

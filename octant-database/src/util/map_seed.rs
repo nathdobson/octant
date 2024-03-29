@@ -1,10 +1,11 @@
 use std::{fmt::Formatter, marker::PhantomData};
 
-use crate::util::deserialize_pair::{DeserializePair, DeserializePairFirst, DeserializePairSecond};
 use serde::{
     de::{DeserializeSeed, MapAccess, Visitor},
     Deserializer,
 };
+
+use crate::util::deserialize_pair::{DeserializePair, DeserializePairFirst, DeserializePairSecond};
 
 pub struct MapSeed<T, O>(T, PhantomData<O>);
 

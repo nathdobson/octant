@@ -6,7 +6,7 @@ use std::{
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{
     de::{DeserializeSeed, Error},
-    ser::{SerializeSeq, SerializeStruct},
+    ser::{SerializeMap, SerializeStruct},
     Deserialize, Deserializer, Serialize, Serializer,
 };
 
@@ -60,7 +60,7 @@ impl Tree {
     pub(crate) fn try_read(&self) -> Option<RwLockReadGuard<Dict>> {
         self.state.try_read()
     }
-    pub fn serialize_tree<S: SerializeSeq>(
+    pub fn serialize_tree<S: SerializeMap>(
         &self,
         s: &mut S,
         table: &mut ForestState,
@@ -73,15 +73,7 @@ impl Tree {
             .try_write()
             .expect("lock should succeed because global lock is held");
         if dict.begin_update() {
-            #[derive(Serialize)]
-            struct Entry<A, B> {
-                key: A,
-                value: B,
-            }
-            s.serialize_element(&Entry {
-                key: header.id,
-                value: Some(SerializeUpdateAdapter::new(dict, table)),
-            })?;
+            s.serialize_entry(&header.id, &SerializeUpdateAdapter::new(dict, table))?;
             dict.end_update();
         }
         Ok(())
@@ -201,7 +193,9 @@ impl<'de> DeserializeUpdate<'de> for Arc<Tree> {
                 if let Some(x) = des.entries.get(&key) {
                     Option::<!>::deserialize(d)?;
                     Ok(x.upgrade_cow()
-                        .expect("received update for weak row")
+                        .ok_or_else(|| {
+                            D::Error::custom(format_args!("received update for weak row {:?}", key))
+                        })?
                         .into_owned())
                 } else {
                     let row = arc_try_new_cyclic(|row: &Weak<Tree>| {

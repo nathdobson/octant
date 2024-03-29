@@ -1,18 +1,20 @@
+use std::{
+    borrow::Cow,
+    fmt::{Debug, Formatter},
+    panic::{AssertUnwindSafe, catch_unwind, resume_unwind},
+    sync::{Arc, Weak},
+};
+
+use serde::{
+    de::{EnumAccess, VariantAccess, Visitor},
+    Deserialize, Deserializer, Serializer,
+};
+
 use crate::{
     de::{DeserializeContext, DeserializeSnapshotSeed, DeserializeUpdate},
     forest::ForestState,
     ser::{SerializeUpdate, SerializeUpdateAdapter},
     tree::Tree,
-};
-use serde::{
-    de::{EnumAccess, VariantAccess, Visitor},
-    Deserialize, Deserializer, Serializer,
-};
-use std::{
-    borrow::Cow,
-    fmt::{Debug, Formatter},
-    panic::{catch_unwind, resume_unwind, AssertUnwindSafe},
-    sync::{Arc, Weak},
 };
 
 pub enum ArcOrWeak<T: ?Sized> {
@@ -117,7 +119,7 @@ pub fn arc_try_new_cyclic<T, E>(
         Arc::new_cyclic(|x| match f(x) {
             Err(e) => {
                 err = Some(e);
-                panic!("unwinding from failed arc");
+                resume_unwind(Box::new("arc_try_new_cyclic internal panic"));
             }
             Ok(x) => x,
         })

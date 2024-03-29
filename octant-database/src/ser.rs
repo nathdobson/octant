@@ -1,6 +1,6 @@
 use serde::{Serialize, Serializer};
-use crate::forest::ForestState;
 
+use crate::forest::ForestState;
 
 pub trait SerializeUpdate {
     fn begin_stream(&mut self);

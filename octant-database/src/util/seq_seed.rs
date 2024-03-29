@@ -1,10 +1,11 @@
 use std::{fmt::Formatter, marker::PhantomData};
 
-use crate::util::deserialize_item::DeserializeItem;
 use serde::{
     de::{DeserializeSeed, SeqAccess, Visitor},
     Deserializer,
 };
+
+use crate::util::deserialize_item::DeserializeItem;
 
 pub struct SeqSeed<T, O>(T, PhantomData<O>);
 

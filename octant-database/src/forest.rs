@@ -1,18 +1,22 @@
-use crate::{
-    dict::Dict,
-    tree::{Tree, TreeId},
-};
-use parking_lot::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use serde::{ser::SerializeSeq, Serializer};
 use std::{
     mem,
     sync::{Arc, Weak},
 };
+
+use parking_lot::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use serde::{ser::SerializeMap, Serializer};
 use weak_table::PtrWeakHashSet;
+
+use crate::{
+    dict::Dict,
+    ser::SerializeUpdate,
+    tree::{Tree, TreeId},
+};
 
 struct ForestGlobalState {
     next_id: u64,
-    map: PtrWeakHashSet<Weak<Tree>>,
+    snapshot_queue: Option<Arc<Tree>>,
+    update_queue: PtrWeakHashSet<Weak<Tree>>,
 }
 
 pub struct ForestState {
@@ -25,21 +29,35 @@ pub struct Forest {
 }
 
 impl ForestGlobalState {
-    fn enqueue(&mut self, row: &Arc<Tree>) {
-        self.map.insert(row.clone());
+    fn enqueue_snapshot(&mut self, root: Arc<Tree>) {
+        self.snapshot_queue = Some(root);
+    }
+    fn enqueue_update(&mut self, row: &Arc<Tree>) {
+        self.update_queue.insert(row.clone());
     }
 }
 
 impl ForestState {
-    pub fn enqueue<'b>(&self, row: &Arc<Tree>) {
-        self.queue.lock().enqueue(row);
+    pub fn enqueue_update<'b>(&self, row: &Arc<Tree>) {
+        self.queue.lock().enqueue_update(row);
     }
-    pub fn serialize_log<S: Serializer>(&mut self, s: S) -> Result<S::Ok, S::Error> {
-        let mut s = s.serialize_seq(None)?;
-        for row in mem::replace(&mut self.queue.get_mut().map, PtrWeakHashSet::new()) {
-            row.serialize_tree(&mut s, self)?;
+    pub fn enqueue_snapshot<'b>(&self, row: Arc<Tree>) {
+        self.queue.lock().enqueue_snapshot(row);
+    }
+    pub fn serialize_update<S: Serializer>(&mut self, s: S) -> Result<S::Ok, S::Error> {
+        if let Some(snapshot) = self.queue.get_mut().snapshot_queue.take() {
+            self.queue.get_mut().update_queue.clear();
+            snapshot.serialize_update(self, s)
+        } else {
+            let mut s = s.serialize_map(None)?;
+            for row in mem::replace(
+                &mut self.queue.get_mut().update_queue,
+                PtrWeakHashSet::new(),
+            ) {
+                row.serialize_tree(&mut s, self)?;
+            }
+            s.end()
         }
-        s.end()
     }
     pub fn read<'b>(&'b self, row: &'b Arc<Tree>) -> RwLockReadGuard<'b, Dict> {
         row.read()
@@ -49,13 +67,13 @@ impl ForestState {
     }
     pub fn write<'b>(&'b self, row: &'b Arc<Tree>) -> RwLockWriteGuard<'b, Dict> {
         if row.is_written() {
-            self.queue.lock().map.insert(row.clone());
+            self.queue.lock().update_queue.insert(row.clone());
         }
         row.write()
     }
     pub fn try_write<'b>(&'b self, row: &'b Arc<Tree>) -> Option<RwLockWriteGuard<'b, Dict>> {
         if row.is_written() {
-            self.queue.lock().map.insert(row.clone());
+            self.queue.lock().update_queue.insert(row.clone());
         }
         row.try_write()
     }
@@ -77,7 +95,8 @@ impl Forest {
                 this: this.clone(),
                 queue: Mutex::new(ForestGlobalState {
                     next_id: 0,
-                    map: PtrWeakHashSet::new(),
+                    snapshot_queue: None,
+                    update_queue: PtrWeakHashSet::new(),
                 }),
             }),
         });

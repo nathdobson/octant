@@ -5,8 +5,8 @@ use std::{
 
 use serde::{
     de::{DeserializeSeed, MapAccess, Visitor},
-    ser::SerializeMap,
-    Deserialize, Deserializer, Serializer,
+    Deserialize,
+    Deserializer, ser::SerializeMap, Serializer,
 };
 
 use crate::{
@@ -14,8 +14,8 @@ use crate::{
     de::{
         DeserializeContext, DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed,
     },
-    tree::Tree,
     ser::{SerializeUpdate, SerializeUpdateAdapter},
+    tree::Tree,
     util::{deserialize_pair::DeserializePair, map_seed::MapSeed},
 };
 use crate::forest::ForestState;
