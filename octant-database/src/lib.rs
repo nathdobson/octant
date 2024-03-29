@@ -8,6 +8,7 @@
 #![feature(new_uninit)]
 #![feature(never_type)]
 #![feature(unboxed_closures)]
+#![feature(dispatch_from_dyn)]
 #![allow(dead_code)]
 
 mod arc;
@@ -20,3 +21,4 @@ pub mod tack;
 mod test;
 mod util;
 mod forest;
+mod unique_arc;
