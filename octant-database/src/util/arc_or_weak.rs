@@ -60,7 +60,10 @@ impl SerializeUpdate for ArcOrWeak<Tree> {
     }
 
     fn end_update(&mut self) {
-        todo!()
+        match self {
+            ArcOrWeak::Arc(x) => x.end_update(),
+            ArcOrWeak::Weak(x) => x.end_update(),
+        }
     }
 }
 

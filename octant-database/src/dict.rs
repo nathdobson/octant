@@ -100,7 +100,7 @@ impl<'de> DeserializeUpdate<'de> for Dict {
             fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
                 write!(f, "map")
             }
-            fn visit_map<A>(mut self, mut map: A) -> Result<Self::Value, A::Error>
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
             where
                 A: MapAccess<'de>,
             {
@@ -190,7 +190,14 @@ impl SerializeUpdate for Dict {
 
     fn end_update(&mut self) {
         if let Some(modified) = &mut self.modified {
+            for x in modified.iter() {
+                if let Some(x) = self.entries.get_mut(x) {
+                    x.end_update();
+                }
+            }
             modified.clear();
+        } else {
+            self.modified = Some(HashSet::new());
         }
     }
 }

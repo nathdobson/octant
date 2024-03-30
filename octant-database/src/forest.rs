@@ -45,9 +45,12 @@ impl ForestState {
         self.queue.lock().enqueue_snapshot(row);
     }
     pub fn serialize_update<S: Serializer>(&mut self, s: S) -> Result<S::Ok, S::Error> {
-        if let Some(snapshot) = self.queue.get_mut().snapshot_queue.take() {
+        if let Some(mut snapshot) = self.queue.get_mut().snapshot_queue.take() {
             self.queue.get_mut().update_queue.clear();
-            snapshot.serialize_update(self, s)
+            assert!(snapshot.begin_update());
+            let result = snapshot.serialize_update(self, s)?;
+            snapshot.end_update();
+            Ok(result)
         } else {
             let mut s = s.serialize_map(None)?;
             for row in mem::replace(
@@ -102,8 +105,8 @@ impl Forest {
         });
         result
     }
-    pub fn with_root(root:Arc<Tree>)->Arc<Self>{
-        let this=Self::new();
+    pub fn with_root(root: Arc<Tree>) -> Arc<Self> {
+        let this = Self::new();
         this.state.write().enqueue_snapshot(root);
         this
     }

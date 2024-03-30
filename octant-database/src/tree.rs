@@ -119,22 +119,19 @@ impl SerializeUpdate for Arc<Tree> {
         let mut s = s.serialize_struct("Arc", 2)?;
         s.serialize_field("id", &id)?;
         if new {
-            s.serialize_field(
-                "value",
-                &Some(SerializeUpdateAdapter::new(
-                    &*state.try_read(self).expect("global lock should be held"),
-                    state,
-                )),
-            )?;
+            let mut lock = state
+                .try_write(self)
+                .expect("Could not lock tree for serialization. Is there an Arc cycle?");
+            assert!(lock.begin_update());
+            s.serialize_field("value", &Some(SerializeUpdateAdapter::new(&*lock, state)))?;
+            lock.end_update();
         } else {
             s.serialize_field("value", &Option::<()>::None)?;
         }
         s.end()
     }
 
-    fn end_update(&mut self) {
-        todo!()
-    }
+    fn end_update(&mut self) {}
 }
 
 impl SerializeUpdate for Weak<Tree> {
@@ -156,9 +153,7 @@ impl SerializeUpdate for Weak<Tree> {
         }
     }
 
-    fn end_update(&mut self) {
-        todo!()
-    }
+    fn end_update(&mut self) {}
 }
 
 impl<'de> DeserializeUpdate<'de> for Arc<Tree> {

@@ -6,22 +6,16 @@ use serde::{
 };
 
 use crate::{
-    forest::ForestState,
     tree::{Tree, TreeId},
     util::{
-        arc_or_empty::ArcOrEmpty, deserialize_item::DeserializeItem,
-        deserialize_pair::DeserializePair, pair_struct_seed::PairStructSeed, seq_seed::SeqSeed,
+        arc_or_empty::ArcOrEmpty,
+        deserialize_pair::DeserializePair, map_seed::MapSeed,
     },
 };
 
 pub struct DeserializeForest {
     pub entries: HashMap<TreeId, ArcOrEmpty<Tree>>,
 }
-
-// pub struct DeserializeContext<'t> {
-//     // pub forest: &'t ForestState,
-//     pub des: &'t mut DeserializeForest,
-// }
 
 pub trait DeserializeUpdate<'de>: Sized {
     fn deserialize_snapshot<D: Deserializer<'de>>(
@@ -48,18 +42,9 @@ impl DeserializeForest {
         Arc::<Tree>::deserialize_snapshot(self, d)
     }
     pub fn deserialize_update<'de, D: Deserializer<'de>>(&mut self, d: D) -> Result<(), D::Error> {
-        return SeqSeed::new(LogSeq(self)).deserialize(d);
-        struct LogSeq<'a>(&'a mut DeserializeForest);
-        impl<'a, 'de, 't> DeserializeItem<'de> for LogSeq<'a> {
-            type Value = ();
-
-            fn deserialize<D: Deserializer<'de>>(&mut self, d: D) -> Result<Self::Value, D::Error> {
-                PairStructSeed::new("Entry", &["key", "value"], LogEntry(self.0))
-                    .deserialize(d)
-            }
-        }
-        struct LogEntry<'a>(&'a mut DeserializeForest);
-        impl<'a, 't, 'de> DeserializePair<'de> for LogEntry<'a> {
+        return MapSeed::new(LogMap(self)).deserialize(d);
+        struct LogMap<'a>(&'a mut DeserializeForest);
+        impl<'a, 't, 'de> DeserializePair<'de> for LogMap<'a> {
             type First = TreeId;
             type Second = ();
 
