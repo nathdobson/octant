@@ -24,7 +24,9 @@ const EXPECTED: &str = r#"{
 const EXPECTED_STATE: &str = r#"Tree {
     id: $0,
     state: {
-        "x": (Weak),
+        "x": Weak(
+            $0,
+        ),
         "y": Tree {
             id: $1,
             state: {},
@@ -68,4 +70,3 @@ fn test_de() {
         .unwrap();
     assert_eq!(format!("{:#?}", root), EXPECTED_STATE);
 }
-

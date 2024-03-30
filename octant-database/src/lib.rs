@@ -9,6 +9,7 @@
 #![feature(never_type)]
 #![feature(unboxed_closures)]
 #![feature(dispatch_from_dyn)]
+#![feature(debug_closure_helpers)]
 #![allow(dead_code)]
 
 mod de;

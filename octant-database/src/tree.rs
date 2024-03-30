@@ -1,4 +1,5 @@
 use std::{
+    fmt,
     fmt::{Debug, Formatter},
     sync::{Arc, OnceLock, Weak},
 };
@@ -76,6 +77,12 @@ impl Tree {
         if dict.begin_update() {
             s.serialize_entry(&id, &SerializeUpdateAdapter::new(dict, table))?;
             dict.end_update();
+        }
+        Ok(())
+    }
+    pub fn fmt_weak(&self, f: &mut Formatter) -> fmt::Result {
+        if let Some(id) = self.id.get() {
+            Debug::fmt(id, f)?;
         }
         Ok(())
     }
@@ -189,11 +196,12 @@ impl<'de> DeserializeUpdate<'de> for Arc<Tree> {
                         Ok(v.clone())
                     }
                     ArcOrEmpty::Empty(_) => {
-                        let dict = OptionSeed::new(DeserializeSnapshotSeed::<Dict>::new(self.forest))
-                            .deserialize(d)?
-                            .ok_or_else(|| {
-                                D::Error::custom("missing definition for uninitialized row")
-                            })?;
+                        let dict =
+                            OptionSeed::new(DeserializeSnapshotSeed::<Dict>::new(self.forest))
+                                .deserialize(d)?
+                                .ok_or_else(|| {
+                                    D::Error::custom("missing definition for uninitialized row")
+                                })?;
                         match self.forest.entries.remove(&key).unwrap() {
                             ArcOrEmpty::Arc(_) => unreachable!(),
                             ArcOrEmpty::Empty(v) => {

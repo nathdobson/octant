@@ -76,10 +76,7 @@ impl<'de> DeserializeUpdate<'de> for Dict {
                 key: Self::First,
                 value: D,
             ) -> Result<Self::Second, D::Error> {
-                Ok((
-                    key,
-                    ArcOrWeak::deserialize_snapshot(self.forest, value)?,
-                ))
+                Ok((key, ArcOrWeak::deserialize_snapshot(self.forest, value)?))
             }
         }
         Ok(Dict {
@@ -110,9 +107,9 @@ impl<'de> DeserializeUpdate<'de> for Dict {
                 while let Some(key) = map.next_key::<String>()? {
                     match self.dict.entries.entry(key) {
                         Entry::Vacant(x) => {
-                            x.insert(map.next_value_seed(DeserializeSnapshotSeed::new(
-                                self.forest,
-                            ))?);
+                            x.insert(
+                                map.next_value_seed(DeserializeSnapshotSeed::new(self.forest))?,
+                            );
                         }
                         Entry::Occupied(mut x) => map.next_value_seed(
                             DeserializeUpdateSeed::new(x.get_mut(), self.forest),
@@ -130,7 +127,25 @@ impl Debug for Dict {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut m = f.debug_map();
         for (k, v) in self.entries.iter() {
-            m.entry(k, v);
+            m.key(k);
+            m.value_with(|f| {
+                match v {
+                    ArcOrWeak::Arc(x) => {
+                        Debug::fmt(x, f)?;
+                    }
+                    ArcOrWeak::Weak(x) => {
+                        f.debug_tuple("Weak")
+                            .field_with(|f| {
+                                if let Some(x) = x.upgrade() {
+                                    x.fmt_weak(f)?;
+                                }
+                                Ok(())
+                            })
+                            .finish()?;
+                    }
+                }
+                Ok(())
+            });
         }
         m.finish()
     }
