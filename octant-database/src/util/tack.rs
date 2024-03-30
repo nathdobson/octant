@@ -8,9 +8,6 @@ pub struct Tack<'a, T: ?Sized>(&'a mut T);
 pub auto trait Untack {}
 
 impl<'a, T: ?Sized + Untack> Tack<'a, T> {
-    // pub fn new(p: &'a mut T) -> Self {
-    //     Tack(p)
-    // }
     pub fn into_inner(self) -> &'a mut T {
         self.0
     }

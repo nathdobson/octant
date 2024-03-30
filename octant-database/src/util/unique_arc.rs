@@ -118,14 +118,14 @@ impl Drop for AssertDropped {
 #[test]
 fn test_without_arc() {
     let mut assert = AssertDropped::new();
-    let x = UniqueArc::new(assert.check());
+    let _x = UniqueArc::new(assert.check());
 }
 
 #[test]
 fn test_with_arc() {
     let mut assert = AssertDropped::new();
     let x = UniqueArc::new(assert.check());
-    let x = x.into_arc();
+    let _x = x.into_arc();
 }
 
 #[test]
@@ -133,13 +133,13 @@ fn test_with_weak() {
     let mut assert = AssertDropped::new();
     let x = UniqueArc::new(assert.check());
     let w = UniqueArc::downgrade(&x);
-    let x = x.into_arc();
+    let _x = x.into_arc();
     mem::drop(w);
 }
 
 #[test]
 fn test_uninit() {
-    let x = UniqueArc::<MaybeUninit<MustDrop>>::new_uninit();
+    let _x = UniqueArc::<MaybeUninit<MustDrop>>::new_uninit();
 }
 
 #[test]

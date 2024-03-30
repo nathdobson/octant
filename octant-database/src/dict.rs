@@ -5,20 +5,17 @@ use std::{
 
 use serde::{
     de::{DeserializeSeed, MapAccess, Visitor},
-    Deserialize,
-    Deserializer, ser::SerializeMap, Serializer,
+    ser::SerializeMap,
+    Deserialize, Deserializer, Serializer,
 };
 
 use crate::{
-    arc::ArcOrWeak,
-    de::{
-        DeserializeContext, DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed,
-    },
+    de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed},
+    forest::ForestState,
     ser::{SerializeUpdate, SerializeUpdateAdapter},
     tree::Tree,
-    util::{deserialize_pair::DeserializePair, map_seed::MapSeed},
+    util::{arc_or_weak::ArcOrWeak, deserialize_pair::DeserializePair, map_seed::MapSeed},
 };
-use crate::forest::ForestState;
 
 pub struct Dict {
     entries: BTreeMap<String, ArcOrWeak<Tree>>,
@@ -57,11 +54,11 @@ impl Dict {
 
 impl<'de> DeserializeUpdate<'de> for Dict {
     fn deserialize_snapshot<D: Deserializer<'de>>(
-        table: DeserializeContext,
+        forest: &mut DeserializeForest,
         d: D,
     ) -> Result<Self, D::Error> {
         struct V<'a> {
-            table: DeserializeContext<'a>,
+            forest: &'a mut DeserializeForest,
         }
         impl<'a, 'de> DeserializePair<'de> for V<'a> {
             type First = String;
@@ -81,24 +78,24 @@ impl<'de> DeserializeUpdate<'de> for Dict {
             ) -> Result<Self::Second, D::Error> {
                 Ok((
                     key,
-                    ArcOrWeak::deserialize_snapshot(self.table.reborrow(), value)?,
+                    ArcOrWeak::deserialize_snapshot(self.forest, value)?,
                 ))
             }
         }
         Ok(Dict {
-            entries: MapSeed::new(V { table }).deserialize(d)?,
+            entries: MapSeed::new(V { forest }).deserialize(d)?,
             modified: None,
         })
     }
 
     fn deserialize_update<'a, D: Deserializer<'de>>(
         &mut self,
-        table: DeserializeContext,
+        forest: &mut DeserializeForest,
         d: D,
     ) -> Result<(), D::Error> {
         struct M<'a> {
             dict: &'a mut Dict,
-            table: DeserializeContext<'a>,
+            forest: &'a mut DeserializeForest,
         }
         impl<'a, 'de> Visitor<'de> for M<'a> {
             type Value = ();
@@ -114,18 +111,18 @@ impl<'de> DeserializeUpdate<'de> for Dict {
                     match self.dict.entries.entry(key) {
                         Entry::Vacant(x) => {
                             x.insert(map.next_value_seed(DeserializeSnapshotSeed::new(
-                                self.table.reborrow(),
+                                self.forest,
                             ))?);
                         }
                         Entry::Occupied(mut x) => map.next_value_seed(
-                            DeserializeUpdateSeed::new(x.get_mut(), self.table.reborrow()),
+                            DeserializeUpdateSeed::new(x.get_mut(), self.forest),
                         )?,
                     }
                 }
                 Ok(())
             }
         }
-        d.deserialize_map(M { dict: self, table })
+        d.deserialize_map(M { dict: self, forest })
     }
 }
 

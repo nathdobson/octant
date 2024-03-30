@@ -11,14 +11,11 @@
 #![feature(dispatch_from_dyn)]
 #![allow(dead_code)]
 
-mod arc;
 mod de;
 mod dict;
 mod tree;
 mod ser;
-pub mod tack;
 #[cfg(test)]
 mod test;
 mod util;
 mod forest;
-mod unique_arc;

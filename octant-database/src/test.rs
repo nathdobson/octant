@@ -3,16 +3,14 @@ use std::sync::Arc;
 
 use serde_json::ser::PrettyFormatter;
 
-use crate::{arc::ArcOrWeak, de::DeserializeForest, forest::Forest, tree::Tree};
+use crate::{de::DeserializeForest, forest::Forest, tree::Tree};
+use crate::util::arc_or_weak::ArcOrWeak;
 
 const EXPECTED: &str = r#"{
   "id": 0,
   "value": {
     "x": {
-      "Weak": {
-        "id": 0,
-        "value": null
-      }
+      "Weak": 0
     },
     "y": {
       "Arc": {
@@ -45,16 +43,15 @@ fn deserializer(buf: &str) -> serde_json::Deserializer<SliceRead> {
 #[test]
 fn test_ser() {
     let root = Tree::new();
-    let table = Forest::new();
+    let forest = Forest::with_root(root.clone());
     {
-        let table = table.read();
-        table.enqueue_snapshot(root.clone());
+        let table = forest.read();
         let mut root_lock = table.write(&root);
         root_lock.insert("x".to_string(), ArcOrWeak::Weak(Arc::downgrade(&root)));
         root_lock.insert("y".to_string(), ArcOrWeak::Arc(Tree::new()));
     }
     let mut data = vec![];
-    let () = table
+    let () = forest
         .write()
         .serialize_update(&mut serializer(&mut data))
         .unwrap();
@@ -65,12 +62,10 @@ fn test_ser() {
 
 #[test]
 fn test_de() {
-    let forest = Forest::new();
     let mut de = DeserializeForest::new();
     let root = de
-        .deserialize_snapshot(&*forest.read(), &mut deserializer(EXPECTED))
+        .deserialize_snapshot(&mut deserializer(EXPECTED))
         .unwrap();
     assert_eq!(format!("{:#?}", root), EXPECTED_STATE);
-    // de.deserialize_update(&*forest.read(), &mut deserializer(EXPECTED))
-    //     .unwrap();
 }
+

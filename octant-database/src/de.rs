@@ -1,43 +1,36 @@
 use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
-use serde::{de::DeserializeSeed, Deserialize, Deserializer};
+use serde::{
+    de::{DeserializeSeed, Error},
+    Deserialize, Deserializer,
+};
 
 use crate::{
-    arc::ArcOrWeak,
     forest::ForestState,
     tree::{Tree, TreeId},
     util::{
-        deserialize_item::DeserializeItem, deserialize_pair::DeserializePair,
-        pair_struct_seed::PairStructSeed, seq_seed::SeqSeed,
+        arc_or_empty::ArcOrEmpty, deserialize_item::DeserializeItem,
+        deserialize_pair::DeserializePair, pair_struct_seed::PairStructSeed, seq_seed::SeqSeed,
     },
 };
 
 pub struct DeserializeForest {
-    pub entries: HashMap<TreeId, ArcOrWeak<Tree>>,
+    pub entries: HashMap<TreeId, ArcOrEmpty<Tree>>,
 }
 
-pub struct DeserializeContext<'t> {
-    pub table: &'t ForestState,
-    pub des: &'t mut DeserializeForest,
-}
-
-impl<'t> DeserializeContext<'t> {
-    pub fn reborrow<'a>(&'a mut self) -> DeserializeContext<'a> {
-        DeserializeContext {
-            table: &*self.table,
-            des: &mut *self.des,
-        }
-    }
-}
+// pub struct DeserializeContext<'t> {
+//     // pub forest: &'t ForestState,
+//     pub des: &'t mut DeserializeForest,
+// }
 
 pub trait DeserializeUpdate<'de>: Sized {
     fn deserialize_snapshot<D: Deserializer<'de>>(
-        table: DeserializeContext,
+        forest: &mut DeserializeForest,
         d: D,
     ) -> Result<Self, D::Error>;
     fn deserialize_update<D: Deserializer<'de>>(
         &mut self,
-        table: DeserializeContext,
+        forest: &mut DeserializeForest,
         d: D,
     ) -> Result<(), D::Error>;
 }
@@ -50,27 +43,22 @@ impl DeserializeForest {
     }
     pub fn deserialize_snapshot<'de, D: Deserializer<'de>>(
         &mut self,
-        table: &ForestState,
         d: D,
     ) -> Result<Arc<Tree>, D::Error> {
-        Arc::<Tree>::deserialize_snapshot(DeserializeContext { table, des: self }, d)
+        Arc::<Tree>::deserialize_snapshot(self, d)
     }
-    pub fn deserialize_update<'de, D: Deserializer<'de>>(
-        &mut self,
-        table: &ForestState,
-        d: D,
-    ) -> Result<(), D::Error> {
-        return SeqSeed::new(LogSeq(DeserializeContext { table, des: self })).deserialize(d);
-        struct LogSeq<'a>(DeserializeContext<'a>);
+    pub fn deserialize_update<'de, D: Deserializer<'de>>(&mut self, d: D) -> Result<(), D::Error> {
+        return SeqSeed::new(LogSeq(self)).deserialize(d);
+        struct LogSeq<'a>(&'a mut DeserializeForest);
         impl<'a, 'de, 't> DeserializeItem<'de> for LogSeq<'a> {
             type Value = ();
 
             fn deserialize<D: Deserializer<'de>>(&mut self, d: D) -> Result<Self::Value, D::Error> {
-                PairStructSeed::new("Entry", &["key", "value"], LogEntry(self.0.reborrow()))
+                PairStructSeed::new("Entry", &["key", "value"], LogEntry(self.0))
                     .deserialize(d)
             }
         }
-        struct LogEntry<'a>(DeserializeContext<'a>);
+        struct LogEntry<'a>(&'a mut DeserializeForest);
         impl<'a, 't, 'de> DeserializePair<'de> for LogEntry<'a> {
             type First = TreeId;
             type Second = ();
@@ -87,14 +75,18 @@ impl DeserializeForest {
                 first: Self::First,
                 d: D,
             ) -> Result<Self::Second, D::Error> {
-                let table = &*self.0.table;
-                let des = &mut *self.0.des;
-
-                if let Some(row) = des.entries.get(&first) {
-                    let row = row.upgrade_cow().expect("uninitialized row").into_owned();
-                    table
-                        .write(&row)
-                        .deserialize_update(DeserializeContext { table, des }, d)?;
+                if let Some(row) = self.0.entries.get(&first) {
+                    let row = match row {
+                        ArcOrEmpty::Arc(x) => x.clone(),
+                        ArcOrEmpty::Empty(_) => {
+                            return Err(D::Error::custom(format_args!(
+                                "Received update for uninitialized row"
+                            )))
+                        }
+                    };
+                    row.try_write().unwrap().deserialize_update(self.0, d)?;
+                } else {
+                    return Err(D::Error::custom("Received update for missing row"));
                 }
                 Ok(())
             }
@@ -102,10 +94,10 @@ impl DeserializeForest {
     }
 }
 
-pub struct DeserializeUpdateSeed<'a, T>(&'a mut T, DeserializeContext<'a>);
+pub struct DeserializeUpdateSeed<'a, T>(&'a mut T, &'a mut DeserializeForest);
 
 impl<'a, T> DeserializeUpdateSeed<'a, T> {
-    pub fn new(x: &'a mut T, table: DeserializeContext<'a>) -> Self {
+    pub fn new(x: &'a mut T, table: &'a mut DeserializeForest) -> Self {
         DeserializeUpdateSeed(x, table)
     }
 }
@@ -121,10 +113,10 @@ impl<'a, 'de, T: DeserializeUpdate<'de>> DeserializeSeed<'de> for DeserializeUpd
     }
 }
 
-pub struct DeserializeSnapshotSeed<'a, T>(DeserializeContext<'a>, PhantomData<T>);
+pub struct DeserializeSnapshotSeed<'a, T>(&'a mut DeserializeForest, PhantomData<T>);
 
 impl<'a, T> DeserializeSnapshotSeed<'a, T> {
-    pub fn new(table: DeserializeContext<'a>) -> Self {
+    pub fn new(table: &'a mut DeserializeForest) -> Self {
         DeserializeSnapshotSeed(table, PhantomData)
     }
 }

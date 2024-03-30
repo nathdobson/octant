@@ -1,7 +1,7 @@
 use std::{
     borrow::Cow,
     fmt::{Debug, Formatter},
-    panic::{AssertUnwindSafe, catch_unwind, resume_unwind},
+    panic::{catch_unwind, resume_unwind, AssertUnwindSafe},
     sync::{Arc, Weak},
 };
 
@@ -11,7 +11,7 @@ use serde::{
 };
 
 use crate::{
-    de::{DeserializeContext, DeserializeSnapshotSeed, DeserializeUpdate},
+    de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate},
     forest::ForestState,
     ser::{SerializeUpdate, SerializeUpdateAdapter},
     tree::Tree,
@@ -66,7 +66,7 @@ impl SerializeUpdate for ArcOrWeak<Tree> {
 
 impl<'de> DeserializeUpdate<'de> for ArcOrWeak<Tree> {
     fn deserialize_snapshot<D: Deserializer<'de>>(
-        table: DeserializeContext,
+        table: &mut DeserializeForest,
         d: D,
     ) -> Result<Self, D::Error> {
         #[derive(Deserialize)]
@@ -75,7 +75,7 @@ impl<'de> DeserializeUpdate<'de> for ArcOrWeak<Tree> {
             Weak,
         }
         struct V<'a> {
-            table: DeserializeContext<'a>,
+            table: &'a mut DeserializeForest,
         }
         impl<'a, 'de> Visitor<'de> for V<'a> {
             type Value = ArcOrWeak<Tree>;
@@ -103,11 +103,11 @@ impl<'de> DeserializeUpdate<'de> for ArcOrWeak<Tree> {
 
     fn deserialize_update<D: Deserializer<'de>>(
         &mut self,
-        _table: DeserializeContext,
-        _d: D,
+        forest: &mut DeserializeForest,
+        d: D,
     ) -> Result<(), D::Error> {
-        // d.deserialize_
-        todo!()
+        *self = Self::deserialize_snapshot(forest, d)?;
+        Ok(())
     }
 }
 

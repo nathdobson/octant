@@ -60,21 +60,21 @@ impl ForestState {
         }
     }
     pub fn read<'b>(&'b self, row: &'b Arc<Tree>) -> RwLockReadGuard<'b, Dict> {
+        assert!(row.forest(&self.this).ptr_eq(&self.this));
         row.read()
     }
     pub fn try_read<'b>(&'b self, row: &'b Arc<Tree>) -> Option<RwLockReadGuard<'b, Dict>> {
+        assert!(row.forest(&self.this).ptr_eq(&self.this));
         row.try_read()
     }
     pub fn write<'b>(&'b self, row: &'b Arc<Tree>) -> RwLockWriteGuard<'b, Dict> {
-        if row.is_written() {
-            self.queue.lock().update_queue.insert(row.clone());
-        }
+        assert!(row.forest(&self.this).ptr_eq(&self.this));
+        self.queue.lock().update_queue.insert(row.clone());
         row.write()
     }
     pub fn try_write<'b>(&'b self, row: &'b Arc<Tree>) -> Option<RwLockWriteGuard<'b, Dict>> {
-        if row.is_written() {
-            self.queue.lock().update_queue.insert(row.clone());
-        }
+        assert!(row.forest(&self.this).ptr_eq(&self.this));
+        self.queue.lock().update_queue.insert(row.clone());
         row.try_write()
     }
     pub fn next_id(&self) -> TreeId {
@@ -101,6 +101,11 @@ impl Forest {
             }),
         });
         result
+    }
+    pub fn with_root(root:Arc<Tree>)->Arc<Self>{
+        let this=Self::new();
+        this.state.write().enqueue_snapshot(root);
+        this
     }
     pub fn read<'a>(self: &'a Arc<Self>) -> RwLockReadGuard<'a, ForestState> {
         self.state.read()
