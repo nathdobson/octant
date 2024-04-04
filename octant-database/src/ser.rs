@@ -6,7 +6,7 @@ use weak_table::WeakValueHashMap;
 use crate::{
     forest::Forest,
     tree::{SerializeTree, Tree, TreeId},
-    util::{arc_or_weak::ArcOrWeak, serializer_proxy::SerializerProxy},
+    util::{ serializer_proxy::SerializerProxy},
 };
 
 pub struct SerializeForest<SP> {
@@ -65,43 +65,6 @@ impl<'a, T: SerializeUpdate + ?Sized, SP: SerializerProxy> Serialize
             self.ser_forest.take().unwrap(),
             s,
         )
-    }
-}
-
-impl<T: 'static + SerializeUpdate> SerializeUpdate for ArcOrWeak<Tree<T>> {
-    fn begin_stream(&mut self) {}
-
-    fn begin_update(&mut self) -> bool {
-        true
-    }
-
-    fn serialize_update<S: Serializer, SP: SerializerProxy>(
-        &self,
-        forest: &mut Forest,
-        ser_forest: &mut SerializeForest<SP>,
-        s: S,
-    ) -> Result<S::Ok, S::Error> {
-        match self {
-            ArcOrWeak::Arc(x) => s.serialize_newtype_variant(
-                "ArcOrWeak",
-                0,
-                "Arc",
-                &SerializeUpdateAdapter::new(x, forest, ser_forest),
-            ),
-            ArcOrWeak::Weak(x) => s.serialize_newtype_variant(
-                "ArcOrWeak",
-                0,
-                "Weak",
-                &SerializeUpdateAdapter::new(x, forest, ser_forest),
-            ),
-        }
-    }
-
-    fn end_update(&mut self) {
-        match self {
-            ArcOrWeak::Arc(x) => x.end_update(),
-            ArcOrWeak::Weak(x) => x.end_update(),
-        }
     }
 }
 

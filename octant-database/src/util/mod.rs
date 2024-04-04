@@ -5,8 +5,6 @@ pub mod map_seed;
 pub mod seq_seed;
 pub mod deserialize_item;
 pub mod option_seed;
-pub mod arc_or_empty;
-pub mod arc_or_weak;
 pub mod unique_arc;
 pub mod tack;
 pub mod deserializer_proxy;
