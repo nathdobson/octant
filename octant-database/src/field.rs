@@ -7,7 +7,7 @@ use serde::{Deserializer, Serializer};
 
 use crate::{
     de::{DeserializeForest, DeserializeUpdate},
-    forest::ForestState,
+    forest::Forest,
     ser::{SerializeForest, SerializeUpdate},
     util::{deserializer_proxy::DeserializerProxy, serializer_proxy::SerializerProxy},
 };
@@ -67,7 +67,7 @@ impl<T: ?Sized + SerializeUpdate> SerializeUpdate for Field<T> {
 
     fn serialize_update<S: Serializer, SP: SerializerProxy>(
         &self,
-        forest: &mut ForestState,
+        forest: &mut Forest,
         ser_forest: &mut SerializeForest<SP>,
         s: S,
     ) -> Result<S::Ok, S::Error> {

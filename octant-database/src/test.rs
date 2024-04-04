@@ -11,7 +11,7 @@ use serde_json::{de::SliceRead, ser::PrettyFormatter};
 use crate::{
     de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed},
     field::Field,
-    forest::{Forest, ForestState},
+    forest::{Forest},
     prim::Prim,
     ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter},
     tree::{Tree, TreeId},
@@ -96,7 +96,7 @@ impl SerializeUpdate for MyStruct {
 
     fn serialize_update<S: Serializer, SP: SerializerProxy>(
         &self,
-        forest: &mut ForestState,
+        forest: &mut Forest,
         ser_forest: &mut SerializeForest<SP>,
         s: S,
     ) -> Result<S::Ok, S::Error> {
@@ -214,11 +214,11 @@ fn test_ser() {
         field2: Field::new(Weak::new()),
         field3: Field::new(Tree::new(Prim::new(2))),
     });
-    let forest = Forest::new();
+    let mut forest = Forest::new();
     let mut ser_forest = SerializeForest::<JsonProxy>::new();
     let mut data = vec![];
     ser_forest
-        .serialize_snapshot(&mut root, &mut forest.write(), &mut serializer(&mut data))
+        .serialize_snapshot(&mut root, &mut forest, &mut serializer(&mut data))
         .unwrap();
     let data = String::from_utf8(data).unwrap();
     println!("{}", data);
@@ -246,7 +246,7 @@ fn test_basic() {
     });
     let forest = Forest::new();
     let mut tester = Tester::new(
-        forest.clone(),
+        forest,
         root.clone(),
         r#"{
   "id": 0,
@@ -262,7 +262,7 @@ fn test_basic() {
 }"#,
     );
     tester.retest(&[]);
-    **forest.read().write(&root).field1 = 2;
+    **tester.forest.write(&root).field1 = 2;
     tester.retest(&[(
         0,
         r#"{
@@ -273,8 +273,8 @@ fn test_basic() {
 }"#,
     )]);
     let weakish = Tree::new(Prim::new(2u8));
-    *forest.read().write(&root).field2 = Arc::downgrade(&weakish);
-    *forest.read().write(&root).field3 = weakish.clone();
+    *tester.forest.write(&root).field2 = Arc::downgrade(&weakish);
+    *tester.forest.write(&root).field3 = weakish.clone();
     tester.retest(&[(
         0,
         r#"{
@@ -290,7 +290,7 @@ fn test_basic() {
 }
 
 fn serialize_update(
-    forest: &mut ForestState,
+    forest: &mut Forest,
     ser_forest: &mut SerializeForest<JsonProxy>,
 ) -> Vec<(TreeId, String)> {
     forest
@@ -307,7 +307,7 @@ fn serialize_update(
 }
 
 struct Tester {
-    forest: Arc<Forest>,
+    forest: Forest,
     ser_forest: SerializeForest<JsonProxy>,
     de_forest: DeserializeForest<JsonProxy>,
     input: Arc<Tree<MyStruct>>,
@@ -315,11 +315,11 @@ struct Tester {
 }
 
 impl Tester {
-    pub fn new(forest: Arc<Forest>, mut input: Arc<Tree<MyStruct>>, expected: &str) -> Tester {
+    pub fn new(mut forest: Forest, mut input: Arc<Tree<MyStruct>>, expected: &str) -> Tester {
         let mut ser_forest = SerializeForest::new();
         let mut bytes = vec![];
         ser_forest
-            .serialize_snapshot(&mut input, &mut forest.write(), &mut serializer(&mut bytes))
+            .serialize_snapshot(&mut input, &mut forest, &mut serializer(&mut bytes))
             .unwrap();
         let snapshot = String::from_utf8(bytes).unwrap();
         assert_eq!(snapshot, expected);
@@ -337,7 +337,7 @@ impl Tester {
         }
     }
     pub fn retest(&mut self, expected: &[(u64, &str)]) {
-        let update = serialize_update(&mut self.forest.write(), &mut self.ser_forest);
+        let update = serialize_update(&mut self.forest, &mut self.ser_forest);
         assert_eq!(update.len(), expected.len());
         for ((id1, s1), (id2, s2)) in update.iter().zip(expected) {
             assert_eq!(id1.value(), *id2);

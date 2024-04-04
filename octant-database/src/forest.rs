@@ -1,62 +1,55 @@
 use std::{
     collections::HashSet,
     mem,
-    sync::{Arc, Weak},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
 };
 
-use parking_lot::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use parking_lot::{Mutex, RwLockReadGuard, RwLockWriteGuard};
 
 use crate::tree::{Tree, TreeId};
 
-struct ForestGlobalState {
-    next_id: u64,
-    update_queue: HashSet<TreeId>,
-    // snapshot_queue: Option<Arc<Tree<dyn TreeInner>>>,
-    // update_queue: PtrWeakHashSet<Weak<Tree<dyn TreeInner>>>,
+#[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Debug, Copy, Clone)]
+pub(crate) struct ForestId(usize);
+static FOREST_ID_COUNTER: AtomicUsize = AtomicUsize::new(1);
+impl ForestId {
+    pub fn new() -> Self {
+        ForestId(FOREST_ID_COUNTER.fetch_add(1, Ordering::Relaxed))
+    }
 }
 
-pub struct ForestState {
-    this: Weak<Forest>,
-    queue: Mutex<ForestGlobalState>,
+struct ForestState {
+    next_id: u64,
+    update_queue: HashSet<TreeId>,
 }
 
 pub struct Forest {
-    state: RwLock<ForestState>,
+    forest_id: ForestId,
+    queue: Mutex<ForestState>,
 }
 
-impl ForestGlobalState {
-    // fn enqueue_snapshot(&mut self, root: Arc<Tree<dyn TreeInner>>) {
-    //     self.snapshot_queue = Some(root);
-    // }
-    fn enqueue_update<T: ?Sized>(&mut self, forest: &ForestState, row: &Arc<Tree<T>>) {
-        self.update_queue.insert(row.id(forest));
+impl Forest {
+    pub(crate) fn enqueue_update<T>(&self, row: &Arc<Tree<T>>) {
+        self.queue.lock().update_queue.insert(row.id(self));
     }
-}
-
-impl ForestState {
-    pub fn enqueue_update<T>(&self, row: &Arc<Tree<T>>) {
-        self.queue.lock().enqueue_update(self, row);
-    }
-    pub fn take_queue(&mut self) -> HashSet<TreeId> {
+    pub(crate) fn take_queue(&mut self) -> HashSet<TreeId> {
         mem::replace(&mut self.queue.get_mut().update_queue, HashSet::new())
     }
-    // pub fn enqueue_snapshot<'b>(&self, row: Arc<Tree<dyn TreeInner>>) {
-    //     self.queue.lock().enqueue_snapshot(row);
-    // }
-
     pub fn read<'b, T: ?Sized>(&'b self, row: &'b Arc<Tree<T>>) -> RwLockReadGuard<'b, T> {
-        assert!(row.forest(&self.this).ptr_eq(&self.this));
+        assert_eq!(row.forest(self.forest_id), self.forest_id);
         row.read()
     }
     pub fn try_read<'b, T: ?Sized>(
         &'b self,
         row: &'b Arc<Tree<T>>,
     ) -> Option<RwLockReadGuard<'b, T>> {
-        assert!(row.forest(&self.this).ptr_eq(&self.this));
+        assert_eq!(row.forest(self.forest_id), self.forest_id);
         row.try_read()
     }
     pub fn write<'b, T: ?Sized>(&'b self, row: &'b Arc<Tree<T>>) -> RwLockWriteGuard<'b, T> {
-        assert!(row.forest(&self.this).ptr_eq(&self.this));
+        assert_eq!(row.forest(self.forest_id), self.forest_id);
         self.queue.lock().update_queue.insert(row.id(self));
         row.write()
     }
@@ -64,38 +57,26 @@ impl ForestState {
         &'b self,
         row: &'b Arc<Tree<T>>,
     ) -> Option<RwLockWriteGuard<'b, T>> {
-        assert!(row.forest(&self.this).ptr_eq(&self.this));
+        assert_eq!(row.forest(self.forest_id), self.forest_id);
         self.queue.lock().update_queue.insert(row.id(self));
         row.try_write()
     }
-    pub fn next_id(&self) -> TreeId {
+    pub(crate) fn next_id(&self) -> TreeId {
         let ref mut queue = *self.queue.lock();
         let id = queue.next_id;
         queue.next_id += 1;
         TreeId::new(id)
     }
-    pub fn get_arc(&self) -> Weak<Forest> {
-        self.this.clone()
-    }
 }
 
 impl Forest {
-    pub fn new() -> Arc<Self> {
-        let result = Arc::new_cyclic(|this| Forest {
-            state: RwLock::new(ForestState {
-                this: this.clone(),
-                queue: Mutex::new(ForestGlobalState {
-                    next_id: 0,
-                    update_queue: HashSet::new(),
-                }),
+    pub fn new() -> Forest {
+        Forest {
+            forest_id: ForestId::new(),
+            queue: Mutex::new(ForestState {
+                next_id: 0,
+                update_queue: HashSet::new(),
             }),
-        });
-        result
-    }
-    pub fn read<'a>(self: &'a Arc<Self>) -> RwLockReadGuard<'a, ForestState> {
-        self.state.read()
-    }
-    pub fn write<'a>(self: &'a Arc<Self>) -> RwLockWriteGuard<'a, ForestState> {
-        self.state.write()
+        }
     }
 }

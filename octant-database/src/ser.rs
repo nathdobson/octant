@@ -4,7 +4,7 @@ use serde::{Serialize, Serializer};
 use weak_table::WeakValueHashMap;
 
 use crate::{
-    forest::ForestState,
+    forest::Forest,
     tree::{SerializeTree, Tree, TreeId},
     util::{arc_or_weak::ArcOrWeak, serializer_proxy::SerializerProxy},
 };
@@ -26,7 +26,7 @@ pub trait SerializeUpdate {
     fn begin_update(&mut self) -> bool;
     fn serialize_update<S: Serializer, SP: SerializerProxy>(
         &self,
-        forest: &mut ForestState,
+        forest: &mut Forest,
         ser_forest: &mut SerializeForest<SP>,
         s: S,
     ) -> Result<S::Ok, S::Error>;
@@ -35,14 +35,14 @@ pub trait SerializeUpdate {
 
 pub struct SerializeUpdateAdapter<'a, T: ?Sized, SP: SerializerProxy> {
     value: &'a T,
-    forest: Cell<Option<&'a mut ForestState>>,
+    forest: Cell<Option<&'a mut Forest>>,
     ser_forest: Cell<Option<&'a mut SerializeForest<SP>>>,
 }
 
 impl<'a, T: ?Sized, SP: SerializerProxy> SerializeUpdateAdapter<'a, T, SP> {
     pub fn new(
         value: &'a T,
-        forest: &'a mut ForestState,
+        forest: &'a mut Forest,
         ser_forest: &'a mut SerializeForest<SP>,
     ) -> Self {
         SerializeUpdateAdapter {
@@ -77,7 +77,7 @@ impl<T: 'static + SerializeUpdate> SerializeUpdate for ArcOrWeak<Tree<T>> {
 
     fn serialize_update<S: Serializer, SP: SerializerProxy>(
         &self,
-        forest: &mut ForestState,
+        forest: &mut Forest,
         ser_forest: &mut SerializeForest<SP>,
         s: S,
     ) -> Result<S::Ok, S::Error> {
@@ -109,7 +109,7 @@ impl<SP: SerializerProxy> SerializeForest<SP> {
     pub fn serialize_snapshot<'up, T: SerializeUpdate>(
         &mut self,
         mut value: &mut T,
-        forest: &mut ForestState,
+        forest: &mut Forest,
         s: SP::SerializerValue<'up>,
     ) -> Result<<SP::SerializerValue<'up> as Serializer>::Ok, SP::Error> {
         value.begin_stream();
@@ -121,7 +121,7 @@ impl<SP: SerializerProxy> SerializeForest<SP> {
     pub fn serialize_update<'up>(
         &mut self,
         id: TreeId,
-        forest: &mut ForestState,
+        forest: &mut Forest,
         s: SP::SerializerValue<'up>,
     ) -> Result<Option<<SP::SerializerValue<'up> as Serializer>::Ok>, SP::Error> {
         if let Some(tree) = self.trees.get(&id) {

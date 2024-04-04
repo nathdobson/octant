@@ -14,7 +14,7 @@ use serde::{
 
 use crate::{
     de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate},
-    forest::{Forest, ForestState},
+    forest::{ForestId, Forest},
     ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter},
     util::{
         deserialize_pair::DeserializePair,
@@ -31,7 +31,7 @@ pub struct TreeId(u64);
 
 pub struct Tree<T: ?Sized> {
     id: OnceLock<TreeId>,
-    forest: OnceLock<Weak<Forest>>,
+    forest: OnceLock<ForestId>,
     written: Once,
     state: RwLock<T>,
 }
@@ -41,7 +41,7 @@ pub(crate) trait SerializeTree<SP: SerializerProxy> {
     fn tree_begin_update(&mut self) -> bool;
     fn tree_serialize_update<'up>(
         &self,
-        forest: &mut ForestState,
+        forest: &mut Forest,
         ser_forest: &mut SerializeForest<SP>,
         s: SP::SerializerValue<'up>,
     ) -> Result<<SP::SerializerValue<'up> as Serializer>::Ok, SP::Error>;
@@ -65,7 +65,7 @@ impl<SP: SerializerProxy, T: SerializeUpdate> SerializeTree<SP> for T {
 
     fn tree_serialize_update<'up>(
         &self,
-        forest: &mut ForestState,
+        forest: &mut Forest,
         ser_forest: &mut SerializeForest<SP>,
         s: SP::SerializerValue<'up>,
     ) -> Result<<SP::SerializerValue<'up> as Serializer>::Ok, SP::Error> {
@@ -118,11 +118,11 @@ impl<T: ?Sized> Tree<T> {
     {
         Arc::new_cyclic(|weak| Self::new_value(f(weak)))
     }
-    pub(crate) fn id(&self, forest: &ForestState) -> TreeId {
+    pub(crate) fn id(&self, forest: &Forest) -> TreeId {
         *self.id.get_or_init(|| forest.next_id())
     }
-    pub(crate) fn forest(&self, forest: &Weak<Forest>) -> &Weak<Forest> {
-        self.forest.get_or_init(|| forest.clone())
+    pub(crate) fn forest(&self, forest: ForestId) -> ForestId {
+        *self.forest.get_or_init(|| forest)
     }
     pub(crate) fn write(&self) -> RwLockWriteGuard<T> {
         self.state.write()
@@ -168,7 +168,7 @@ impl<T: SerializeUpdate + 'static> SerializeUpdate for Arc<Tree<T>> {
 
     fn serialize_update<S: Serializer, SP: SerializerProxy>(
         &self,
-        forest: &mut ForestState,
+        forest: &mut Forest,
         ser_forest: &mut SerializeForest<SP>,
         s: S,
     ) -> Result<S::Ok, S::Error> {
@@ -207,7 +207,7 @@ impl<T: ?Sized> SerializeUpdate for Weak<Tree<T>> {
 
     fn serialize_update<S: Serializer, SP: SerializerProxy>(
         &self,
-        forest: &mut ForestState,
+        forest: &mut Forest,
         ser_forest: &mut SerializeForest<SP>,
         s: S,
     ) -> Result<S::Ok, S::Error> {

@@ -26,4 +26,13 @@ mod util;
 mod forest;
 mod prim;
 mod field;
-mod option;
+
+pub use tree::Tree;
+pub use forest::Forest;
+pub use de::DeserializeUpdate;
+pub use de::DeserializeForest;
+pub use ser::SerializeForest;
+pub use ser::SerializeUpdate;
+pub use tree::TreeId;
+pub use util::serializer_proxy::SerializerProxy;
+pub use util::deserializer_proxy::DeserializerProxy;

@@ -13,7 +13,7 @@ use serde::{
 
 use crate::{
     de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed},
-    forest::ForestState,
+    forest::Forest,
     ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter}
     ,
     util::{
@@ -189,7 +189,7 @@ impl<K: Ord + Serialize, V: SerializeUpdate> SerializeUpdate for Dict<K, V> {
 
     fn serialize_update<S: Serializer, SP: SerializerProxy>(
         &self,
-        forest: &mut ForestState,
+        forest: &mut Forest,
         ser_forest: &mut SerializeForest<SP>,
         s: S,
     ) -> Result<S::Ok, S::Error> {
