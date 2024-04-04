@@ -1,12 +1,10 @@
-use std::{
-    mem::MaybeUninit,
-    sync::{Arc, Weak},
-};
-use crate::util::unique_arc::UniqueArc;
+use std::sync::{Arc, Weak};
 
-pub enum ArcOrEmpty<T> {
+use crate::util::unique_arc::{MaybeUninit2, UniqueArc};
+
+pub enum ArcOrEmpty<T: ?Sized> {
     Arc(Arc<T>),
-    Empty(UniqueArc<MaybeUninit<T>>),
+    Empty(UniqueArc<MaybeUninit2<T>>),
 }
 
 impl<T> ArcOrEmpty<T> {

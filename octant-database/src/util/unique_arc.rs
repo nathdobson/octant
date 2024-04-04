@@ -1,8 +1,11 @@
 use std::{
+    alloc::{handle_alloc_error, Allocator, Global, Layout},
+    any::Any,
     cell::UnsafeCell,
+    marker::Unsize,
     mem,
-    mem::MaybeUninit,
-    ops::{Deref, DerefMut},
+    mem::ManuallyDrop,
+    ops::{CoerceUnsized, Deref, DerefMut},
     ptr::NonNull,
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -19,6 +22,7 @@ struct ArcInner<T: ?Sized> {
 
 pub struct UniqueArc<T: ?Sized>(NonNull<ArcInner<T>>);
 
+pub struct MaybeUninit2<T: ?Sized>(ManuallyDrop<T>);
 const MAX_REFCOUNT: usize = (isize::MAX) as usize;
 
 impl<T: ?Sized> UniqueArc<T> {
@@ -37,16 +41,47 @@ impl<T: ?Sized> UniqueArc<T> {
     }
     pub fn downgrade(this: &Self) -> Weak<T> {
         unsafe {
-            this.0.as_ref().weak.fetch_add(1, Ordering::Relaxed);
+            let count = this.0.as_ref().weak.fetch_add(1, Ordering::Relaxed);
+            assert!(count <= MAX_REFCOUNT);
             Weak::from_raw(this.0.as_ref().inner.get())
         }
     }
     pub fn into_arc(self) -> Arc<T> {
         unsafe {
             let raw: *mut T = self.0.as_ref().inner.get();
-            self.0.as_ref().strong.fetch_add(1, Ordering::Release);
+            let count = self.0.as_ref().strong.fetch_add(1, Ordering::Release);
+            assert!(count <= MAX_REFCOUNT);
             mem::forget(self);
             Arc::from_raw(raw)
+        }
+    }
+}
+
+impl UniqueArc<dyn 'static + Sync + Send + Any> {
+    pub fn downcast<T>(this: Self) -> Result<UniqueArc<T>, Self>
+    where
+        T: Any + Send + Sync,
+    {
+        if (*this).is::<T>() {
+            let result = Ok(UniqueArc(this.0.cast()));
+            mem::forget(this);
+            result
+        } else {
+            Err(this)
+        }
+    }
+    pub fn downcast_downgrade<T: 'static>(this: &Self) -> Option<Weak<T>> {
+        if (**this).is::<T>() {
+            unsafe { Some(Weak::from_raw(Self::downgrade(this).into_raw() as *const T)) }
+        } else {
+            None
+        }
+    }
+    pub fn downcast_downgrade_uninit<T: 'static>(this: &Self) -> Option<Weak<T>> {
+        if (**this).is::<MaybeUninit2<T>>() {
+            unsafe { Some(Weak::from_raw(Self::downgrade(this).into_raw() as *const T)) }
+        } else {
+            None
         }
     }
 }
@@ -73,27 +108,38 @@ impl<T: ?Sized> Drop for UniqueArc<T> {
     }
 }
 
-impl<T> UniqueArc<MaybeUninit<T>> {
+impl<T> UniqueArc<MaybeUninit2<T>> {
     pub fn new_uninit() -> Self {
-        Self::new(MaybeUninit::uninit())
+        unsafe {
+            let layout = Layout::new::<ArcInner<MaybeUninit2<T>>>();
+            let mut ptr = Global
+                .allocate(layout)
+                .unwrap_or_else(|_| handle_alloc_error(layout))
+                .cast::<ArcInner<MaybeUninit2<T>>>();
+            *ptr.as_mut().strong.get_mut() = 0;
+            *ptr.as_mut().weak.get_mut() = 1;
+            UniqueArc(ptr)
+        }
     }
     pub fn init(mut self, value: T) -> Arc<T> {
         unsafe {
-            (*self).write(value);
-            mem::transmute::<Arc<MaybeUninit<T>>, Arc<T>>(self.into_arc())
+            ((&raw mut (*self.0.as_ptr()).inner) as *mut T).write(value);
+            mem::transmute::<Arc<MaybeUninit2<T>>, Arc<T>>(self.into_arc())
         }
     }
     pub fn downgrade_uninit(this: &Self) -> Weak<T> {
-        unsafe { mem::transmute::<Weak<MaybeUninit<T>>, Weak<T>>(Self::downgrade(this)) }
+        unsafe { mem::transmute::<Weak<MaybeUninit2<T>>, Weak<T>>(Self::downgrade(this)) }
     }
 }
+
+impl<T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<UniqueArc<U>> for UniqueArc<T> {}
 
 struct AssertDropped {
     dropped: bool,
 }
 
 impl AssertDropped {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         AssertDropped { dropped: false }
     }
     pub fn check(&mut self) -> MustDrop {
@@ -139,23 +185,31 @@ fn test_with_weak() {
 
 #[test]
 fn test_uninit() {
-    let _x = UniqueArc::<MaybeUninit<MustDrop>>::new_uninit();
+    let _x = UniqueArc::<MaybeUninit2<MustDrop>>::new_uninit();
 }
 
 #[test]
 fn test_uninit_arc() {
     let mut assert = AssertDropped::new();
-    let x = UniqueArc::<MaybeUninit<MustDrop>>::new_uninit();
+    let x = UniqueArc::<MaybeUninit2<MustDrop>>::new_uninit();
     x.init(assert.check());
 }
 
 #[test]
 fn test_uninit_weak() {
     let mut assert = AssertDropped::new();
-    let x = UniqueArc::<MaybeUninit<MustDrop>>::new_uninit();
+    let x = UniqueArc::<MaybeUninit2<MustDrop>>::new_uninit();
     let w = UniqueArc::downgrade_uninit(&x);
     assert!(w.upgrade().is_none());
     x.init(assert.check());
+}
+
+#[test]
+fn test_downcast_downgrade_uninit() {
+    static mut ASSERT: AssertDropped = AssertDropped::new();
+    let x = UniqueArc::<MaybeUninit2<MustDrop>>::new_uninit();
+    let x: UniqueArc<dyn 'static + Sync + Send + Any> = x;
+    UniqueArc::downcast_downgrade_uninit::<MustDrop>(&x).unwrap();
 }
 
 // use std::{

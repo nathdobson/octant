@@ -5,30 +5,30 @@ use serde::{
     Deserializer,
 };
 
-pub struct FieldKeySeed(&'static str);
+pub struct IdentifierSeed(&'static str);
 
-impl FieldKeySeed {
+impl IdentifierSeed {
     pub fn new(name: &'static str) -> Self {
-        FieldKeySeed(name)
+        IdentifierSeed(name)
     }
 }
 
-impl<'de> DeserializeSeed<'de> for FieldKeySeed {
+impl<'de> DeserializeSeed<'de> for IdentifierSeed {
     type Value = ();
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_string(self)
+        deserializer.deserialize_identifier(self)
     }
 }
 
-impl<'de> Visitor<'de> for FieldKeySeed {
+impl<'de> Visitor<'de> for IdentifierSeed {
     type Value = ();
 
     fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "a field key matching {}", self.0)
+        write!(f, "a field key matching `{}'", self.0)
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -39,7 +39,7 @@ impl<'de> Visitor<'de> for FieldKeySeed {
             Ok(())
         } else {
             Err(E::custom(format_args!(
-                "expected a field matching {} but found {}",
+                "expected a field matching `{}' but found {}",
                 self.0, v
             )))
         }

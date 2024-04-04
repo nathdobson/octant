@@ -7,7 +7,7 @@ use serde::{
 
 use crate::util::{
     deserialize_pair::{DeserializePair, DeserializePairFirst, DeserializePairSecond},
-    field_key_seed::FieldKeySeed,
+    identifier_seed::IdentifierSeed,
 };
 
 pub struct PairStructSeed<T> {
@@ -72,13 +72,13 @@ impl<'de, T: DeserializePair<'de>> Visitor<'de> for PairStructSeed<T> {
     {
         let ((), first) = map
             .next_entry_seed(
-                FieldKeySeed::new(self.fields[0]),
+                IdentifierSeed::new(self.fields[0]),
                 DeserializePairFirst::new(&mut self.inner),
             )?
             .ok_or_else(|| self.missing(0))?;
         let ((), second) = map
             .next_entry_seed(
-                FieldKeySeed::new(self.fields[1]),
+                IdentifierSeed::new(self.fields[1]),
                 DeserializePairSecond::new(&mut self.inner, first),
             )?
             .ok_or_else(|| self.missing(1))?;

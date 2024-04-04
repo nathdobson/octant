@@ -1,74 +1,85 @@
 use std::{
     collections::{btree_map::Entry, BTreeMap, HashSet},
     fmt::{Debug, Formatter},
+    hash::Hash,
+    marker::PhantomData,
 };
 
 use serde::{
     de::{DeserializeSeed, MapAccess, Visitor},
-    ser::SerializeMap,
-    Deserialize, Deserializer, Serializer,
+    Deserialize,
+    Deserializer, ser::SerializeMap, Serialize, Serializer,
 };
 
 use crate::{
     de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed},
     forest::ForestState,
-    ser::{SerializeUpdate, SerializeUpdateAdapter},
-    tree::Tree,
-    util::{arc_or_weak::ArcOrWeak, deserialize_pair::DeserializePair, map_seed::MapSeed},
+    ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter}
+    ,
+    util::{
+        deserialize_pair::DeserializePair,
+        deserializer_proxy::DeserializerProxy, map_seed::MapSeed,
+        serializer_proxy::SerializerProxy,
+    },
 };
 
-pub struct Dict {
-    entries: BTreeMap<String, ArcOrWeak<Tree>>,
-    modified: Option<HashSet<String>>,
+pub struct Dict<K, V> {
+    entries: BTreeMap<K, V>,
+    modified: Option<HashSet<K>>,
 }
 
-impl Dict {
+impl<K: Eq + Ord + Hash + Clone, V> Dict<K, V> {
     pub fn new() -> Self {
         Dict {
             entries: Default::default(),
             modified: None,
         }
     }
-    pub fn insert(&mut self, key: String, value: ArcOrWeak<Tree>) {
+    pub fn insert(&mut self, key: K, value: V) {
         self.entries.insert(key.clone(), value);
         if let Some(modified) = &mut self.modified {
             modified.insert(key);
         }
     }
-    pub fn remove(&mut self, key: &str) {
+    pub fn remove(&mut self, key: &K) {
         self.entries.remove(key);
         if let Some(modified) = &mut self.modified {
-            modified.insert(key.to_string());
+            modified.insert(key.clone());
         }
     }
-    pub fn get(&self, key: &str) -> Option<&ArcOrWeak<Tree>> {
+    pub fn get(&self, key: &K) -> Option<&V> {
         self.entries.get(key)
     }
-    pub fn get_mut(&mut self, key: &str) -> Option<&mut ArcOrWeak<Tree>> {
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
         if let Some(modified) = &mut self.modified {
-            modified.insert(key.to_string());
+            modified.insert(key.clone());
         }
         self.entries.get_mut(key)
     }
 }
 
-impl<'de> DeserializeUpdate<'de> for Dict {
-    fn deserialize_snapshot<D: Deserializer<'de>>(
-        forest: &mut DeserializeForest,
+impl<'de, K: Ord + Deserialize<'de>, V: DeserializeUpdate<'de>> DeserializeUpdate<'de>
+    for Dict<K, V>
+{
+    fn deserialize_snapshot<D: Deserializer<'de>, DP: DeserializerProxy>(
+        forest: &mut DeserializeForest<DP>,
         d: D,
     ) -> Result<Self, D::Error> {
-        struct V<'a> {
-            forest: &'a mut DeserializeForest,
+        struct Vis<'a, K, V, DP: DeserializerProxy> {
+            forest: &'a mut DeserializeForest<DP>,
+            phantom: PhantomData<(K, V)>,
         }
-        impl<'a, 'de> DeserializePair<'de> for V<'a> {
-            type First = String;
-            type Second = (String, ArcOrWeak<Tree>);
+        impl<'a, 'de, K: Deserialize<'de>, V: DeserializeUpdate<'de>, DP: DeserializerProxy>
+            DeserializePair<'de> for Vis<'a, K, V, DP>
+        {
+            type First = K;
+            type Second = (K, V);
 
             fn deserialize_first<D: Deserializer<'de>>(
                 &mut self,
                 d: D,
             ) -> Result<Self::First, D::Error> {
-                String::deserialize(d)
+                K::deserialize(d)
             }
 
             fn deserialize_second<D: Deserializer<'de>>(
@@ -76,25 +87,36 @@ impl<'de> DeserializeUpdate<'de> for Dict {
                 key: Self::First,
                 value: D,
             ) -> Result<Self::Second, D::Error> {
-                Ok((key, ArcOrWeak::deserialize_snapshot(self.forest, value)?))
+                Ok((key, V::deserialize_snapshot(self.forest, value)?))
             }
         }
         Ok(Dict {
-            entries: MapSeed::new(V { forest }).deserialize(d)?,
+            entries: MapSeed::new(Vis {
+                forest,
+                phantom: PhantomData,
+            })
+            .deserialize(d)?,
             modified: None,
         })
     }
 
-    fn deserialize_update<'a, D: Deserializer<'de>>(
+    fn deserialize_update<'a, D: Deserializer<'de>, DP: DeserializerProxy>(
         &mut self,
-        forest: &mut DeserializeForest,
+        forest: &mut DeserializeForest<DP>,
         d: D,
     ) -> Result<(), D::Error> {
-        struct M<'a> {
-            dict: &'a mut Dict,
-            forest: &'a mut DeserializeForest,
+        struct M<'a, K, V, DP: DeserializerProxy> {
+            dict: &'a mut Dict<K, V>,
+            forest: &'a mut DeserializeForest<DP>,
         }
-        impl<'a, 'de> Visitor<'de> for M<'a> {
+        impl<
+                'a,
+                'de,
+                K: Ord + Deserialize<'de>,
+                V: DeserializeUpdate<'de>,
+                DP: DeserializerProxy,
+            > Visitor<'de> for M<'a, K, V, DP>
+        {
             type Value = ();
 
             fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
@@ -104,7 +126,7 @@ impl<'de> DeserializeUpdate<'de> for Dict {
             where
                 A: MapAccess<'de>,
             {
-                while let Some(key) = map.next_key::<String>()? {
+                while let Some(key) = map.next_key::<K>()? {
                     match self.dict.entries.entry(key) {
                         Entry::Vacant(x) => {
                             x.insert(
@@ -123,35 +145,36 @@ impl<'de> DeserializeUpdate<'de> for Dict {
     }
 }
 
-impl Debug for Dict {
+impl<K: Debug, V: Debug> Debug for Dict<K, V> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut m = f.debug_map();
         for (k, v) in self.entries.iter() {
-            m.key(k);
-            m.value_with(|f| {
-                match v {
-                    ArcOrWeak::Arc(x) => {
-                        Debug::fmt(x, f)?;
-                    }
-                    ArcOrWeak::Weak(x) => {
-                        f.debug_tuple("Weak")
-                            .field_with(|f| {
-                                if let Some(x) = x.upgrade() {
-                                    x.fmt_weak(f)?;
-                                }
-                                Ok(())
-                            })
-                            .finish()?;
-                    }
-                }
-                Ok(())
-            });
+            m.entry(k, v);
+            // m.key(k);
+            // m.value_with(|f| {
+            //     match v {
+            //         ArcOrWeak::Arc(x) => {
+            //             Debug::fmt(x, f)?;
+            //         }
+            //         ArcOrWeak::Weak(x) => {
+            //             f.debug_tuple("Weak")
+            //                 .field_with(|f| {
+            //                     if let Some(x) = x.upgrade() {
+            //                         x.fmt_weak(f)?;
+            //                     }
+            //                     Ok(())
+            //                 })
+            //                 .finish()?;
+            //         }
+            //     }
+            //     Ok(())
+            // });
         }
         m.finish()
     }
 }
 
-impl SerializeUpdate for Dict {
+impl<K: Ord + Serialize, V: SerializeUpdate> SerializeUpdate for Dict<K, V> {
     fn begin_stream(&mut self) {
         self.modified = None;
     }
@@ -164,9 +187,10 @@ impl SerializeUpdate for Dict {
         }
     }
 
-    fn serialize_update<S: Serializer>(
+    fn serialize_update<S: Serializer, SP: SerializerProxy>(
         &self,
-        state: &ForestState,
+        forest: &mut ForestState,
+        ser_forest: &mut SerializeForest<SP>,
         s: S,
     ) -> Result<S::Ok, S::Error> {
         if let Some(modified) = &self.modified {
@@ -175,14 +199,14 @@ impl SerializeUpdate for Dict {
                 let v = self
                     .entries
                     .get(k)
-                    .map(|v| SerializeUpdateAdapter::new(v, state));
+                    .map(|v| SerializeUpdateAdapter::new(v, forest, ser_forest));
                 s.serialize_entry(k, &v)?;
             }
             s.end()
         } else {
             let mut s = s.serialize_map(Some(self.entries.len()))?;
             for (k, v) in self.entries.iter() {
-                s.serialize_entry(k, &Some(SerializeUpdateAdapter::new(v, state)))?;
+                s.serialize_entry(k, &Some(SerializeUpdateAdapter::new(v, forest, ser_forest)))?;
             }
             s.end()
         }

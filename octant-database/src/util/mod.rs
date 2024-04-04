@@ -1,6 +1,6 @@
 pub mod deserialize_pair;
 pub mod pair_struct_seed;
-pub mod field_key_seed;
+pub mod identifier_seed;
 pub mod map_seed;
 pub mod seq_seed;
 pub mod deserialize_item;
@@ -9,3 +9,7 @@ pub mod arc_or_empty;
 pub mod arc_or_weak;
 pub mod unique_arc;
 pub mod tack;
+pub mod deserializer_proxy;
+pub mod deserializer_by_mut;
+pub mod serializer_proxy;
+pub mod struct_visitor;

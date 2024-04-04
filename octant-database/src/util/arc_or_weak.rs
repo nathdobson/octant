@@ -1,20 +1,9 @@
 use std::{
     borrow::Cow,
-    fmt::{Debug, Formatter},
-    panic::{catch_unwind, resume_unwind, AssertUnwindSafe},
+    fmt::{Debug, Formatter}
+    ,
+    panic::{AssertUnwindSafe, catch_unwind, resume_unwind},
     sync::{Arc, Weak},
-};
-
-use serde::{
-    de::{EnumAccess, VariantAccess, Visitor},
-    Deserialize, Deserializer, Serializer,
-};
-
-use crate::{
-    de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate},
-    forest::ForestState,
-    ser::{SerializeUpdate, SerializeUpdateAdapter},
-    tree::Tree,
 };
 
 pub enum ArcOrWeak<T: ?Sized> {
@@ -31,88 +20,7 @@ impl<T: ?Sized> ArcOrWeak<T> {
     }
 }
 
-impl SerializeUpdate for ArcOrWeak<Tree> {
-    fn begin_stream(&mut self) {}
 
-    fn begin_update(&mut self) -> bool {
-        true
-    }
-
-    fn serialize_update<S: Serializer>(
-        &self,
-        state: &ForestState,
-        s: S,
-    ) -> Result<S::Ok, S::Error> {
-        match self {
-            ArcOrWeak::Arc(x) => s.serialize_newtype_variant(
-                "ArcOrWeak",
-                0,
-                "Arc",
-                &SerializeUpdateAdapter::new(x, state),
-            ),
-            ArcOrWeak::Weak(x) => s.serialize_newtype_variant(
-                "ArcOrWeak",
-                0,
-                "Weak",
-                &SerializeUpdateAdapter::new(x, state),
-            ),
-        }
-    }
-
-    fn end_update(&mut self) {
-        match self {
-            ArcOrWeak::Arc(x) => x.end_update(),
-            ArcOrWeak::Weak(x) => x.end_update(),
-        }
-    }
-}
-
-impl<'de> DeserializeUpdate<'de> for ArcOrWeak<Tree> {
-    fn deserialize_snapshot<D: Deserializer<'de>>(
-        table: &mut DeserializeForest,
-        d: D,
-    ) -> Result<Self, D::Error> {
-        #[derive(Deserialize)]
-        enum Tag {
-            Arc,
-            Weak,
-        }
-        struct V<'a> {
-            table: &'a mut DeserializeForest,
-        }
-        impl<'a, 'de> Visitor<'de> for V<'a> {
-            type Value = ArcOrWeak<Tree>;
-
-            fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
-            where
-                A: EnumAccess<'de>,
-            {
-                let (tag, access) = data.variant::<Tag>()?;
-                match tag {
-                    Tag::Arc => Ok(ArcOrWeak::Arc(
-                        access.newtype_variant_seed(DeserializeSnapshotSeed::new(self.table))?,
-                    )),
-                    Tag::Weak => Ok(ArcOrWeak::Weak(
-                        access.newtype_variant_seed(DeserializeSnapshotSeed::new(self.table))?,
-                    )),
-                }
-            }
-            fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
-                write!(f, "enum")
-            }
-        }
-        d.deserialize_enum("ArcOrWeak", &["Weak", "Arc"], V { table })
-    }
-
-    fn deserialize_update<D: Deserializer<'de>>(
-        &mut self,
-        forest: &mut DeserializeForest,
-        d: D,
-    ) -> Result<(), D::Error> {
-        *self = Self::deserialize_snapshot(forest, d)?;
-        Ok(())
-    }
-}
 
 pub fn arc_try_new_cyclic<T, E>(
     f: impl for<'a> FnOnce(&'a Weak<T>) -> Result<T, E>,

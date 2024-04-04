@@ -10,7 +10,11 @@
 #![feature(unboxed_closures)]
 #![feature(dispatch_from_dyn)]
 #![feature(debug_closure_helpers)]
+#![feature(allocator_api)]
+#![feature(raw_ref_op)]
 #![allow(dead_code)]
+#![allow(unused_variables)]
+#![allow(unused_mut)]
 
 mod de;
 mod dict;
@@ -20,3 +24,6 @@ mod ser;
 mod test;
 mod util;
 mod forest;
+mod prim;
+mod field;
+mod option;
