@@ -1,6 +1,7 @@
 use std::{
     collections::HashSet,
     mem,
+    ops::{Deref, DerefMut},
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
@@ -9,7 +10,10 @@ use std::{
 
 use parking_lot::{Mutex, RwLockReadGuard, RwLockWriteGuard};
 
-use crate::tree::{Tree, TreeId};
+use crate::{
+    tree::{Tree, TreeId},
+    util::tack::Tack,
+};
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Debug, Copy, Clone)]
 pub(crate) struct ForestId(usize);
@@ -30,6 +34,29 @@ pub struct Forest {
     queue: Mutex<ForestState>,
 }
 
+pub struct TreeReadGuard<'a, T: ?Sized>(RwLockReadGuard<'a, T>);
+pub struct TreeWriteGuard<'a, T: ?Sized>(RwLockWriteGuard<'a, T>);
+
+impl<'a, T: ?Sized> Deref for TreeReadGuard<'a, T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        self.0.deref()
+    }
+}
+
+impl<'a, T: ?Sized> Deref for TreeWriteGuard<'a, T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        self.0.deref()
+    }
+}
+
+impl<'a, T: ?Sized> TreeWriteGuard<'a, T> {
+    pub fn get_mut<'b>(&'b mut self) -> Tack<'b, T> {
+        Tack::new(self.0.deref_mut())
+    }
+}
+
 impl Forest {
     pub(crate) fn enqueue_update<T>(&self, row: &Arc<Tree<T>>) {
         self.queue.lock().update_queue.insert(row.id(self));
@@ -37,29 +64,29 @@ impl Forest {
     pub(crate) fn take_queue(&mut self) -> HashSet<TreeId> {
         mem::replace(&mut self.queue.get_mut().update_queue, HashSet::new())
     }
-    pub fn read<'b, T: ?Sized>(&'b self, row: &'b Arc<Tree<T>>) -> RwLockReadGuard<'b, T> {
+    pub fn read<'b, T: ?Sized>(&'b self, row: &'b Arc<Tree<T>>) -> TreeReadGuard<'b, T> {
         assert_eq!(row.forest(self.forest_id), self.forest_id);
-        row.read()
+        TreeReadGuard(row.read())
     }
     pub fn try_read<'b, T: ?Sized>(
         &'b self,
         row: &'b Arc<Tree<T>>,
-    ) -> Option<RwLockReadGuard<'b, T>> {
+    ) -> Option<TreeReadGuard<'b, T>> {
         assert_eq!(row.forest(self.forest_id), self.forest_id);
-        row.try_read()
+        Some(TreeReadGuard(row.try_read()?))
     }
-    pub fn write<'b, T: ?Sized>(&'b self, row: &'b Arc<Tree<T>>) -> RwLockWriteGuard<'b, T> {
+    pub fn write<'b, T: ?Sized>(&'b self, row: &'b Arc<Tree<T>>) -> TreeWriteGuard<'b, T> {
         assert_eq!(row.forest(self.forest_id), self.forest_id);
         self.queue.lock().update_queue.insert(row.id(self));
-        row.write()
+        TreeWriteGuard(row.write())
     }
     pub fn try_write<'b, T: ?Sized>(
         &'b self,
         row: &'b Arc<Tree<T>>,
-    ) -> Option<RwLockWriteGuard<'b, T>> {
+    ) -> Option<TreeWriteGuard<'b, T>> {
         assert_eq!(row.forest(self.forest_id), self.forest_id);
         self.queue.lock().update_queue.insert(row.id(self));
-        row.try_write()
+        Some(TreeWriteGuard(row.try_write()?))
     }
     pub(crate) fn next_id(&self) -> TreeId {
         let ref mut queue = *self.queue.lock();

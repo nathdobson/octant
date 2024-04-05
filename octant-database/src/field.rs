@@ -9,7 +9,7 @@ use crate::{
     de::{DeserializeForest, DeserializeUpdate},
     forest::Forest,
     ser::{SerializeForest, SerializeUpdate},
-    util::{deserializer_proxy::DeserializerProxy, serializer_proxy::SerializerProxy},
+    util::{deserializer_proxy::DeserializerProxy, serializer_proxy::SerializerProxy, tack::Tack},
 };
 
 pub struct Field<T: ?Sized> {
@@ -29,6 +29,9 @@ impl<T: ?Sized> Field<T> {
     }
     pub fn modified(&self) -> bool {
         self.modified
+    }
+    pub fn get_mut<'a>(self: Tack<'a, Self>) -> Tack<'a, T> {
+        Tack::new(&mut self.into_inner_unchecked().value)
     }
 }
 

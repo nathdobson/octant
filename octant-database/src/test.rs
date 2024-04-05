@@ -1,28 +1,24 @@
 use std::sync::{Arc, Weak};
 
 use pretty_assertions::assert_eq;
-use serde::{
-    de::{DeserializeSeed},
-    Deserializer,
-    ser::SerializeStruct, Serializer,
-};
+use serde::{de::DeserializeSeed, ser::SerializeStruct, Deserializer, Serializer};
 use serde_json::{de::SliceRead, ser::PrettyFormatter};
 
 use crate::{
     de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed},
     field::Field,
-    forest::{Forest},
+    forest::Forest,
     prim::Prim,
     ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter},
     tree::{Tree, TreeId},
     util::{
-        deserializer_proxy::DeserializerProxy
-        ,
+        deserializer_proxy::DeserializerProxy,
+        option_seed::OptionSeed,
         serializer_proxy::SerializerProxy,
         struct_visitor::{StructAccess, StructSeed, StructVisitor},
+        tack::Tack,
     },
 };
-use crate::util::option_seed::OptionSeed;
 
 const EXPECTED: &str = r#"{
   "id": 0,
@@ -113,21 +109,33 @@ impl SerializeUpdate for MyStruct {
             &self
                 .field1
                 .modified()
-                .then_some(SerializeUpdateAdapter::new(&self.field1, forest, ser_forest)),
+                .then_some(SerializeUpdateAdapter::new(
+                    &self.field1,
+                    forest,
+                    ser_forest,
+                )),
         )?;
         s.serialize_field(
             "field2",
             &self
                 .field2
                 .modified()
-                .then_some(SerializeUpdateAdapter::new(&self.field2, forest, ser_forest)),
+                .then_some(SerializeUpdateAdapter::new(
+                    &self.field2,
+                    forest,
+                    ser_forest,
+                )),
         )?;
         s.serialize_field(
             "field3",
             &self
                 .field3
                 .modified()
-                .then_some(SerializeUpdateAdapter::new(&self.field3, forest, ser_forest)),
+                .then_some(SerializeUpdateAdapter::new(
+                    &self.field3,
+                    forest,
+                    ser_forest,
+                )),
         )?;
         Ok(s.end()?)
     }
@@ -137,6 +145,21 @@ impl SerializeUpdate for MyStruct {
         self.field1.end_update();
         self.field2.end_update();
         self.field3.end_update();
+    }
+}
+
+impl MyStruct {
+    fn this_mut<'a>(self: Tack<'a, Self>) -> Tack<'a, Weak<Tree<MyStruct>>> {
+        Tack::new(&mut self.into_inner_unchecked().this)
+    }
+    fn field1_mut<'a>(self: Tack<'a, Self>) -> Tack<'a, Prim<u8>> {
+        Tack::new(&mut self.into_inner_unchecked().field1)
+    }
+    fn field2_mut<'a>(self: Tack<'a, Self>) -> Tack<'a, Weak<Tree<Prim<u8>>>> {
+        Tack::new(&mut self.into_inner_unchecked().field2)
+    }
+    fn field3_mut<'a>(self: Tack<'a, Self>) -> Tack<'a, Arc<Tree<Prim<u8>>>> {
+        Tack::new(&mut self.into_inner_unchecked().field3)
     }
 }
 
@@ -181,7 +204,10 @@ impl<'de> DeserializeUpdate<'de> for MyStruct {
             type Value = ();
 
             fn visit<A: StructAccess<'de>>(self, mut a: A) -> Result<Self::Value, A::Error> {
-                a.next_seed(OptionSeed::new(DeserializeUpdateSeed::new(&mut self.this.this, self.forest)))?;
+                a.next_seed(OptionSeed::new(DeserializeUpdateSeed::new(
+                    &mut self.this.this,
+                    self.forest,
+                )))?;
                 a.next_seed(OptionSeed::new(DeserializeUpdateSeed::new(
                     &mut self.this.field1,
                     self.forest,
@@ -208,11 +234,13 @@ impl<'de> DeserializeUpdate<'de> for MyStruct {
 
 #[test]
 fn test_ser() {
-    let mut root = Tree::new_cyclic(|this| MyStruct {
-        this: Field::new(this.clone()),
-        field1: Field::new(Prim::new(1)),
-        field2: Field::new(Weak::new()),
-        field3: Field::new(Tree::new(Prim::new(2))),
+    let mut root = Arc::new_cyclic(|this| {
+        Tree::new(MyStruct {
+            this: Field::new(this.clone()),
+            field1: Field::new(Prim::new(1)),
+            field2: Field::new(Weak::new()),
+            field3: Field::new(Arc::new(Tree::new(Prim::new(2)))),
+        })
     });
     let mut forest = Forest::new();
     let mut ser_forest = SerializeForest::<JsonProxy>::new();
@@ -238,11 +266,13 @@ fn test_de() {
 
 #[test]
 fn test_basic() {
-    let root = Tree::new_cyclic(|this| MyStruct {
-        this: Field::new(this.clone()),
-        field1: Field::new(Prim::new(1)),
-        field2: Field::new(Weak::new()),
-        field3: Field::new(Tree::new(Prim::new(2))),
+    let root = Arc::new_cyclic(|this| {
+        Tree::new(MyStruct {
+            this: Field::new(this.clone()),
+            field1: Field::new(Prim::new(1)),
+            field2: Field::new(Weak::new()),
+            field3: Field::new(Arc::new(Tree::new(Prim::new(2)))),
+        })
     });
     let forest = Forest::new();
     let mut tester = Tester::new(
@@ -262,7 +292,7 @@ fn test_basic() {
 }"#,
     );
     tester.retest(&[]);
-    **tester.forest.write(&root).field1 = 2;
+    **tester.forest.write(&root).get_mut().field1_mut().get_mut() = 2;
     tester.retest(&[(
         0,
         r#"{
@@ -272,9 +302,9 @@ fn test_basic() {
   "field3": null
 }"#,
     )]);
-    let weakish = Tree::new(Prim::new(2u8));
-    *tester.forest.write(&root).field2 = Arc::downgrade(&weakish);
-    *tester.forest.write(&root).field3 = weakish.clone();
+    let weakish = Arc::new(Tree::new(Prim::new(2u8)));
+    *tester.forest.write(&root).get_mut().field2_mut() = Arc::downgrade(&weakish);
+    *tester.forest.write(&root).get_mut().field3_mut() = weakish.clone();
     tester.retest(&[(
         0,
         r#"{

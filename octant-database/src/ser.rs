@@ -13,14 +13,6 @@ pub struct SerializeForest<SP> {
     pub(crate) trees: WeakValueHashMap<TreeId, Weak<Tree<dyn SerializeTree<SP>>>>,
 }
 
-impl<SP: SerializerProxy> SerializeForest<SP> {
-    pub fn new() -> Self {
-        SerializeForest {
-            trees: WeakValueHashMap::new(),
-        }
-    }
-}
-
 pub trait SerializeUpdate {
     fn begin_stream(&mut self);
     fn begin_update(&mut self) -> bool;
@@ -69,6 +61,11 @@ impl<'a, T: SerializeUpdate + ?Sized, SP: SerializerProxy> Serialize
 }
 
 impl<SP: SerializerProxy> SerializeForest<SP> {
+    pub fn new() -> Self {
+        SerializeForest {
+            trees: WeakValueHashMap::new(),
+        }
+    }
     pub fn serialize_snapshot<'up, T: SerializeUpdate>(
         &mut self,
         mut value: &mut T,
@@ -98,8 +95,5 @@ impl<SP: SerializerProxy> SerializeForest<SP> {
             }
         }
         Ok(None)
-    }
-    pub fn next_id(&mut self) -> TreeId {
-        todo!()
     }
 }

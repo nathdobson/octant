@@ -11,6 +11,7 @@ use crate::{
     ser::{SerializeForest, SerializeUpdate},
     util::{deserializer_proxy::DeserializerProxy, serializer_proxy::SerializerProxy},
 };
+use crate::util::tack::Untack;
 
 pub struct Prim<T: ?Sized>(T);
 
@@ -79,3 +80,5 @@ impl<T: ?Sized> DerefMut for Prim<T> {
         &mut self.0
     }
 }
+
+impl<T: ?Sized> Untack for Prim<T> {}

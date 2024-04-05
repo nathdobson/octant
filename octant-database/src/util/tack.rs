@@ -1,11 +1,14 @@
-use std::fmt::{Debug, Display, Formatter};
-use std::marker::Unsize;
-use std::ops::{CoerceUnsized, Deref, DerefMut};
+use std::{
+    fmt::{Debug, Display, Formatter},
+    marker::Unsize,
+    ops::{CoerceUnsized, Deref, DerefMut},
+    sync::{Arc, Weak},
+};
 
 #[repr(transparent)]
 pub struct Tack<'a, T: ?Sized>(&'a mut T);
 
-pub auto trait Untack {}
+pub trait Untack {}
 
 impl<'a, T: ?Sized + Untack> Tack<'a, T> {
     pub fn into_inner(self) -> &'a mut T {
@@ -67,3 +70,7 @@ impl<'a, T: ?Sized + Untack> DerefMut for Tack<'a, T> {
         self.reborrow().get_mut()
     }
 }
+
+impl<T: ?Sized> Untack for Weak<T> {}
+
+impl<T: ?Sized> Untack for Arc<T> {}

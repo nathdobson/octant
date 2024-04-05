@@ -1,5 +1,4 @@
 use std::{
-    fmt,
     fmt::{Debug, Formatter},
     marker::PhantomData,
     sync::{Arc, OnceLock, Weak},
@@ -14,7 +13,7 @@ use serde::{
 
 use crate::{
     de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate},
-    forest::{ForestId, Forest},
+    forest::{Forest, ForestId},
     ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter},
     util::{
         deserialize_pair::DeserializePair,
@@ -35,6 +34,7 @@ pub struct Tree<T: ?Sized> {
     written: Once,
     state: RwLock<T>,
 }
+
 
 pub(crate) trait SerializeTree<SP: SerializerProxy> {
     fn tree_begin_stream(&mut self);
@@ -84,7 +84,7 @@ impl TreeId {
 }
 
 impl<T: ?Sized> Tree<T> {
-    pub fn new_value(value: T) -> Self
+    pub fn new(value: T) -> Self
     where
         T: Sized,
     {
@@ -95,7 +95,7 @@ impl<T: ?Sized> Tree<T> {
             state: RwLock::new(value),
         }
     }
-    pub fn new_id_value(id: TreeId, value: T) -> Self
+    pub(crate) fn new_id_value(id: TreeId, value: T) -> Self
     where
         T: Sized,
     {
@@ -106,18 +106,7 @@ impl<T: ?Sized> Tree<T> {
             state: RwLock::new(value),
         }
     }
-    pub fn new(value: T) -> Arc<Self>
-    where
-        T: Sized,
-    {
-        Arc::new(Self::new_value(value))
-    }
-    pub fn new_cyclic<F: for<'a> FnOnce(&'a Weak<Self>) -> T>(f: F) -> Arc<Self>
-    where
-        T: Sized,
-    {
-        Arc::new_cyclic(|weak| Self::new_value(f(weak)))
-    }
+
     pub(crate) fn id(&self, forest: &Forest) -> TreeId {
         *self.id.get_or_init(|| forest.next_id())
     }
@@ -135,14 +124,6 @@ impl<T: ?Sized> Tree<T> {
     }
     pub(crate) fn try_read(&self) -> Option<RwLockReadGuard<T>> {
         self.state.try_read()
-    }
-}
-impl<SP: SerializerProxy> Tree<dyn SerializeTree<SP>> {
-    pub fn fmt_weak(&self, f: &mut Formatter) -> fmt::Result {
-        if let Some(id) = self.id.get() {
-            Debug::fmt(id, f)?;
-        }
-        Ok(())
     }
 }
 
