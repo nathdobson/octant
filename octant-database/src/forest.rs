@@ -61,7 +61,7 @@ impl Forest {
     pub(crate) fn enqueue_update<T>(&self, row: &Arc<Tree<T>>) {
         self.queue.lock().update_queue.insert(row.id(self));
     }
-    pub(crate) fn take_queue(&mut self) -> HashSet<TreeId> {
+    pub fn take_queue(&mut self) -> HashSet<TreeId> {
         mem::replace(&mut self.queue.get_mut().update_queue, HashSet::new())
     }
     pub fn read<'b, T: ?Sized>(&'b self, row: &'b Arc<Tree<T>>) -> TreeReadGuard<'b, T> {

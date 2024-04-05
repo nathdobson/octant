@@ -15,6 +15,8 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(unused_mut)]
+#![feature(try_blocks)]
+#![feature(absolute_path)]
 
 mod de;
 mod dict;
@@ -26,6 +28,7 @@ mod util;
 mod forest;
 mod prim;
 mod field;
+mod file;
 
 pub use tree::Tree;
 pub use forest::Forest;
