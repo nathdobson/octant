@@ -12,16 +12,18 @@ use serde::{
 };
 
 use crate::{
-    de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed},
     forest::Forest,
-    ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter},
     util::{
         deserialize_pair::DeserializePair,
         map_seed::MapSeed,
     },
 };
-use crate::deserializer_proxy::DeserializerProxy;
-use crate::serializer_proxy::SerializerProxy;
+use crate::de::forest::DeserializeForest;
+use crate::de::proxy::DeserializerProxy;
+use crate::de::update::{DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed};
+use crate::ser::forest::SerializeForest;
+use crate::ser::update::{SerializeUpdate, SerializeUpdateAdapter};
+use crate::ser::proxy::SerializerProxy;
 use crate::tack::Tack;
 
 pub struct Dict<K, V> {

@@ -6,7 +6,13 @@ use std::{
     path::Path,
     sync::{Arc, Weak},
 };
+
 use tokio::io;
+
+use no_imports::MyStruct;
+use octant_database::{file::Database, tree::Tree};
+use octant_database::value::field::Field;
+use octant_database::value::prim::Prim;
 
 mod no_imports {
     #![no_implicit_prelude]
@@ -14,14 +20,12 @@ mod no_imports {
         #[derive(Debug)]
         pub struct MyStruct {
             pub this: ::std::sync::Weak<::octant_database::tree::Tree<MyStruct>>,
-            pub field1: ::octant_database::prim::Prim<u8>,
-            pub field2: ::std::sync::Weak<::octant_database::tree::Tree<::octant_database::prim::Prim<u8>>>,
-            pub field3: ::std::sync::Arc<::octant_database::tree::Tree<::octant_database::prim::Prim<u8>>>,
+            pub field1: ::octant_database::value::prim::Prim<u8>,
+            pub field2: ::std::sync::Weak<::octant_database::tree::Tree<::octant_database::value::prim::Prim<u8>>>,
+            pub field3: ::std::sync::Arc<::octant_database::tree::Tree<::octant_database::value::prim::Prim<u8>>>,
         }
     }
 }
-use no_imports::MyStruct;
-use octant_database::{field::Field, file::Database, prim::Prim, tree::Tree};
 
 #[tokio::test]
 async fn test_file() -> io::Result<()> {

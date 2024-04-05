@@ -6,9 +6,9 @@ use serde::{
 };
 
 use crate::util::{
-    deserialize_pair::{DeserializePair, DeserializePairFirst, DeserializePairSecond},
     identifier_seed::IdentifierSeed,
 };
+use crate::util::deserialize_pair::{DeserializePair, DeserializePairFirst, DeserializePairSecond};
 
 pub struct PairStructSeed<T> {
     name: &'static str,

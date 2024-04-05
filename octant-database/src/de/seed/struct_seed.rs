@@ -1,10 +1,7 @@
-use std::{fmt::Formatter, slice};
-
-use serde::{
-    de::{DeserializeSeed, Error, MapAccess, SeqAccess, Visitor}
-    , Deserializer,
-};
-
+use serde::de::{DeserializeSeed, Error, MapAccess, SeqAccess, Visitor};
+use serde::Deserializer;
+use std::slice;
+use std::fmt::Formatter;
 use crate::util::identifier_seed::IdentifierSeed;
 
 pub trait StructAccess<'de> {

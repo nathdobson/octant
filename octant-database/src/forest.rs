@@ -10,8 +10,8 @@ use std::{
 
 use parking_lot::{Mutex, RwLockReadGuard, RwLockWriteGuard};
 
-use crate::tree::{Tree, TreeId};
 use crate::tack::Tack;
+use crate::tree::{Tree, TreeId};
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Debug, Copy, Clone)]
 pub(crate) struct ForestId(usize);

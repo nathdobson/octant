@@ -1,18 +1,22 @@
+use std::{io, path::Path, sync::Arc, time::Duration};
+
 use serde::{Deserialize, Serialize};
 use serde_json::{de::SliceRead, ser::PrettyFormatter};
-use std::{io, path::Path, sync::Arc, time::Duration};
 use tokio::{
     fs,
-    fs::{read_dir, File},
+    fs::{File, read_dir},
     io::AsyncWriteExt,
     sync::RwLock,
 };
-use crate::de::{DeserializeForest, DeserializeUpdate};
+
+use crate::de::forest::DeserializeForest;
+use crate::de::proxy::DeserializerProxy;
+use crate::de::update::DeserializeUpdate;
 use crate::forest::Forest;
-use crate::ser::{SerializeForest, SerializeUpdate};
+use crate::ser::forest::SerializeForest;
+use crate::ser::proxy::SerializerProxy;
+use crate::ser::update::SerializeUpdate;
 use crate::tree::{Tree, TreeId};
-use crate::deserializer_proxy::DeserializerProxy;
-use crate::serializer_proxy::SerializerProxy;
 
 pub struct Database {
     forest: Arc<RwLock<Forest>>,

@@ -1,24 +1,29 @@
 use std::sync::{Arc, Weak};
 
 use pretty_assertions::assert_eq;
-use serde::{de::DeserializeSeed, Deserializer, ser::SerializeStruct, Serializer};
+use serde::{de::DeserializeSeed, ser::SerializeStruct, Deserializer, Serializer};
 use serde_json::{de::SliceRead, ser::PrettyFormatter};
 
 use crate::{
-    de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed},
-    field::Field,
-    forest::Forest,
-    prim::Prim,
-    ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter},
-    tree::{Tree, TreeId},
-    util::{
-        option_seed::OptionSeed,
-        struct_visitor::{StructAccess, StructSeed, StructVisitor},
+    de::{
+        forest::DeserializeForest,
+        proxy::DeserializerProxy,
+        seed::{
+            option_seed::OptionSeed,
+            struct_seed::{StructAccess, StructSeed, StructVisitor},
+        },
+        update::{DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed},
     },
+    forest::Forest,
+    ser::{
+        forest::SerializeForest,
+        proxy::SerializerProxy,
+        update::{SerializeUpdate, SerializeUpdateAdapter},
+    },
+    tack::Tack,
+    tree::{Tree, TreeId},
+    value::{field::Field, prim::Prim},
 };
-use crate::deserializer_proxy::DeserializerProxy;
-use crate::serializer_proxy::SerializerProxy;
-use crate::tack::Tack;
 
 const EXPECTED: &str = r#"{
   "id": 0,

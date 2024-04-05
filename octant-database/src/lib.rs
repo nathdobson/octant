@@ -18,22 +18,17 @@
 #![feature(try_blocks)]
 #![feature(absolute_path)]
 
-pub mod de;
-mod dict;
 pub mod tree;
-pub mod ser;
 #[cfg(test)]
 mod test;
 mod util;
 pub mod forest;
-pub mod prim;
-pub mod field;
 pub mod file;
 pub mod derive;
-pub mod deserializer_proxy;
-pub mod serializer_proxy;
 pub mod tack;
-pub mod struct_visitor;
+pub mod de;
+pub mod value;
+pub mod ser;
 
 pub mod reexports{
     pub use serde;

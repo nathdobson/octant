@@ -6,14 +6,17 @@ use std::{
 use serde::{de::DeserializeSeed, Deserializer, Serialize, Serializer};
 
 use crate::{
-    de::{DeserializeForest, DeserializeUpdate, DeserializeUpdateSeed},
-    deserializer_proxy::DeserializerProxy,
     forest::Forest,
-    ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter},
-    serializer_proxy::SerializerProxy,
     tack::Tack,
-    util::option_seed::OptionSeed,
+
 };
+use crate::de::forest::DeserializeForest;
+use crate::de::proxy::DeserializerProxy;
+use crate::de::seed::option_seed::OptionSeed;
+use crate::de::update::{DeserializeUpdate, DeserializeUpdateSeed};
+use crate::ser::forest::SerializeForest;
+use crate::ser::proxy::SerializerProxy;
+use crate::ser::update::{SerializeUpdate, SerializeUpdateAdapter};
 
 pub struct Field<T: ?Sized> {
     modified: bool,

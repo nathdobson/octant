@@ -12,18 +12,20 @@ use serde::{
 };
 
 use crate::{
-    de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate},
     forest::{Forest, ForestId},
-    ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter},
     util::{
-        deserialize_pair::DeserializePair,
-        option_seed::OptionSeed,
         pair_struct_seed::PairStructSeed,
         unique_arc::{MaybeUninit2, UniqueArc},
     },
 };
-use crate::deserializer_proxy::DeserializerProxy;
-use crate::serializer_proxy::SerializerProxy;
+use crate::de::forest::DeserializeForest;
+use crate::de::proxy::DeserializerProxy;
+use crate::de::seed::option_seed::OptionSeed;
+use crate::de::update::{DeserializeSnapshotSeed, DeserializeUpdate};
+use crate::ser::forest::SerializeForest;
+use crate::ser::update::{SerializeUpdate, SerializeUpdateAdapter};
+use crate::ser::proxy::SerializerProxy;
+use crate::util::deserialize_pair::DeserializePair;
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Copy, Clone, Serialize, Deserialize)]
 pub struct TreeId(u64);
@@ -35,49 +37,10 @@ pub struct Tree<T: ?Sized> {
     state: RwLock<T>,
 }
 
-
-pub(crate) trait SerializeTree<SP: SerializerProxy> {
-    fn tree_begin_stream(&mut self);
-    fn tree_begin_update(&mut self) -> bool;
-    fn tree_serialize_update<'up>(
-        &self,
-        forest: &mut Forest,
-        ser_forest: &mut SerializeForest<SP>,
-        s: SP::SerializerValue<'up>,
-    ) -> Result<<SP::SerializerValue<'up> as Serializer>::Ok, SP::Error>;
-    fn tree_end_update(&mut self);
-}
-
 impl TreeId {
     pub fn value(&self) -> u64 {
         self.0
     }
-}
-
-impl<SP: SerializerProxy, T: SerializeUpdate> SerializeTree<SP> for T {
-    fn tree_begin_stream(&mut self) {
-        self.begin_stream();
-    }
-
-    fn tree_begin_update(&mut self) -> bool {
-        self.begin_update()
-    }
-
-    fn tree_serialize_update<'up>(
-        &self,
-        forest: &mut Forest,
-        ser_forest: &mut SerializeForest<SP>,
-        s: SP::SerializerValue<'up>,
-    ) -> Result<<SP::SerializerValue<'up> as Serializer>::Ok, SP::Error> {
-        self.serialize_update(forest, ser_forest, s)
-    }
-
-    fn tree_end_update(&mut self) {
-        self.end_update()
-    }
-}
-
-impl TreeId {
     pub fn new(x: u64) -> Self {
         TreeId(x)
     }
