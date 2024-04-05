@@ -3,13 +3,16 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use serde::{Deserializer, Serializer};
+use serde::{de::DeserializeSeed, Deserializer, Serialize, Serializer};
 
 use crate::{
-    de::{DeserializeForest, DeserializeUpdate},
+    de::{DeserializeForest, DeserializeUpdate, DeserializeUpdateSeed},
+    deserializer_proxy::DeserializerProxy,
     forest::Forest,
-    ser::{SerializeForest, SerializeUpdate},
-    util::{deserializer_proxy::DeserializerProxy, serializer_proxy::SerializerProxy, tack::Tack},
+    ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter},
+    serializer_proxy::SerializerProxy,
+    tack::Tack,
+    util::option_seed::OptionSeed,
 };
 
 pub struct Field<T: ?Sized> {
@@ -97,5 +100,58 @@ impl<'de, T: DeserializeUpdate<'de>> DeserializeUpdate<'de> for Field<T> {
         d: D,
     ) -> Result<(), D::Error> {
         self.value.deserialize_update(forest, d)
+    }
+}
+
+pub struct SerializeFieldAdapter<'a, T, SP: SerializerProxy>(
+    Option<SerializeUpdateAdapter<'a, T, SP>>,
+);
+
+impl<'a, T, SP: SerializerProxy> SerializeFieldAdapter<'a, T, SP> {
+    pub fn new(
+        field: &'a Field<T>,
+        forest: &'a mut Forest,
+        ser_forest: &'a mut SerializeForest<SP>,
+    ) -> Self {
+        SerializeFieldAdapter(
+            field
+                .modified
+                .then_some(SerializeUpdateAdapter::new(field, forest, ser_forest)),
+        )
+    }
+}
+
+impl<'a, T: SerializeUpdate, SP: SerializerProxy> Serialize for SerializeFieldAdapter<'a, T, SP> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.0.serialize(serializer)
+    }
+}
+
+pub struct DeserializeFieldSeed<'a, T, DP: DeserializerProxy>(
+    OptionSeed<DeserializeUpdateSeed<'a, Field<T>, DP>>,
+);
+
+impl<'a, T, DP: DeserializerProxy> DeserializeFieldSeed<'a, T, DP> {
+    pub fn new(field: &'a mut Field<T>, de_forest: &'a mut DeserializeForest<DP>) -> Self {
+        DeserializeFieldSeed(OptionSeed::new(DeserializeUpdateSeed::new(
+            field, de_forest,
+        )))
+    }
+}
+
+impl<'a, 'de, T: DeserializeUpdate<'de>, DP: DeserializerProxy> DeserializeSeed<'de>
+    for DeserializeFieldSeed<'a, T, DP>
+{
+    type Value = ();
+
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        self.0.deserialize(deserializer)?;
+        Ok(())
     }
 }

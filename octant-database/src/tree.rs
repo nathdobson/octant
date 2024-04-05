@@ -7,8 +7,8 @@ use std::{
 use parking_lot::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{
     de::{DeserializeSeed, Error},
-    ser::SerializeStruct,
-    Deserialize, Deserializer, Serialize, Serializer,
+    Deserialize,
+    Deserializer, ser::SerializeStruct, Serialize, Serializer,
 };
 
 use crate::{
@@ -17,13 +17,13 @@ use crate::{
     ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter},
     util::{
         deserialize_pair::DeserializePair,
-        deserializer_proxy::DeserializerProxy,
         option_seed::OptionSeed,
         pair_struct_seed::PairStructSeed,
-        serializer_proxy::SerializerProxy,
         unique_arc::{MaybeUninit2, UniqueArc},
     },
 };
+use crate::deserializer_proxy::DeserializerProxy;
+use crate::serializer_proxy::SerializerProxy;
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Copy, Clone, Serialize, Deserialize)]
 pub struct TreeId(u64);

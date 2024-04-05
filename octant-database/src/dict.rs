@@ -7,8 +7,8 @@ use std::{
 
 use serde::{
     de::{DeserializeSeed, MapAccess, Visitor},
-    ser::SerializeMap,
-    Deserialize, Deserializer, Serialize, Serializer,
+    Deserialize,
+    Deserializer, ser::SerializeMap, Serialize, Serializer,
 };
 
 use crate::{
@@ -16,10 +16,13 @@ use crate::{
     forest::Forest,
     ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter},
     util::{
-        deserialize_pair::DeserializePair, deserializer_proxy::DeserializerProxy,
-        map_seed::MapSeed, serializer_proxy::SerializerProxy, tack::Tack,
+        deserialize_pair::DeserializePair,
+        map_seed::MapSeed,
     },
 };
+use crate::deserializer_proxy::DeserializerProxy;
+use crate::serializer_proxy::SerializerProxy;
+use crate::tack::Tack;
 
 pub struct Dict<K, V> {
     entries: BTreeMap<K, V>,

@@ -7,8 +7,9 @@ use serde::{
 
 use crate::{
     tree::{Tree, TreeId},
-    util::{deserializer_proxy::DeserializerProxy, unique_arc::UniqueArc},
+    util::unique_arc::UniqueArc,
 };
+use crate::deserializer_proxy::DeserializerProxy;
 
 pub(crate) trait DeserializeTree<DP: DeserializerProxy> {
     fn deserialize_update_by_proxy<'up, 'de>(

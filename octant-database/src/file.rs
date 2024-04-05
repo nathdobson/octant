@@ -1,7 +1,3 @@
-use crate::{
-    DeserializeForest, DeserializeUpdate, DeserializerProxy, Forest, SerializeForest,
-    SerializeUpdate, SerializerProxy, Tree, TreeId,
-};
 use serde::{Deserialize, Serialize};
 use serde_json::{de::SliceRead, ser::PrettyFormatter};
 use std::{io, path::Path, sync::Arc, time::Duration};
@@ -11,6 +7,12 @@ use tokio::{
     io::AsyncWriteExt,
     sync::RwLock,
 };
+use crate::de::{DeserializeForest, DeserializeUpdate};
+use crate::forest::Forest;
+use crate::ser::{SerializeForest, SerializeUpdate};
+use crate::tree::{Tree, TreeId};
+use crate::deserializer_proxy::DeserializerProxy;
+use crate::serializer_proxy::SerializerProxy;
 
 pub struct Database {
     forest: Arc<RwLock<Forest>>,
@@ -32,9 +34,9 @@ impl SerializerProxy for JsonProxy {
 }
 
 impl Database {
-    fn serializer<'up>(
-        vec: &'up mut Vec<u8>,
-    ) -> serde_json::Serializer<&'up mut Vec<u8>, PrettyFormatter<'up>> {
+    fn serializer(
+        vec: &mut Vec<u8>,
+    ) -> serde_json::Serializer<&mut Vec<u8>, PrettyFormatter> {
         serde_json::Serializer::with_formatter(vec, PrettyFormatter::new())
     }
     pub async fn new<

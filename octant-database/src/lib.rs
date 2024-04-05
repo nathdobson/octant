@@ -18,24 +18,23 @@
 #![feature(try_blocks)]
 #![feature(absolute_path)]
 
-mod de;
+pub mod de;
 mod dict;
-mod tree;
-mod ser;
+pub mod tree;
+pub mod ser;
 #[cfg(test)]
 mod test;
 mod util;
-mod forest;
-mod prim;
-mod field;
-mod file;
+pub mod forest;
+pub mod prim;
+pub mod field;
+pub mod file;
+pub mod derive;
+pub mod deserializer_proxy;
+pub mod serializer_proxy;
+pub mod tack;
+pub mod struct_visitor;
 
-pub use tree::Tree;
-pub use forest::Forest;
-pub use de::DeserializeUpdate;
-pub use de::DeserializeForest;
-pub use ser::SerializeForest;
-pub use ser::SerializeUpdate;
-pub use tree::TreeId;
-pub use util::serializer_proxy::SerializerProxy;
-pub use util::deserializer_proxy::DeserializerProxy;
+pub mod reexports{
+    pub use serde;
+}

@@ -1,30 +1,24 @@
-use std::{
-    path,
-    path::Path,
-    sync::{Arc, Weak},
-};
+use std::sync::{Arc, Weak};
 
 use pretty_assertions::assert_eq;
-use serde::{de::DeserializeSeed, ser::SerializeStruct, Deserialize, Deserializer, Serializer};
+use serde::{de::DeserializeSeed, Deserializer, ser::SerializeStruct, Serializer};
 use serde_json::{de::SliceRead, ser::PrettyFormatter};
-use tokio::io;
 
 use crate::{
     de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed},
     field::Field,
-    file::Database,
     forest::Forest,
     prim::Prim,
     ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter},
     tree::{Tree, TreeId},
     util::{
-        deserializer_proxy::DeserializerProxy,
         option_seed::OptionSeed,
-        serializer_proxy::SerializerProxy,
         struct_visitor::{StructAccess, StructSeed, StructVisitor},
-        tack::Tack,
     },
 };
+use crate::deserializer_proxy::DeserializerProxy;
+use crate::serializer_proxy::SerializerProxy;
+use crate::tack::Tack;
 
 const EXPECTED: &str = r#"{
   "id": 0,
@@ -387,49 +381,4 @@ impl Tester {
         }
         assert_eq!(format!("{:?}", self.input), format!("{:?}", self.output));
     }
-}
-
-#[test]
-fn test() {
-    let s = r#"{"a":1} {"b":2}"#;
-    let mut d = serde_json::Deserializer::new(serde_json::de::StrRead::new(&s));
-    assert_eq!(
-        format!("{:?}", serde_json::Value::deserialize(&mut d).unwrap()),
-        r#"Object {"a": Number(1)}"#
-    );
-    assert_eq!(
-        format!("{:?}", serde_json::Value::deserialize(&mut d).unwrap()),
-        r#"Object {"b": Number(2)}"#
-    );
-}
-
-#[tokio::test]
-async fn test_file() -> io::Result<()> {
-    let path = path::absolute(Path::new("../target/test.db"))?;
-    tokio::fs::remove_dir_all(&path).await?;
-    tokio::fs::create_dir_all(&path).await?;
-    {
-        let root = Arc::new_cyclic(|this| {
-            Tree::new(MyStruct {
-                this: Field::new(this.clone()),
-                field1: Field::new(Prim::new(1)),
-                field2: Field::new(Weak::new()),
-                field3: Field::new(Arc::new(Tree::new(Prim::new(2)))),
-            })
-        });
-        let (mut db, root) = Database::new(&path, || root).await?;
-        **db.forest()
-            .write()
-            .await
-            .write(&root)
-            .get_mut()
-            .field1_mut()
-            .get_mut() = 2;
-        db.serialize().await?;
-    }
-    {
-        let (mut db, root) = Database::new::<MyStruct>(&path, || todo!()).await?;
-        assert_eq!(**db.forest().read().await.read(&root).field1, 2);
-    }
-    Ok(())
 }

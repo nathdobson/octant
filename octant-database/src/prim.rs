@@ -9,9 +9,10 @@ use crate::{
     de::{DeserializeForest, DeserializeUpdate},
     forest::Forest,
     ser::{SerializeForest, SerializeUpdate},
-    util::{deserializer_proxy::DeserializerProxy, serializer_proxy::SerializerProxy},
 };
-use crate::util::tack::Untack;
+use crate::deserializer_proxy::DeserializerProxy;
+use crate::serializer_proxy::SerializerProxy;
+use crate::tack::Untack;
 
 pub struct Prim<T: ?Sized>(T);
 

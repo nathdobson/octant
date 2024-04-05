@@ -3,17 +3,15 @@ use std::{
     mem,
     ops::{Deref, DerefMut},
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc,
+        atomic::{AtomicUsize, Ordering},
     },
 };
 
 use parking_lot::{Mutex, RwLockReadGuard, RwLockWriteGuard};
 
-use crate::{
-    tree::{Tree, TreeId},
-    util::tack::Tack,
-};
+use crate::tree::{Tree, TreeId};
+use crate::tack::Tack;
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Debug, Copy, Clone)]
 pub(crate) struct ForestId(usize);

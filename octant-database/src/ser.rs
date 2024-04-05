@@ -5,9 +5,10 @@ use weak_table::WeakValueHashMap;
 
 use crate::{
     forest::Forest,
-    tree::{SerializeTree, Tree, TreeId},
-    util::{ serializer_proxy::SerializerProxy},
+    tree::{SerializeTree, Tree, TreeId}
+    ,
 };
+use crate::serializer_proxy::SerializerProxy;
 
 pub struct SerializeForest<SP> {
     pub(crate) trees: WeakValueHashMap<TreeId, Weak<Tree<dyn SerializeTree<SP>>>>,

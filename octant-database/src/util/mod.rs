@@ -6,8 +6,4 @@ pub mod seq_seed;
 pub mod deserialize_item;
 pub mod option_seed;
 pub mod unique_arc;
-pub mod tack;
-pub mod deserializer_proxy;
 pub mod deserializer_by_mut;
-pub mod serializer_proxy;
-pub mod struct_visitor;
