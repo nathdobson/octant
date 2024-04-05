@@ -1,5 +1,5 @@
 use std::{
-    collections::{btree_map::Entry, BTreeMap, HashSet},
+    collections::{btree_map::Entry, BTreeMap, BTreeSet},
     fmt::{Debug, Formatter},
     hash::Hash,
     marker::PhantomData,
@@ -7,54 +7,56 @@ use std::{
 
 use serde::{
     de::{DeserializeSeed, MapAccess, Visitor},
-    Deserialize,
-    Deserializer, ser::SerializeMap, Serialize, Serializer,
+    ser::SerializeMap,
+    Deserialize, Deserializer, Serialize, Serializer,
 };
 
 use crate::{
     de::{DeserializeForest, DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed},
     forest::Forest,
-    ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter}
-    ,
+    ser::{SerializeForest, SerializeUpdate, SerializeUpdateAdapter},
     util::{
-        deserialize_pair::DeserializePair,
-        deserializer_proxy::DeserializerProxy, map_seed::MapSeed,
-        serializer_proxy::SerializerProxy,
+        deserialize_pair::DeserializePair, deserializer_proxy::DeserializerProxy,
+        map_seed::MapSeed, serializer_proxy::SerializerProxy, tack::Tack,
     },
 };
 
 pub struct Dict<K, V> {
     entries: BTreeMap<K, V>,
-    modified: Option<HashSet<K>>,
+    modified: Option<BTreeSet<K>>,
 }
 
-impl<K: Eq + Ord + Hash + Clone, V> Dict<K, V> {
+impl<K: Eq + Ord + Hash + Clone, V: SerializeUpdate> Dict<K, V> {
     pub fn new() -> Self {
         Dict {
             entries: Default::default(),
             modified: None,
         }
     }
-    pub fn insert(&mut self, key: K, value: V) {
-        self.entries.insert(key.clone(), value);
-        if let Some(modified) = &mut self.modified {
+    pub fn insert(self: Tack<Self>, key: K, mut value: V) {
+        let this = self.into_inner_unchecked();
+        value.begin_stream();
+        this.entries.insert(key.clone(), value);
+        if let Some(modified) = &mut this.modified {
             modified.insert(key);
         }
     }
-    pub fn remove(&mut self, key: &K) {
-        self.entries.remove(key);
-        if let Some(modified) = &mut self.modified {
+    pub fn remove(self: Tack<Self>, key: &K) {
+        let this = self.into_inner_unchecked();
+        this.entries.remove(key);
+        if let Some(modified) = &mut this.modified {
             modified.insert(key.clone());
         }
     }
     pub fn get(&self, key: &K) -> Option<&V> {
         self.entries.get(key)
     }
-    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
-        if let Some(modified) = &mut self.modified {
+    pub fn get_mut<'a>(self: Tack<'a, Self>, key: &K) -> Option<&'a mut V> {
+        let this = self.into_inner_unchecked();
+        if let Some(modified) = &mut this.modified {
             modified.insert(key.clone());
         }
-        self.entries.get_mut(key)
+        this.entries.get_mut(key)
     }
 }
 
@@ -150,25 +152,6 @@ impl<K: Debug, V: Debug> Debug for Dict<K, V> {
         let mut m = f.debug_map();
         for (k, v) in self.entries.iter() {
             m.entry(k, v);
-            // m.key(k);
-            // m.value_with(|f| {
-            //     match v {
-            //         ArcOrWeak::Arc(x) => {
-            //             Debug::fmt(x, f)?;
-            //         }
-            //         ArcOrWeak::Weak(x) => {
-            //             f.debug_tuple("Weak")
-            //                 .field_with(|f| {
-            //                     if let Some(x) = x.upgrade() {
-            //                         x.fmt_weak(f)?;
-            //                     }
-            //                     Ok(())
-            //                 })
-            //                 .finish()?;
-            //         }
-            //     }
-            //     Ok(())
-            // });
         }
         m.finish()
     }
@@ -221,7 +204,7 @@ impl<K: Ord + Serialize, V: SerializeUpdate> SerializeUpdate for Dict<K, V> {
             }
             modified.clear();
         } else {
-            self.modified = Some(HashSet::new());
+            self.modified = Some(BTreeSet::new());
         }
     }
 }
