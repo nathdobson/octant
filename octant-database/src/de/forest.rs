@@ -8,7 +8,7 @@ use crate::de::proxy::DeserializerProxy;
 use crate::de::tree::DeserializeTree;
 use crate::de::update::DeserializeUpdate;
 use crate::tree::{Tree, TreeId};
-use crate::util::unique_arc::UniqueArc;
+use crate::unique_arc::UniqueArc;
 
 pub struct DeserializeForest<DP: DeserializerProxy> {
     pub(crate) updaters: HashMap<TreeId, Arc<Tree<dyn DeserializeTree<DP>>>>,

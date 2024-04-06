@@ -18,18 +18,19 @@
 #![feature(try_blocks)]
 #![feature(absolute_path)]
 
-pub mod tree;
+pub mod de;
+pub mod derive;
+pub mod file;
+pub mod forest;
+pub mod ser;
+pub mod tack;
 #[cfg(test)]
 mod test;
+pub mod tree;
+mod unique_arc;
 mod util;
-pub mod forest;
-pub mod file;
-pub mod derive;
-pub mod tack;
-pub mod de;
 pub mod value;
-pub mod ser;
 
-pub mod reexports{
+pub mod reexports {
     pub use serde;
 }

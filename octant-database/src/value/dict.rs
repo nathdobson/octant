@@ -11,15 +11,10 @@ use serde::{
     Deserializer, ser::SerializeMap, Serialize, Serializer,
 };
 
-use crate::{
-    forest::Forest,
-    util::{
-        deserialize_pair::DeserializePair,
-        map_seed::MapSeed,
-    },
-};
+use crate::forest::Forest;
 use crate::de::forest::DeserializeForest;
 use crate::de::proxy::DeserializerProxy;
+use crate::de::seed::map_seed::{DeserializeEntry, MapSeed};
 use crate::de::update::{DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed};
 use crate::ser::forest::SerializeForest;
 use crate::ser::update::{SerializeUpdate, SerializeUpdateAdapter};
@@ -77,23 +72,23 @@ impl<'de, K: Ord + Deserialize<'de>, V: DeserializeUpdate<'de>> DeserializeUpdat
             phantom: PhantomData<(K, V)>,
         }
         impl<'a, 'de, K: Deserialize<'de>, V: DeserializeUpdate<'de>, DP: DeserializerProxy>
-            DeserializePair<'de> for Vis<'a, K, V, DP>
+            DeserializeEntry<'de> for Vis<'a, K, V, DP>
         {
-            type First = K;
-            type Second = (K, V);
+            type Key = K;
+            type Entry = (K, V);
 
-            fn deserialize_first<D: Deserializer<'de>>(
+            fn deserialize_key<D: Deserializer<'de>>(
                 &mut self,
                 d: D,
-            ) -> Result<Self::First, D::Error> {
+            ) -> Result<Self::Key, D::Error> {
                 K::deserialize(d)
             }
 
-            fn deserialize_second<D: Deserializer<'de>>(
+            fn deserialize_value<D: Deserializer<'de>>(
                 &mut self,
-                key: Self::First,
+                key: Self::Key,
                 value: D,
-            ) -> Result<Self::Second, D::Error> {
+            ) -> Result<Self::Entry, D::Error> {
                 Ok((key, V::deserialize_snapshot(self.forest, value)?))
             }
         }

@@ -12,20 +12,23 @@ use serde::{
 };
 
 use crate::{
+    de::{
+        forest::DeserializeForest,
+        proxy::DeserializerProxy,
+        seed::{
+            option_seed::OptionSeed,
+            struct_seed::{StructAccess, StructSeed, StructVisitor},
+        },
+        update::{DeserializeSnapshotSeed, DeserializeUpdate},
+    },
     forest::{Forest, ForestId},
-    util::{
-        pair_struct_seed::PairStructSeed,
-        unique_arc::{MaybeUninit2, UniqueArc},
+    ser::{
+        forest::SerializeForest,
+        proxy::SerializerProxy,
+        update::{SerializeUpdate, SerializeUpdateAdapter},
     },
 };
-use crate::de::forest::DeserializeForest;
-use crate::de::proxy::DeserializerProxy;
-use crate::de::seed::option_seed::OptionSeed;
-use crate::de::update::{DeserializeSnapshotSeed, DeserializeUpdate};
-use crate::ser::forest::SerializeForest;
-use crate::ser::update::{SerializeUpdate, SerializeUpdateAdapter};
-use crate::ser::proxy::SerializerProxy;
-use crate::util::deserialize_pair::DeserializePair;
+use crate::unique_arc::{MaybeUninit2, UniqueArc};
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Copy, Clone, Serialize, Deserialize)]
 pub struct TreeId(u64);
@@ -181,49 +184,40 @@ impl<'de, T: 'static + Sync + Send + for<'de2> DeserializeUpdate<'de2>> Deserial
                 'de,
                 T: 'static + Sync + Send + for<'de2> DeserializeUpdate<'de2>,
                 DP: DeserializerProxy,
-            > DeserializePair<'de> for V<'a, T, DP>
+            > StructVisitor<'de> for V<'a, T, DP>
         {
-            type First = TreeId;
-            type Second = Arc<Tree<T>>;
+            type Value = Arc<Tree<T>>;
 
-            fn deserialize_first<D: Deserializer<'de>>(
-                &mut self,
-                d: D,
-            ) -> Result<Self::First, D::Error> {
-                TreeId::deserialize(d)
-            }
-
-            fn deserialize_second<D: Deserializer<'de>>(
-                &mut self,
-                key: Self::First,
-                d: D,
-            ) -> Result<Self::Second, D::Error> {
+            fn visit<A: StructAccess<'de>>(self, mut a: A) -> Result<Self::Value, A::Error> {
+                let key = a.next_seed(PhantomData::<TreeId>)?;
                 if let Some(value) = self.forest.values.get(&key) {
-                    Option::<!>::deserialize(d)?;
+                    a.next_seed(PhantomData::<Option<!>>)?;
                     return Ok(Arc::downcast(value.clone())
-                        .map_err(|_| D::Error::custom(format_args!("downcast failed")))?);
+                        .map_err(|_| A::Error::custom(format_args!("downcast failed")))?);
                 }
                 self.forest
                     .holes
                     .entry(key)
                     .or_insert_with(|| UniqueArc::<MaybeUninit2<Tree<T>>>::new_uninit());
-                let value = OptionSeed::new(DeserializeSnapshotSeed::<T, DP>::new(self.forest))
-                    .deserialize(d)?
-                    .ok_or_else(|| D::Error::custom(format_args!("Missing value")))?;
+                let value = a
+                    .next_seed(OptionSeed::new(DeserializeSnapshotSeed::<T, DP>::new(
+                        self.forest,
+                    )))?
+                    .ok_or_else(|| A::Error::custom(format_args!("Missing value")))?;
                 let hole = self
                     .forest
                     .holes
                     .remove(&key)
-                    .ok_or_else(|| D::Error::custom(format_args!("Duplicate value")))?;
+                    .ok_or_else(|| A::Error::custom(format_args!("Duplicate value")))?;
                 let hole = UniqueArc::downcast::<MaybeUninit2<Tree<T>>>(hole)
-                    .map_err(|_| D::Error::custom(format_args!("downcast failed")))?;
+                    .map_err(|_| A::Error::custom(format_args!("downcast failed")))?;
                 let value = hole.init(Tree::new_id_value(key, value));
                 self.forest.values.insert(key, value.clone());
                 self.forest.updaters.insert(key, value.clone());
                 Ok(value)
             }
         }
-        PairStructSeed::new(
+        StructSeed::new(
             "Arc",
             &["id", "value"],
             V {
