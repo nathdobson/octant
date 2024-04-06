@@ -12,6 +12,7 @@ use std::{
         atomic::{AtomicUsize, Ordering}, Weak,
     },
 };
+use std::mem::MaybeUninit;
 
 #[repr(C)]
 struct ArcInner<T: ?Sized> {
@@ -22,7 +23,6 @@ struct ArcInner<T: ?Sized> {
 
 pub struct UniqueArc<T: ?Sized>(NonNull<ArcInner<T>>);
 
-pub struct MaybeUninit2<T: ?Sized>(ManuallyDrop<T>);
 const MAX_REFCOUNT: usize = (isize::MAX) as usize;
 
 impl<T: ?Sized> UniqueArc<T> {
@@ -78,7 +78,7 @@ impl UniqueArc<dyn 'static + Sync + Send + Any> {
         }
     }
     pub fn downcast_downgrade_uninit<T: 'static>(this: &Self) -> Option<Weak<T>> {
-        if (**this).is::<MaybeUninit2<T>>() {
+        if (**this).is::<MaybeUninit<T>>() {
             unsafe { Some(Weak::from_raw(Self::downgrade(this).into_raw() as *const T)) }
         } else {
             None
@@ -108,14 +108,14 @@ impl<T: ?Sized> Drop for UniqueArc<T> {
     }
 }
 
-impl<T> UniqueArc<MaybeUninit2<T>> {
+impl<T> UniqueArc<MaybeUninit<T>> {
     pub fn new_uninit() -> Self {
         unsafe {
-            let layout = Layout::new::<ArcInner<MaybeUninit2<T>>>();
+            let layout = Layout::new::<ArcInner<MaybeUninit<T>>>();
             let mut ptr = Global
                 .allocate(layout)
                 .unwrap_or_else(|_| handle_alloc_error(layout))
-                .cast::<ArcInner<MaybeUninit2<T>>>();
+                .cast::<ArcInner<MaybeUninit<T>>>();
             *ptr.as_mut().strong.get_mut() = 0;
             *ptr.as_mut().weak.get_mut() = 1;
             UniqueArc(ptr)
@@ -124,11 +124,11 @@ impl<T> UniqueArc<MaybeUninit2<T>> {
     pub fn init(mut self, value: T) -> Arc<T> {
         unsafe {
             ((&raw mut (*self.0.as_ptr()).inner) as *mut T).write(value);
-            mem::transmute::<Arc<MaybeUninit2<T>>, Arc<T>>(self.into_arc())
+            mem::transmute::<Arc<MaybeUninit<T>>, Arc<T>>(self.into_arc())
         }
     }
     pub fn downgrade_uninit(this: &Self) -> Weak<T> {
-        unsafe { mem::transmute::<Weak<MaybeUninit2<T>>, Weak<T>>(Self::downgrade(this)) }
+        unsafe { mem::transmute::<Weak<MaybeUninit<T>>, Weak<T>>(Self::downgrade(this)) }
     }
 }
 
@@ -185,20 +185,20 @@ fn test_with_weak() {
 
 #[test]
 fn test_uninit() {
-    let _x = UniqueArc::<MaybeUninit2<MustDrop>>::new_uninit();
+    let _x = UniqueArc::<MaybeUninit<MustDrop>>::new_uninit();
 }
 
 #[test]
 fn test_uninit_arc() {
     let mut assert = AssertDropped::new();
-    let x = UniqueArc::<MaybeUninit2<MustDrop>>::new_uninit();
+    let x = UniqueArc::<MaybeUninit<MustDrop>>::new_uninit();
     x.init(assert.check());
 }
 
 #[test]
 fn test_uninit_weak() {
     let mut assert = AssertDropped::new();
-    let x = UniqueArc::<MaybeUninit2<MustDrop>>::new_uninit();
+    let x = UniqueArc::<MaybeUninit<MustDrop>>::new_uninit();
     let w = UniqueArc::downgrade_uninit(&x);
     assert!(w.upgrade().is_none());
     x.init(assert.check());
@@ -207,7 +207,7 @@ fn test_uninit_weak() {
 #[test]
 fn test_downcast_downgrade_uninit() {
     static mut ASSERT: AssertDropped = AssertDropped::new();
-    let x = UniqueArc::<MaybeUninit2<MustDrop>>::new_uninit();
+    let x = UniqueArc::<MaybeUninit<MustDrop>>::new_uninit();
     let x: UniqueArc<dyn 'static + Sync + Send + Any> = x;
     UniqueArc::downcast_downgrade_uninit::<MustDrop>(&x).unwrap();
 }

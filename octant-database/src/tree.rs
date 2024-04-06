@@ -3,12 +3,13 @@ use std::{
     marker::PhantomData,
     sync::{Arc, OnceLock, Weak},
 };
+use std::mem::MaybeUninit;
 
 use parking_lot::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{
     de::{DeserializeSeed, Error},
-    Deserialize,
-    Deserializer, ser::SerializeStruct, Serialize, Serializer,
+    ser::SerializeStruct,
+    Deserialize, Deserializer, Serialize, Serializer,
 };
 
 use crate::{
@@ -27,8 +28,8 @@ use crate::{
         proxy::SerializerProxy,
         update::{SerializeUpdate, SerializeUpdateAdapter},
     },
+    unique_arc::UniqueArc,
 };
-use crate::unique_arc::{MaybeUninit2, UniqueArc};
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Copy, Clone, Serialize, Deserialize)]
 pub struct TreeId(u64);
@@ -198,7 +199,7 @@ impl<'de, T: 'static + Sync + Send + for<'de2> DeserializeUpdate<'de2>> Deserial
                 self.forest
                     .holes
                     .entry(key)
-                    .or_insert_with(|| UniqueArc::<MaybeUninit2<Tree<T>>>::new_uninit());
+                    .or_insert_with(|| UniqueArc::<MaybeUninit<Tree<T>>>::new_uninit());
                 let value = a
                     .next_seed(OptionSeed::new(DeserializeSnapshotSeed::<T, DP>::new(
                         self.forest,
@@ -209,7 +210,7 @@ impl<'de, T: 'static + Sync + Send + for<'de2> DeserializeUpdate<'de2>> Deserial
                     .holes
                     .remove(&key)
                     .ok_or_else(|| A::Error::custom(format_args!("Duplicate value")))?;
-                let hole = UniqueArc::downcast::<MaybeUninit2<Tree<T>>>(hole)
+                let hole = UniqueArc::downcast::<MaybeUninit<Tree<T>>>(hole)
                     .map_err(|_| A::Error::custom(format_args!("downcast failed")))?;
                 let value = hole.init(Tree::new_id_value(key, value));
                 self.forest.values.insert(key, value.clone());
@@ -255,7 +256,7 @@ impl<'de, T: 'static + Sync + Send> DeserializeUpdate<'de> for Weak<Tree<T>> {
                     forest
                         .holes
                         .entry(key)
-                        .or_insert_with(|| UniqueArc::<MaybeUninit2<Tree<T>>>::new_uninit()),
+                        .or_insert_with(|| UniqueArc::<MaybeUninit<Tree<T>>>::new_uninit()),
                 )
                 .ok_or_else(|| D::Error::custom("downcast failed"))?)
             }

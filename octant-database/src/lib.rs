@@ -28,7 +28,6 @@ pub mod tack;
 mod test;
 pub mod tree;
 mod unique_arc;
-mod util;
 pub mod value;
 
 pub mod reexports {
