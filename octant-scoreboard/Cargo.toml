@@ -12,3 +12,4 @@ octant-gui = { path = "../octant-gui" }
 octant-gui-core = { path = "../octant-gui-core" }
 anyhow = "1.0.75"
 atomic_refcell = "0.1.13"
+url = "2.5.0"

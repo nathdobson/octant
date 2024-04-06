@@ -2,10 +2,15 @@ use std::sync::Arc;
 
 use atomic_refcell::AtomicRefCell;
 
-use octant_gui::builder::{ElementExt, HtmlFormElementExt};
-use octant_gui::event_loop::Page;
-use octant_server::Handler;
-use octant_server::session::{Session, SessionData};
+use octant_gui::{
+    builder::{ElementExt, HtmlFormElementExt},
+    event_loop::Page,
+};
+use octant_server::{
+    session::{Session, SessionData},
+    Handler,
+};
+use url::Url;
 
 pub struct ScoreHandler {}
 
@@ -22,9 +27,13 @@ struct ScoreSession {
 impl SessionData for ScoreSession {}
 
 impl Handler for ScoreHandler {
-    fn handle(&self, url: &str, session: Arc<Session>) -> anyhow::Result<Page> {
+    fn prefix(&self) -> String {
+        "score".to_string()
+    }
+
+    fn handle(&self, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
         let d = session.global().window().document();
-        let text = d.create_text_node(url);
+        let text = d.create_text_node(&format!("{:?}", url));
         let input = d.create_input_element().attr("type", "text");
         let form = d
             .create_form_element()

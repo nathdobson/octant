@@ -13,10 +13,7 @@ async fn main() {
     simple_logger::SimpleLogger::new().env().init().unwrap();
     register_handler();
     let handler = ScoreHandler {};
-    OctantServer {
-        options: OctantServerOptions::from_command_line(),
-        handler,
-    }
-        .run()
-        .await;
+    let mut server=OctantServer::new(OctantServerOptions::from_command_line());
+    server.add_handler(handler);
+    server.run().await;
 }

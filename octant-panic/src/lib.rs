@@ -1,6 +1,8 @@
-use std::cell::Cell;
-use std::panic::{catch_unwind, PanicInfo, set_hook, UnwindSafe};
-use std::sync::Once;
+use std::{
+    cell::Cell,
+    panic::{catch_unwind, set_hook, PanicInfo, UnwindSafe},
+    sync::Once,
+};
 
 use anyhow::anyhow;
 
@@ -38,6 +40,11 @@ pub fn panic_handler(info: &PanicInfo<'_>) {
     } else {
         "Unknown payload type"
     };
-    let error = anyhow::Error::msg(payload.to_owned());
+    let message = if let Some(location) = info.location() {
+        format!("{}\nat {}", payload, location)
+    } else {
+        format!("{}", payload)
+    };
+    let error = anyhow::Error::msg(message);
     LAST_ERROR.set(Some(error));
 }

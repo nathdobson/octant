@@ -1,23 +1,29 @@
 #![feature(future_join)]
 #![deny(unused_must_use)]
 
-use std::net::SocketAddr;
-use std::sync::Arc;
+use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
 use anyhow::anyhow;
 use clap::Parser;
-use futures::SinkExt;
-use futures::stream::{SplitSink, SplitStream, StreamExt};
-use warp::{Filter, Reply};
-use warp::ws::{Message, WebSocket};
+use futures::{
+    stream::{SplitSink, SplitStream, StreamExt},
+    SinkExt,
+};
+use warp::{
+    ws::{Message, WebSocket},
+    Filter, Reply,
+};
 
-use octant_gui::{Global, Runtime};
-use octant_gui::event_loop::{Application, EventLoop, Page};
+use octant_gui::{
+    event_loop::{Application, EventLoop, Page},
+    Global, Runtime,
+};
 use octant_gui_core::{DownMessageList, UpMessageList};
 
 use crate::session::Session;
 
 pub mod session;
+use url::Url;
 
 #[derive(Parser, Debug)]
 pub struct OctantServerOptions {
@@ -25,9 +31,9 @@ pub struct OctantServerOptions {
     pub bind_http: Option<SocketAddr>,
 }
 
-pub struct OctantServer<H> {
-    pub options: OctantServerOptions,
-    pub handler: H,
+pub struct OctantServer {
+    options: OctantServerOptions,
+    handlers: HashMap<String, Box<dyn Handler>>,
 }
 
 impl OctantServerOptions {
@@ -37,21 +43,44 @@ impl OctantServerOptions {
 }
 
 pub trait Handler: 'static + Sync + Send {
-    fn handle(&self, url: &str, session: Arc<Session>) -> anyhow::Result<Page>;
+    fn prefix(&self) -> String;
+    fn handle(&self, url: &Url, session: Arc<Session>) -> anyhow::Result<Page>;
 }
 
-struct OctantApplication<H> {
-    server: Arc<OctantServer<H>>,
+struct OctantApplication {
+    server: Arc<OctantServer>,
     session: Arc<Session>,
 }
 
-impl<H: Handler> Application for OctantApplication<H> {
+impl Application for OctantApplication {
     fn create_page(&self, url: &str, _global: Arc<Global>) -> anyhow::Result<Page> {
-        self.server.handler.handle(url, self.session.clone())
+        let url = Url::parse(url)?;
+        let prefix = url
+            .path_segments()
+            .map(|mut x| {
+                x.next();
+                x.next()
+            })
+            .flatten()
+            .ok_or_else(|| anyhow::Error::msg("Cannot find path prefix"))?;
+        self.server
+            .handlers
+            .get(prefix)
+            .ok_or_else(|| anyhow::Error::msg("Cannot find handler"))?
+            .handle(&url, self.session.clone())
     }
 }
 
-impl<H: Handler> OctantServer<H> {
+impl OctantServer {
+    pub fn new(options: OctantServerOptions) -> Self {
+        OctantServer {
+            options,
+            handlers: HashMap::new(),
+        }
+    }
+    pub fn add_handler(&mut self, handler: impl Handler) {
+        self.handlers.insert(handler.prefix(), Box::new(handler));
+    }
     async fn encode(x: DownMessageList) -> anyhow::Result<Message> {
         Ok(Message::binary(serde_json::to_vec(&x)?))
     }
