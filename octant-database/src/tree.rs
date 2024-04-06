@@ -263,11 +263,6 @@ impl<'de, T: 'static + Sync + Send> DeserializeUpdate<'de> for Weak<Tree<T>> {
         } else {
             Ok(Weak::new())
         }
-        // Ok(forest
-        //     .entries
-        //     .entry(key)
-        //     .or_insert_with(|| ArcOrEmpty::Empty(UniqueArc::new_uninit()))
-        //     .weak())
     }
 
     fn deserialize_update<D: Deserializer<'de>, DP: DeserializerProxy>(
