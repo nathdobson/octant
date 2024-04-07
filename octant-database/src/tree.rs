@@ -8,8 +8,8 @@ use std::mem::MaybeUninit;
 use parking_lot::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{
     de::{DeserializeSeed, Error},
-    ser::SerializeStruct,
-    Deserialize, Deserializer, Serialize, Serializer,
+    Deserialize,
+    Deserializer, ser::SerializeStruct, Serialize, Serializer,
 };
 
 use crate::{

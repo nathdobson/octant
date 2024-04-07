@@ -1,7 +1,7 @@
 use std::sync::{Arc, Weak};
 
 use pretty_assertions::assert_eq;
-use serde::{de::DeserializeSeed, ser::SerializeStruct, Deserializer, Serializer};
+use serde::{de::DeserializeSeed, Deserializer, ser::SerializeStruct, Serializer};
 use serde_json::{de::SliceRead, ser::PrettyFormatter};
 
 use crate::{

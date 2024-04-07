@@ -5,13 +5,13 @@ use std::{
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::forest::Forest;
 use crate::de::forest::DeserializeForest;
 use crate::de::proxy::DeserializerProxy;
 use crate::de::update::DeserializeUpdate;
+use crate::forest::Forest;
 use crate::ser::forest::SerializeForest;
-use crate::ser::update::SerializeUpdate;
 use crate::ser::proxy::SerializerProxy;
+use crate::ser::update::SerializeUpdate;
 use crate::tack::Untack;
 
 pub struct Prim<T: ?Sized>(T);

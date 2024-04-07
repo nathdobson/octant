@@ -1,16 +1,16 @@
 use std::sync::Arc;
 
 use atomic_refcell::AtomicRefCell;
+use url::Url;
 
 use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
     event_loop::Page,
 };
 use octant_server::{
-    session::{Session, SessionData},
     Handler,
+    session::{Session, SessionData},
 };
-use url::Url;
 
 pub struct ScoreHandler {}
 

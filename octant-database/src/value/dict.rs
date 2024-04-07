@@ -11,14 +11,14 @@ use serde::{
     Deserializer, ser::SerializeMap, Serialize, Serializer,
 };
 
-use crate::forest::Forest;
 use crate::de::forest::DeserializeForest;
 use crate::de::proxy::DeserializerProxy;
 use crate::de::seed::map_seed::{DeserializeEntry, MapSeed};
 use crate::de::update::{DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed};
+use crate::forest::Forest;
 use crate::ser::forest::SerializeForest;
-use crate::ser::update::{SerializeUpdate, SerializeUpdateAdapter};
 use crate::ser::proxy::SerializerProxy;
+use crate::ser::update::{SerializeUpdate, SerializeUpdateAdapter};
 use crate::tack::Tack;
 
 pub struct Dict<K, V> {

@@ -1,6 +1,6 @@
 use std::{
     cell::Cell,
-    panic::{catch_unwind, set_hook, PanicInfo, UnwindSafe},
+    panic::{catch_unwind, PanicInfo, set_hook, UnwindSafe},
     sync::Once,
 };
 

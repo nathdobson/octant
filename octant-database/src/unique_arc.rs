@@ -3,8 +3,8 @@ use std::{
     any::Any,
     cell::UnsafeCell,
     marker::Unsize,
-    mem,
-    mem::ManuallyDrop,
+    mem
+    ,
     ops::{CoerceUnsized, Deref, DerefMut},
     ptr::NonNull,
     sync::{

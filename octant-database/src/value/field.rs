@@ -8,7 +8,6 @@ use serde::{de::DeserializeSeed, Deserializer, Serialize, Serializer};
 use crate::{
     forest::Forest,
     tack::Tack,
-
 };
 use crate::de::forest::DeserializeForest;
 use crate::de::proxy::DeserializerProxy;

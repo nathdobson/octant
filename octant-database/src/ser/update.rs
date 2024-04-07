@@ -1,5 +1,7 @@
-use serde::{Serialize, Serializer};
 use std::cell::Cell;
+
+use serde::{Serialize, Serializer};
+
 use crate::forest::Forest;
 use crate::ser::forest::SerializeForest;
 use crate::ser::proxy::SerializerProxy;

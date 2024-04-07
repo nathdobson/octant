@@ -1,4 +1,5 @@
 use serde::Serializer;
+
 use crate::forest::Forest;
 use crate::ser::forest::SerializeForest;
 use crate::ser::proxy::SerializerProxy;
