@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum GlobalMethod {
-    Window,
-    NewCredentialCreationOptions,
+pub enum AuthenticatorAttachment {
+    Platform,
+    CrossPlatform,
 }

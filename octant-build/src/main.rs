@@ -1,14 +1,10 @@
 #![feature(exit_status_error)]
 
-use std::io;
-use std::io::ErrorKind;
-use std::path::Path;
+use std::{io, io::ErrorKind, path::Path};
 
 use clap::{Parser, Subcommand, ValueEnum};
 use futures::future::{BoxFuture, FutureExt};
-use tokio::fs;
-use tokio::fs::create_dir_all;
-use tokio::process::Command;
+use tokio::{fs, fs::create_dir_all, process::Command};
 
 #[derive(Clone, ValueEnum, Debug)]
 enum Profile {
@@ -45,7 +41,7 @@ fn copy_dir_all<'a>(src: &'a Path, dst: &'a Path) -> BoxFuture<'a, anyhow::Resul
         }
         Ok(())
     }
-        .boxed()
+    .boxed()
 }
 
 #[tokio::main]
@@ -89,6 +85,9 @@ async fn main_impl() -> anyhow::Result<()> {
     copy_dir_all("octant-client/www".as_ref(), "target/www".as_ref()).await?;
     Command::new(&format!("target/{profile_dir_name}/octant-scoreboard"))
         .args(&["--bind-http", "0.0.0.0:8080"])
+        .args(&["--bind-https", "0.0.0.0:8081"])
+        .args(&["--cert-path", "octant-server/cert/certificate.pem"])
+        .args(&["--key-path", "octant-server/cert/key.pem"])
         .env("RUST_BACKTRACE", "1")
         .env("RUST_LOG", "info")
         .status()

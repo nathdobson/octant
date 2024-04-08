@@ -12,11 +12,12 @@ mod login;
 mod score;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     simple_logger::SimpleLogger::new().env().init().unwrap();
     register_handler();
     let mut server = OctantServer::new(OctantServerOptions::from_command_line());
     server.add_handler(ScoreHandler {});
     server.add_handler(LoginHandler {});
-    server.run().await;
+    server.run().await?;
+    Ok(())
 }

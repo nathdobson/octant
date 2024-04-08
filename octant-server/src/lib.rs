@@ -1,18 +1,19 @@
 #![feature(future_join)]
 #![deny(unused_must_use)]
 
-use std::{collections::HashMap, net::SocketAddr, sync::Arc};
+use std::{collections::HashMap, future::join, net::SocketAddr, sync::Arc};
 
 use anyhow::anyhow;
 use clap::Parser;
 use futures::{
-    SinkExt,
     stream::{SplitSink, SplitStream, StreamExt},
+    SinkExt,
 };
+use tokio::try_join;
 use url::Url;
 use warp::{
-    Filter,
-    Reply, ws::{Message, WebSocket},
+    ws::{Message, WebSocket},
+    Filter, Reply,
 };
 
 use octant_gui::{
@@ -29,6 +30,12 @@ pub mod session;
 pub struct OctantServerOptions {
     #[arg(long, required = true)]
     pub bind_http: Option<SocketAddr>,
+    #[arg(long)]
+    pub bind_https: Option<SocketAddr>,
+    #[arg(long)]
+    pub cert_path: Option<String>,
+    #[arg(long)]
+    pub key_path: Option<String>,
 }
 
 pub struct OctantServer {
@@ -114,13 +121,14 @@ impl OctantServer {
         event_loop.handle_events().await?;
         Ok(())
     }
-    pub async fn run(self) {
-        Arc::new(self).run_arc().await
+    pub async fn run(self) -> anyhow::Result<()> {
+        Arc::new(self).run_arc().await?;
+        Ok(())
     }
     fn add_header(reply: impl Reply) -> impl Reply {
         warp::reply::with_header(reply, "Cache-Control", "no-cache")
     }
-    pub async fn run_arc(self: Arc<Self>) {
+    pub async fn run_arc(self: Arc<Self>) -> anyhow::Result<()> {
         let statik = warp::path("static")
             .and(warp::fs::dir("./target/www"))
             .map(Self::add_header);
@@ -144,8 +152,36 @@ impl OctantServer {
                     })
                 }
             });
-        if let Some(bind_http) = self.options.bind_http {
-            warp::serve(statik.or(site).or(socket)).run(bind_http).await;
-        }
+        let routes = statik.or(site).or(socket);
+        let http = async {
+            if let Some(bind_http) = self.options.bind_http {
+                warp::serve(routes.clone()).run(bind_http).await;
+            }
+            Result::<_, anyhow::Error>::Ok(())
+        };
+        let https = async {
+            if let Some(bind_https) = self.options.bind_https {
+                warp::serve(routes.clone())
+                    .tls()
+                    .cert_path(
+                        self.options
+                            .cert_path
+                            .as_ref()
+                            .ok_or_else(|| anyhow!("missing cert_path flag"))?,
+                    )
+                    .key_path(
+                        &self
+                            .options
+                            .key_path
+                            .as_ref()
+                            .ok_or_else(|| anyhow!("missing key_path flag:"))?,
+                    )
+                    .run(bind_https)
+                    .await;
+            }
+            Result::<_, anyhow::Error>::Ok(())
+        };
+        try_join!(http, https)?;
+        Ok(())
     }
 }

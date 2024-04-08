@@ -2,11 +2,13 @@ use std::sync::Arc;
 
 use web_sys::Window;
 
-use octant_gui_core::HandleId;
-use octant_gui_core::window::{WindowMethod, WindowTag};
+use octant_gui_core::{
+    HandleId,
+    window::{WindowMethod, WindowTag},
+};
 use octant_object::define_class;
 
-use crate::{document, HasLocalType, object, peer};
+use crate::{document, HasLocalType, navigator, object, peer};
 
 define_class! {
     pub class extends object {
@@ -27,10 +29,21 @@ impl Value {
             self.window.document().unwrap(),
         ))
     }
+    pub fn navigator(&self, handle: HandleId) -> Arc<dyn navigator::Trait> {
+        Arc::new(navigator::Value::new(
+            handle,
+            self.window.navigator(),
+        ))
+    }
 
-    pub fn invoke_with(&self, method: &WindowMethod, handle: HandleId) -> Option<Arc<dyn peer::Trait>> {
+    pub fn invoke_with(
+        &self,
+        method: &WindowMethod,
+        handle: HandleId,
+    ) -> Option<Arc<dyn peer::Trait>> {
         match method {
             WindowMethod::Document => Some(self.document(handle)),
+            WindowMethod::Navigator => Some(self.navigator(handle)),
         }
     }
 }

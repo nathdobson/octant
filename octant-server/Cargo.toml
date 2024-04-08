@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.4.18", features = ["derive"] }
-warp = "0.3.5"
+warp = { version = "0.3.5", features = ["tls"] }
 futures = "0.3.28"
 anyhow = "1.0.75"
 log = "0.4.20"

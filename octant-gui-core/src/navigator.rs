@@ -3,12 +3,11 @@ use serde::{Deserialize, Serialize};
 use crate::TypeTag;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
-pub struct WindowTag;
+pub struct NavigatorTag;
 
-impl TypeTag for WindowTag {}
+impl TypeTag for NavigatorTag {}
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum WindowMethod {
-    Document,
-    Navigator,
+pub enum NavigatorMethod {
+    Credentials
 }

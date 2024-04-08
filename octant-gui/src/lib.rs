@@ -11,7 +11,7 @@ use futures::sink::Sink;
 use futures::Stream;
 
 pub use global::Global;
-use octant_gui_core::{DownMessageList, UpMessageList};
+use octant_gui_core::{DownMessageList,  UpMessageList};
 pub use runtime::Runtime;
 
 pub mod document;
@@ -30,6 +30,10 @@ pub mod html_input_element;
 pub mod event_loop;
 pub mod builder;
 
+pub mod navigator;
+pub mod credentials_container;
+pub mod credential_creation_options;
+
 pub type DownMessageSink = Pin<Box<dyn Send + Sync + Sink<DownMessageList, Error=anyhow::Error>>>;
 pub type UpMessageStream = Pin<Box<dyn Send + Sync + Stream<Item=anyhow::Result<Option<UpMessageList>>>>>;
 pub type Handle = Arc<dyn handle::Trait>;
@@ -37,6 +41,11 @@ pub type JsValue = Arc<dyn js_value::Trait>;
 pub type Window = Arc<dyn window::Trait>;
 
 pub type Document = Arc<dyn document::Trait>;
+
+pub type Navigator = Arc<dyn navigator::Trait>;
+
+pub type CredentialsContainer = Arc<dyn credentials_container::Trait>;
+pub type CredentialCreationOptions = Arc<dyn credential_creation_options::Trait>;
 
 pub type HtmlElement = Arc<dyn html_element::Trait>;
 pub type HtmlFormElement = Arc<dyn html_form_element::Trait>;

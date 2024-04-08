@@ -1,16 +1,18 @@
 use std::sync::OnceLock;
 
-use octant_gui_core::Method;
-use octant_gui_core::window::{WindowMethod, WindowTag};
+use octant_gui_core::{
+    window::{WindowMethod, WindowTag},
+    Method,
+};
 use octant_object::define_class;
 
-use crate::{document, Document, handle, node};
-use crate::runtime::HasTypedHandle;
+use crate::{document, handle, node, runtime::HasTypedHandle, Document, Navigator, navigator};
 
 define_class! {
     #[derive(Debug)]
     pub class extends node {
         document: OnceLock<Document>,
+        navigator: OnceLock<Navigator>,
     }
 }
 
@@ -23,6 +25,7 @@ impl Value {
         Value {
             parent: node::Value::new(handle),
             document: OnceLock::new(),
+            navigator: OnceLock::new(),
         }
     }
 }
@@ -35,6 +38,12 @@ impl Value {
         self.document.get_or_init(|| {
             self.runtime()
                 .add(document::Value::new(self.invoke(WindowMethod::Document)))
+        })
+    }
+    pub fn navigator(&self) -> &Navigator {
+        self.navigator.get_or_init(|| {
+            self.runtime()
+                .add(navigator::Value::new(self.invoke(WindowMethod::Navigator)))
         })
     }
 }

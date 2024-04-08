@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use octant_gui_core::global::GlobalMethod;
-use octant_gui_core::Method;
+use octant_gui_core::{global::GlobalMethod, Method};
 
-use crate::{window, Window};
-use crate::runtime::Runtime;
+use crate::{
+    credential_creation_options, runtime::Runtime, window, CredentialCreationOptions, Window,
+};
 
 pub struct Global {
     runtime: Arc<Runtime>,
@@ -25,5 +25,11 @@ impl Global {
     }
     pub fn window(&self) -> &Window {
         &self.window
+    }
+    pub fn new_credential_creation_options(&self) -> CredentialCreationOptions {
+        self.runtime.add(credential_creation_options::Value::new(
+            self.runtime
+                .invoke(Method::Global(GlobalMethod::NewCredentialCreationOptions)),
+        ))
     }
 }

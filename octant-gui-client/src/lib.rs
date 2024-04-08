@@ -3,24 +3,27 @@
 #![feature(ptr_metadata)]
 #![feature(never_type)]
 
-use std::collections::HashMap;
-use std::pin::Pin;
-use std::ptr::{DynMetadata, Pointee};
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    pin::Pin,
+    ptr::{DynMetadata, Pointee},
+    sync::Arc,
+};
 
 use anyhow::anyhow;
 use atomic_refcell::AtomicRefCell;
 use futures::{Stream, StreamExt};
-use wasm_bindgen::{JsCast, JsValue};
-use wasm_bindgen::closure::Closure;
-use web_sys::{console, Event, HtmlAnchorElement, window};
+use wasm_bindgen::{closure::Closure, JsCast, JsValue};
+use web_sys::{console, window, Event, HtmlAnchorElement};
 
 use octant_gui_core::{
-    DownMessage, DownMessageList, HandleId, Method, TypedHandle, TypeTag, UpMessage, UpMessageList,
+    DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle, UpMessage, UpMessageList,
 };
 use octant_object::cast::Cast;
 use wasm_error::WasmError;
 
+mod credential_creation_options;
+mod credentials_container;
 mod document;
 mod element;
 mod global;
@@ -28,13 +31,14 @@ mod html_element;
 mod html_form_element;
 mod html_input_element;
 mod js_value;
+mod navigator;
 mod node;
 mod object;
 mod peer;
 mod text;
 mod window;
 
-pub type DownMessageStream = Pin<Box<dyn Stream<Item=anyhow::Result<DownMessageList>>>>;
+pub type DownMessageStream = Pin<Box<dyn Stream<Item = anyhow::Result<DownMessageList>>>>;
 pub type UpMessageSink = Box<dyn Fn(UpMessageList) -> anyhow::Result<()>>;
 
 struct State {
@@ -48,7 +52,7 @@ pub struct Runtime {
 }
 
 pub trait HasLocalType: TypeTag {
-    type Local: ?Sized + Pointee<Metadata=DynMetadata<Self::Local>>;
+    type Local: ?Sized + Pointee<Metadata = DynMetadata<Self::Local>>;
 }
 
 pub type WindowPeer = Arc<dyn window::Trait>;
@@ -118,8 +122,8 @@ impl Runtime {
         pop_listener.forget();
         Ok(runtime)
     }
-    fn invoke(self: &Arc<Self>, assign: HandleId, method: &Method) -> anyhow::Result<()> {
-        if let Some(result) = self.invoke_with(method, assign)? {
+    async fn invoke(self: &Arc<Self>, assign: HandleId, method: &Method) -> anyhow::Result<()> {
+        if let Some(result) = self.invoke_with(method, assign).await? {
             self.state.borrow_mut().handles.insert(assign, result);
         }
         Ok(())
@@ -134,7 +138,7 @@ impl Runtime {
             .downcast_trait()
             .unwrap()
     }
-    fn invoke_with(
+    async fn invoke_with(
         self: &Arc<Self>,
         method: &Method,
         handle: HandleId,
@@ -163,6 +167,18 @@ impl Runtime {
                 self.handle(*node)
                     .invoke_with(&self.clone(), method, handle)
             }
+            Method::Navigator(node, method) => {
+                self.handle(*node)
+                    .invoke_with(method, handle)
+            }
+            Method::CredentialsContainer(node, method) => {
+                self.handle(*node)
+                    .invoke_with(&self.clone(), method, handle).await
+            }
+            Method::CredentialCreationOptionsMethod(node, method) => {
+                self.handle(*node)
+                    .invoke_with(method, handle)
+            }
         })
     }
     fn delete(self: &Arc<Self>, handle: HandleId) {
@@ -176,7 +192,7 @@ impl Runtime {
                 console::info_1(&format!("{:?}", command).into());
                 match command {
                     DownMessage::Invoke { assign, method } => {
-                        self.invoke(assign, &method)?;
+                        self.invoke(assign, &method).await?;
                     }
                     DownMessage::Delete(handle) => self.delete(handle),
                     DownMessage::Fail(msg) => return Err(anyhow::Error::msg(msg)),
