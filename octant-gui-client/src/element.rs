@@ -3,7 +3,7 @@ use std::sync::Arc;
 use atomic_refcell::AtomicRefCell;
 use web_sys::Element;
 
-use octant_gui_core::element::{ElementMethod, ElementTag};
+use octant_gui_core::{ElementMethod, ElementTag};
 use octant_gui_core::HandleId;
 use octant_object::define_class;
 

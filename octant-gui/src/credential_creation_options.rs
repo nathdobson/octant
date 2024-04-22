@@ -1,8 +1,8 @@
 use octant_gui_core::{
-    credential_creation_options::{CredentialCreationOptionsMethod, CredentialCreationOptionsTag}
+    {CredentialCreationOptionsMethod, CredentialCreationOptionsTag}
     ,
     Method,
-    public_key_credential_creation_options::PublicKeyCredentialCreationOptions,
+    PublicKeyCredentialCreationOptions,
 };
 use octant_object::define_class;
 

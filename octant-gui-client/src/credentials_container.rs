@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use web_sys::CredentialsContainer;
 
-use octant_gui_core::credentials_container::{CredentialsContainerMethod, CredentialsContainerTag};
+use octant_gui_core::{CredentialsContainerMethod, CredentialsContainerTag};
 use octant_gui_core::HandleId;
 use octant_object::define_class;
 

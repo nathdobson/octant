@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use atomic_refcell::AtomicRefCell;
 
-use octant_gui_core::html_input_element::{
+use octant_gui_core::{
     HtmlInputElementMethod, HtmlInputElementTag, HtmlInputElementUpMessage,
 };
 use octant_gui_core::Method;

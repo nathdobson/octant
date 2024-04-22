@@ -39,6 +39,7 @@ mod promise;
 mod text;
 mod window;
 mod credential_promise;
+mod import;
 
 pub type DownMessageStream = Pin<Box<dyn Stream<Item = anyhow::Result<DownMessageList>>>>;
 pub type UpMessageSink = Box<dyn Fn(UpMessageList) -> anyhow::Result<()>>;

@@ -1,6 +1,6 @@
 use atomic_refcell::AtomicRefCell;
 
-use octant_gui_core::element::{ElementMethod, ElementTag};
+use octant_gui_core::{ElementMethod, ElementTag};
 use octant_gui_core::Method;
 use octant_object::define_class;
 

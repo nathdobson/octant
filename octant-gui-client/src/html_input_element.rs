@@ -4,7 +4,7 @@ use std::sync::Arc;
 use web_sys::HtmlInputElement;
 
 use octant_gui_core::{HandleId, TypedHandle};
-use octant_gui_core::html_input_element::{
+use octant_gui_core::{
     HtmlInputElementMethod, HtmlInputElementTag,
 };
 use octant_object::define_class;

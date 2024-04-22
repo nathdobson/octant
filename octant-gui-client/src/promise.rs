@@ -4,7 +4,7 @@ use js_sys::Promise;
 
 use octant_gui_core::{
     HandleId,
-    promise::{PromiseMethod, PromiseTag}, TypedHandle,
+    {PromiseMethod, PromiseTag}, TypedHandle,
 };
 use octant_object::define_class;
 

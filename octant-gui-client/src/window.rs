@@ -4,7 +4,7 @@ use web_sys::Window;
 
 use octant_gui_core::{
     HandleId,
-    window::{WindowMethod, WindowTag},
+    {WindowMethod, WindowTag},
 };
 use octant_object::define_class;
 

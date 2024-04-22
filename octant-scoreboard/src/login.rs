@@ -17,17 +17,7 @@ use octant_gui::{
     event_loop::Page,
     CredentialCreationOptions,
 };
-use octant_gui_core::{
-    attestation_conveyance_preference::AttestationConveyancePreference,
-    authenticator_attachment::AuthenticatorAttachment,
-    authenticator_response::AuthenticatorResponse,
-    authenticator_selection_criteria::AuthenticatorSelectionCriteria, credential::Credential,
-    pub_key_cred_params::PubKeyCredParams,
-    public_key_credential_creation_options::PublicKeyCredentialCreationOptions,
-    public_key_credential_rp_entity::PublicKeyCredentialRpEntity,
-    public_key_credential_user_entity::PublicKeyCredentialUserEntity,
-    user_verification_requirement::UserVerificationRequirement,
-};
+use octant_gui_core::{AttestationConveyancePreference, AuthenticatorAttachment, AuthenticatorResponse, AuthenticatorSelectionCriteria, Credential, PubKeyCredParams, PublicKeyCredentialCreationOptions, PublicKeyCredentialRpEntity, PublicKeyCredentialUserEntity, UserVerificationRequirement};
 use octant_server::{
     session::{Session, SessionData},
     Handler,

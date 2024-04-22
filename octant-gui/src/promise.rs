@@ -3,7 +3,7 @@ use tokio::sync::oneshot;
 
 use octant_gui_core::{
     Method,
-    promise::{PromiseMethod, PromiseTag, PromiseUpMessage},
+    {PromiseMethod, PromiseTag, PromiseUpMessage},
 };
 use octant_object::define_class;
 

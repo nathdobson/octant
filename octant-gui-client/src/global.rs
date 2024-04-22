@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use web_sys::CredentialCreationOptions;
 
-use octant_gui_core::{global::GlobalMethod, HandleId};
+use octant_gui_core::{GlobalMethod, HandleId};
 
 use crate::{credential_creation_options, peer, window};
 

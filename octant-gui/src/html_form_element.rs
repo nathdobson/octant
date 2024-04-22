@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use atomic_refcell::AtomicRefCell;
 
-use octant_gui_core::html_form_element::{
+use octant_gui_core::{
     HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage,
 };
 use octant_gui_core::Method;

@@ -3,7 +3,7 @@ use std::sync::OnceLock;
 use octant_gui_core::{
     Method
     ,
-    navigator::{NavigatorMethod, NavigatorTag},
+    {NavigatorMethod, NavigatorTag},
 };
 use octant_object::define_class;
 

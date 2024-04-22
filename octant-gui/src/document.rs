@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::sync::OnceLock;
 
-use octant_gui_core::document::{DocumentMethod, DocumentTag};
+use octant_gui_core::{DocumentMethod, DocumentTag};
 use octant_gui_core::Method;
 use octant_object::define_class;
 

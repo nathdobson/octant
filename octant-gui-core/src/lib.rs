@@ -1,57 +1,68 @@
 #![deny(unused_must_use)]
 
-use std::{
-    fmt::{Debug, Formatter},
-    hash::Hash,
-    marker::PhantomData,
-};
+mod attestation_conveyance_preference;
 
+use std::fmt::{Debug, Formatter};
+use std::hash::Hash;
+use std::marker::PhantomData;
 use serde::{Deserialize, Serialize};
-
-use crate::{
-    credential_creation_options::{CredentialCreationOptionsMethod, CredentialCreationOptionsTag},
-    credentials_container::{CredentialsContainerMethod, CredentialsContainerTag},
-    document::{DocumentMethod, DocumentTag},
-    element::{ElementMethod, ElementTag},
-    global::GlobalMethod,
-    html_form_element::{HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage},
-    html_input_element::{HtmlInputElementMethod, HtmlInputElementTag, HtmlInputElementUpMessage},
-    navigator::{NavigatorMethod, NavigatorTag},
-    node::{NodeMethod, NodeTag},
-    promise::{PromiseMethod, PromiseTag},
-    window::{WindowMethod, WindowTag},
-};
-use crate::credential_promise::{CredentialPromiseMethod, CredentialPromiseTag, CredentialPromiseUpMessage};
-
-pub mod attestation_conveyance_preference;
-pub mod authenticator_attachment;
-pub mod authenticator_selection_criteria;
-pub mod credential_creation_options;
-pub mod credentials_container;
-pub mod document;
-pub mod element;
-pub mod global;
-pub mod html_form_element;
-pub mod html_input_element;
-pub mod navigator;
-pub mod node;
-pub mod object;
-pub mod promise;
-pub mod pub_key_cred_params;
-pub mod public_key_credential_creation_options;
-pub mod public_key_credential_rp_entity;
-pub mod public_key_credential_user_entity;
-pub mod user_verification_requirement;
-pub mod value;
-pub mod window;
-pub mod credential;
-pub mod public_key_credential;
-pub mod credential_promise;
-pub mod error;
-pub mod authenticator_response;
-pub mod authentication_extensions_client_outputs;
-pub mod authenticator_attestation_response;
-pub mod authenticator_transport;
+pub use attestation_conveyance_preference::*;
+mod authenticator_attachment;
+pub use authenticator_attachment::*;
+mod authenticator_selection_criteria;
+pub use authenticator_selection_criteria::*;
+mod credential_creation_options;
+pub use credential_creation_options::*;
+mod credentials_container;
+pub use credentials_container::*;
+mod document;
+pub use document::*;
+mod element;
+pub use element::*;
+mod global;
+pub use global::*;
+mod html_form_element;
+pub use html_form_element::*;
+mod html_input_element;
+pub use html_input_element::*;
+mod navigator;
+pub use navigator::*;
+mod node;
+pub use node::*;
+mod object;
+pub use object::*;
+mod promise;
+pub use promise::*;
+mod pub_key_cred_params;
+pub use pub_key_cred_params::*;
+mod public_key_credential_creation_options;
+pub use public_key_credential_creation_options::*;
+mod public_key_credential_rp_entity;
+pub use public_key_credential_rp_entity::*;
+mod public_key_credential_user_entity;
+pub use public_key_credential_user_entity::*;
+mod user_verification_requirement;
+pub use user_verification_requirement::*;
+mod value;
+pub use value::*;
+mod window;
+pub use window::*;
+mod credential;
+pub use credential::*;
+mod public_key_credential;
+pub use public_key_credential::*;
+mod credential_promise;
+pub use credential_promise::*;
+mod error;
+pub use error::*;
+mod authenticator_response;
+pub use authenticator_response::*;
+mod authentication_extensions_client_outputs;
+pub use authentication_extensions_client_outputs::*;
+mod authenticator_attestation_response;
+pub use authenticator_attestation_response::*;
+mod authenticator_transport;
+pub use authenticator_transport::*;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DownMessageList {

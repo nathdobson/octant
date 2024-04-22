@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use octant_gui_core::{global::GlobalMethod, Method};
+use octant_gui_core::{GlobalMethod, Method};
 
 use crate::{
     credential_creation_options, CredentialCreationOptions, runtime::Runtime, window, Window,

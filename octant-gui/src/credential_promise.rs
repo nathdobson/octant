@@ -1,9 +1,9 @@
 use octant_gui_core::{
-    credential::Credential,
-    credential_promise::{
+    Credential,
+    {
         CredentialPromiseMethod, CredentialPromiseTag, CredentialPromiseUpMessage,
     },
-    error::Error
+    Error
 
 
     ,

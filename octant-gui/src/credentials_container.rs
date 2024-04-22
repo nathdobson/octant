@@ -1,5 +1,5 @@
 use octant_gui_core::{
-    credentials_container::{CredentialsContainerMethod, CredentialsContainerTag},
+    {CredentialsContainerMethod, CredentialsContainerTag},
     Method,
 };
 use octant_object::define_class;

@@ -6,10 +6,10 @@ use wasm_bindgen::JsCast;
 use web_sys::{HtmlFormElement, InputEvent};
 
 use octant_gui_core::{HandleId, TypedHandle, UpMessage, UpMessageList};
-use octant_gui_core::html_form_element::{
+use octant_gui_core::{
     HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage,
 };
-use octant_gui_core::html_input_element::HtmlInputElementUpMessage;
+use octant_gui_core::HtmlInputElementUpMessage;
 use octant_object::cast::Cast;
 use octant_object::define_class;
 

@@ -2,7 +2,7 @@ use std::sync::OnceLock;
 
 use octant_gui_core::{
     Method,
-    window::{WindowMethod, WindowTag},
+    {WindowMethod, WindowTag},
 };
 use octant_object::define_class;
 

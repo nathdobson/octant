@@ -3,7 +3,7 @@ use std::sync::Arc;
 use wasm_bindgen::JsCast;
 use web_sys::Document;
 
-use octant_gui_core::document::{DocumentMethod, DocumentTag};
+use octant_gui_core::{DocumentMethod, DocumentTag};
 use octant_gui_core::HandleId;
 use octant_object::define_class;
 

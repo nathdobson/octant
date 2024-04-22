@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use web_sys::Navigator;
 
-use octant_gui_core::{HandleId, navigator::NavigatorMethod};
-use octant_gui_core::navigator::NavigatorTag;
+use octant_gui_core::{HandleId, NavigatorMethod};
+use octant_gui_core::NavigatorTag;
 use octant_object::define_class;
 
 use crate::{credentials_container, HasLocalType, object, peer};
