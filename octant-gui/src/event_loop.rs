@@ -1,5 +1,4 @@
-use std::panic::AssertUnwindSafe;
-use std::sync::Arc;
+use std::{panic::AssertUnwindSafe, sync::Arc};
 
 use futures::StreamExt;
 
@@ -86,6 +85,9 @@ impl EventLoop {
             UpMessage::VisitPage(page) => {
                 self.page = None;
                 self.page = Some(self.app.create_page(&page, self.global.clone())?);
+            }
+            UpMessage::CredentialPromise(promise, message) => {
+                self.global.runtime().handle(promise).handle_event(message)
             }
         }
         Ok(())

@@ -1,3 +1,6 @@
+use base64urlsafedata::Base64UrlSafeData;
+use serde::{Deserialize, Serialize};
+
 use crate::{
     attestation_conveyance_preference::AttestationConveyancePreference,
     authenticator_selection_criteria::AuthenticatorSelectionCriteria,
@@ -5,8 +8,6 @@ use crate::{
     public_key_credential_rp_entity::PublicKeyCredentialRpEntity,
     public_key_credential_user_entity::PublicKeyCredentialUserEntity,
 };
-use base64urlsafedata::Base64UrlSafeData;
-use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PublicKeyCredentialCreationOptions {

@@ -1,12 +1,12 @@
 use std::sync::OnceLock;
 
 use octant_gui_core::{
-    window::{WindowMethod, WindowTag},
     Method,
+    window::{WindowMethod, WindowTag},
 };
 use octant_object::define_class;
 
-use crate::{document, handle, node, runtime::HasTypedHandle, Document, Navigator, navigator};
+use crate::{document, Document, handle, Navigator, navigator, node, runtime::HasTypedHandle};
 
 define_class! {
     #[derive(Debug)]

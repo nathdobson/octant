@@ -8,30 +8,6 @@ use std::sync::Arc;
 
 use crate::stackbox::{StackBox, TraitObjectStorage};
 
-trait A: 'static + Any {}
-
-trait B: A {}
-
-trait C: B {}
-
-struct X;
-
-impl A for X {}
-
-struct Y;
-
-impl A for Y {}
-
-impl B for Y {}
-
-struct Z;
-
-impl A for Z {}
-
-impl B for Z {}
-
-impl C for Z {}
-
 pub trait CastValue: 'static + Any {
     fn into_leaf_rc<'a>(
         self: Rc<Self>,

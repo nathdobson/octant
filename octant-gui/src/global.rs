@@ -3,7 +3,7 @@ use std::sync::Arc;
 use octant_gui_core::{global::GlobalMethod, Method};
 
 use crate::{
-    credential_creation_options, runtime::Runtime, window, CredentialCreationOptions, Window,
+    credential_creation_options, CredentialCreationOptions, runtime::Runtime, window, Window,
 };
 
 pub struct Global {

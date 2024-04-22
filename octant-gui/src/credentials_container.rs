@@ -1,9 +1,11 @@
-use crate::{handle, object, runtime::HasTypedHandle, CredentialCreationOptions};
 use octant_gui_core::{
     credentials_container::{CredentialsContainerMethod, CredentialsContainerTag},
     Method,
 };
 use octant_object::define_class;
+
+use crate::{credential_promise, CredentialCreationOptions, CredentialPromise, handle, object, runtime::HasTypedHandle};
+
 define_class! {
     #[derive(Debug)]
     pub class extends object {
@@ -21,8 +23,11 @@ impl Value {
             parent: object::Value::new(handle),
         }
     }
-    pub fn create_with_options(&self, options: &CredentialCreationOptions) {
-        self.invoke(CredentialsContainerMethod::CreateWithOptions(options.typed_handle()));
+    pub fn create_with_options(&self, options: &CredentialCreationOptions) -> CredentialPromise {
+        self.runtime()
+            .add(credential_promise::Value::new(self.invoke(
+                CredentialsContainerMethod::CreateWithOptions(options.typed_handle()),
+            )))
     }
 }
 

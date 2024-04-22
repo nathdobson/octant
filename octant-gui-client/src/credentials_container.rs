@@ -1,15 +1,12 @@
 use std::sync::Arc;
-use wasm_bindgen_futures::JsFuture;
 
+use web_sys::CredentialsContainer;
+
+use octant_gui_core::credentials_container::{CredentialsContainerMethod, CredentialsContainerTag};
 use octant_gui_core::HandleId;
 use octant_object::define_class;
 
-use crate::{object, peer, HasLocalType, Runtime};
-use octant_gui_core::{
-    credentials_container::{CredentialsContainerMethod, CredentialsContainerTag},
-    navigator::NavigatorTag,
-};
-use web_sys::CredentialsContainer;
+use crate::{credential_promise, HasLocalType, object, peer, Runtime};
 
 define_class! {
     pub class extends object {
@@ -33,14 +30,12 @@ impl Value {
         match method {
             CredentialsContainerMethod::CreateWithOptions(options) => {
                 let options = runtime.handle(*options);
-                JsFuture::from(
+                Some(Arc::new(credential_promise::Value::new(
+                    handle,
                     self.credentials_container
                         .create_with_options(options.native())
                         .unwrap(),
-                )
-                .await
-                .unwrap();
-                None
+                )))
             }
         }
     }

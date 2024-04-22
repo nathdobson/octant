@@ -1,8 +1,15 @@
-use std::sync::Arc;
+use anyhow::anyhow;
+use std::{future, mem, sync::Arc};
 
 use atomic_refcell::AtomicRefCell;
 use url::Url;
-use webauthn_rs::{prelude::Uuid, WebauthnBuilder};
+use webauthn_rs::{
+    prelude::{RegisterPublicKeyCredential, Uuid},
+    WebauthnBuilder,
+};
+use webauthn_rs_core::proto::{
+    AuthenticatorAttestationResponseRaw, RegistrationExtensionsClientOutputs,
+};
 
 use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
@@ -11,15 +18,16 @@ use octant_gui::{
     CredentialCreationOptions,
 };
 use octant_gui_core::{
+    attestation_conveyance_preference::AttestationConveyancePreference,
     authenticator_attachment::AuthenticatorAttachment,
-    authenticator_selection_criteria::AuthenticatorSelectionCriteria,
+    authenticator_response::AuthenticatorResponse,
+    authenticator_selection_criteria::AuthenticatorSelectionCriteria, credential::Credential,
     pub_key_cred_params::PubKeyCredParams,
     public_key_credential_creation_options::PublicKeyCredentialCreationOptions,
     public_key_credential_rp_entity::PublicKeyCredentialRpEntity,
     public_key_credential_user_entity::PublicKeyCredentialUserEntity,
     user_verification_requirement::UserVerificationRequirement,
 };
-use octant_gui_core::attestation_conveyance_preference::AttestationConveyancePreference;
 use octant_server::{
     session::{Session, SessionData},
     Handler,
@@ -42,10 +50,13 @@ struct LoginSession {
 impl SessionData for LoginSession {}
 
 impl LoginHandler {
-    pub fn do_register(session: Arc<Session>) {
-        let rp_id = "localhost";
-        let rp_origin = Url::parse("https://localhost:8080").expect("Invalid URL");
-        let mut builder = WebauthnBuilder::new(rp_id, &rp_origin).expect("Invalid configuration");
+    pub fn do_register(session: Arc<Session>, url: &Url) -> anyhow::Result<()> {
+        let host = url
+            .host()
+            .ok_or_else(|| anyhow!("host not included in URL"))?;
+        let rp_id = format!("{}", host);
+        let rp_origin = url.join("/").expect("Invalid URL");
+        let mut builder = WebauthnBuilder::new(&rp_id, &rp_origin).expect("Invalid configuration");
         let webauthn = builder.build().expect("Invalid configuration");
 
         // Initiate a basic registration flow to enroll a cryptographic authenticator
@@ -117,12 +128,52 @@ impl LoginHandler {
                 },
             },
         });
-        session
+        let p = session
             .global()
             .window()
             .navigator()
             .credentials()
             .create_with_options(&options);
+        p.wait();
+        tokio::spawn(async move {
+            let cred = match p.get().await {
+                Err(e) => {
+                    log::error!("{:?}", e);
+                    return;
+                }
+                Ok(x) => x,
+            };
+            let cred = match cred {
+                Credential::PublicKeyCredential(cred) => cred,
+            };
+            let response = match cred.response {
+                AuthenticatorResponse::AuthenticatorAttestationResponse(response) => response,
+            };
+            let result = webauthn
+                .finish_passkey_registration(
+                    &RegisterPublicKeyCredential {
+                        id: cred.id,
+                        raw_id: cred.raw_id,
+                        response: AuthenticatorAttestationResponseRaw {
+                            attestation_object: response.attestation_object,
+                            client_data_json: response.client_data_json,
+                            transports: None,
+                        },
+                        extensions: RegistrationExtensionsClientOutputs {
+                            appid: None,
+                            cred_props: None,
+                            cred_protect: None,
+                            hmac_secret: None,
+                            min_pin_length: None,
+                        },
+                        type_: "PublicKeyCredential".to_string(),
+                    },
+                    &skr,
+                )
+                .unwrap();
+            println!("{:?}", result);
+        });
+        Ok(())
     }
 }
 
@@ -132,6 +183,7 @@ impl Handler for LoginHandler {
     }
 
     fn handle(&self, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
+        let url = url.clone();
         let d = session.global().window().document();
         let text = d.create_text_node("Login");
         let input = d
@@ -153,7 +205,9 @@ impl Handler for LoginHandler {
                 move || {
                     // let data = session.data::<LoginSession>();
                     // let ref mut state = *data.state.borrow_mut();
-                    Self::do_register(session.clone());
+                    if let Err(e) = Self::do_register(session.clone(), &url) {
+                        log::error!("{:?}", e);
+                    }
                 }
             });
         let page = d.create_element("div").child(text).child(form);

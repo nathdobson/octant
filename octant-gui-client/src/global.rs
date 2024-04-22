@@ -1,4 +1,5 @@
 use std::sync::Arc;
+
 use web_sys::CredentialCreationOptions;
 
 use octant_gui_core::{global::GlobalMethod, HandleId};

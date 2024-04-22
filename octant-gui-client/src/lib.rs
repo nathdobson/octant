@@ -14,10 +14,10 @@ use anyhow::anyhow;
 use atomic_refcell::AtomicRefCell;
 use futures::{Stream, StreamExt};
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
-use web_sys::{console, window, Event, HtmlAnchorElement};
+use web_sys::{console, Event, HtmlAnchorElement, window};
 
 use octant_gui_core::{
-    DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle, UpMessage, UpMessageList,
+    DownMessage, DownMessageList, HandleId, Method, TypedHandle, TypeTag, UpMessage, UpMessageList,
 };
 use octant_object::cast::Cast;
 use wasm_error::WasmError;
@@ -35,8 +35,10 @@ mod navigator;
 mod node;
 mod object;
 mod peer;
+mod promise;
 mod text;
 mod window;
+mod credential_promise;
 
 pub type DownMessageStream = Pin<Box<dyn Stream<Item = anyhow::Result<DownMessageList>>>>;
 pub type UpMessageSink = Box<dyn Fn(UpMessageList) -> anyhow::Result<()>>;
@@ -62,7 +64,6 @@ impl Runtime {
         let runtime = Arc::new(Runtime {
             state: AtomicRefCell::new(State {
                 source: Some(source),
-
                 handles: HashMap::new(),
             }),
             sink,
@@ -167,17 +168,20 @@ impl Runtime {
                 self.handle(*node)
                     .invoke_with(&self.clone(), method, handle)
             }
-            Method::Navigator(node, method) => {
-                self.handle(*node)
-                    .invoke_with(method, handle)
-            }
+            Method::Navigator(node, method) => self.handle(*node).invoke_with(method, handle),
             Method::CredentialsContainer(node, method) => {
                 self.handle(*node)
-                    .invoke_with(&self.clone(), method, handle).await
+                    .invoke_with(&self.clone(), method, handle)
+                    .await
             }
-            Method::CredentialCreationOptionsMethod(node, method) => {
-                self.handle(*node)
-                    .invoke_with(method, handle)
+            Method::CredentialCreationOptions(node, method) => {
+                self.handle(*node).invoke_with(method, handle)
+            }
+            Method::Promise(node, method) => {
+                self.handle(*node).invoke_with(&self.clone(),method, handle)
+            }
+            Method::CredentialPromise(node, method) => {
+                self.handle(*node).invoke_with(&self.clone(),method, handle)
             }
         })
     }

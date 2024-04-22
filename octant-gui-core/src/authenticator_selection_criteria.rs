@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     authenticator_attachment::AuthenticatorAttachment,
     user_verification_requirement::UserVerificationRequirement,
 };
-use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AuthenticatorSelectionCriteria {

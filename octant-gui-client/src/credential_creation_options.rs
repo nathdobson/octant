@@ -1,19 +1,21 @@
-use crate::{object, peer, HasLocalType};
+use std::sync::Arc;
+
+use web_sys::{
+    CredentialCreationOptions,
+    js_sys::Uint8Array,
+};
+
 use octant_gui_core::{
-    credential_creation_options::{CredentialCreationOptionsMethod, CredentialCreationOptionsTag},
-    credentials_container::CredentialsContainerMethod,
+    credential_creation_options::{CredentialCreationOptionsMethod, CredentialCreationOptionsTag}
+    ,
+    HandleId
+    ,
     public_key_credential_creation_options::PublicKeyCredentialCreationOptions,
-    window::WindowTag,
-    HandleId,
 };
 use octant_object::define_class;
-use std::sync::Arc;
-use wasm_bindgen::JsValue;
-use wasm_bindgen_futures::js_sys;
-use web_sys::{
-    js_sys::{Object, Reflect, Uint8Array},
-    CredentialCreationOptions, CredentialsContainer, Node,
-};
+
+use crate::{HasLocalType, object, peer};
+
 define_class! {
     pub class extends object {
         credentials_creation_options: CredentialCreationOptions,

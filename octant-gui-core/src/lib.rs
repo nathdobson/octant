@@ -9,6 +9,8 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    credential_creation_options::{CredentialCreationOptionsMethod, CredentialCreationOptionsTag},
+    credentials_container::{CredentialsContainerMethod, CredentialsContainerTag},
     document::{DocumentMethod, DocumentTag},
     element::{ElementMethod, ElementTag},
     global::GlobalMethod,
@@ -16,11 +18,14 @@ use crate::{
     html_input_element::{HtmlInputElementMethod, HtmlInputElementTag, HtmlInputElementUpMessage},
     navigator::{NavigatorMethod, NavigatorTag},
     node::{NodeMethod, NodeTag},
+    promise::{PromiseMethod, PromiseTag},
     window::{WindowMethod, WindowTag},
 };
-use crate::credential_creation_options::{CredentialCreationOptionsMethod, CredentialCreationOptionsTag};
-use crate::credentials_container::{CredentialsContainerMethod, CredentialsContainerTag};
+use crate::credential_promise::{CredentialPromiseMethod, CredentialPromiseTag, CredentialPromiseUpMessage};
 
+pub mod attestation_conveyance_preference;
+pub mod authenticator_attachment;
+pub mod authenticator_selection_criteria;
 pub mod credential_creation_options;
 pub mod credentials_container;
 pub mod document;
@@ -31,16 +36,22 @@ pub mod html_input_element;
 pub mod navigator;
 pub mod node;
 pub mod object;
+pub mod promise;
+pub mod pub_key_cred_params;
 pub mod public_key_credential_creation_options;
 pub mod public_key_credential_rp_entity;
 pub mod public_key_credential_user_entity;
+pub mod user_verification_requirement;
 pub mod value;
 pub mod window;
-pub mod pub_key_cred_params;
-pub mod authenticator_selection_criteria;
-pub mod authenticator_attachment;
-pub mod user_verification_requirement;
-pub mod attestation_conveyance_preference;
+pub mod credential;
+pub mod public_key_credential;
+pub mod credential_promise;
+pub mod error;
+pub mod authenticator_response;
+pub mod authentication_extensions_client_outputs;
+pub mod authenticator_attestation_response;
+pub mod authenticator_transport;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DownMessageList {
@@ -58,8 +69,16 @@ pub enum Method {
     Node(TypedHandle<NodeTag>, NodeMethod),
     HtmlFormElement(TypedHandle<HtmlFormElementTag>, HtmlFormElementMethod),
     HtmlInputElement(TypedHandle<HtmlInputElementTag>, HtmlInputElementMethod),
-    CredentialsContainer(TypedHandle<CredentialsContainerTag>, CredentialsContainerMethod),
-    CredentialCreationOptionsMethod(TypedHandle<CredentialCreationOptionsTag>, CredentialCreationOptionsMethod),
+    CredentialsContainer(
+        TypedHandle<CredentialsContainerTag>,
+        CredentialsContainerMethod,
+    ),
+    CredentialCreationOptions(
+        TypedHandle<CredentialCreationOptionsTag>,
+        CredentialCreationOptionsMethod,
+    ),
+    Promise(TypedHandle<PromiseTag>, PromiseMethod),
+    CredentialPromise(TypedHandle<CredentialPromiseTag>, CredentialPromiseMethod),
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
@@ -94,6 +113,7 @@ pub enum UpMessage {
     VisitPage(String),
     HtmlFormElement(TypedHandle<HtmlFormElementTag>, HtmlFormElementUpMessage),
     HtmlInputElement(TypedHandle<HtmlInputElementTag>, HtmlInputElementUpMessage),
+    CredentialPromise(TypedHandle<CredentialPromiseTag>, CredentialPromiseUpMessage),
 }
 
 #[derive(Serialize, Deserialize, Debug)]

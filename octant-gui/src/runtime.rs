@@ -1,8 +1,10 @@
-use std::any::type_name;
-use std::marker::PhantomData;
-use std::mem;
-use std::ptr::{DynMetadata, Pointee};
-use std::sync::{Arc, Weak};
+use std::{
+    any::type_name,
+    marker::PhantomData,
+    mem,
+    ptr::{DynMetadata, Pointee},
+    sync::{Arc, Weak},
+};
 
 use atomic_refcell::AtomicRefCell;
 use futures::SinkExt;
@@ -75,7 +77,7 @@ impl Runtime {
             .borrow_mut()
             .handles
             .get(&key.0)
-            .expect("unknown handle");
+            .unwrap_or_else(|| panic!("unknown handle {:?}", key));
         let dhandle = handle.clone();
         handle
             .downcast_trait()
@@ -91,5 +93,5 @@ pub trait HasTypedHandle: handle::Trait {
 }
 
 pub trait HasLocalType: TypeTag {
-    type Local: ?Sized + Pointee<Metadata=DynMetadata<Self::Local>>;
+    type Local: ?Sized + Pointee<Metadata = DynMetadata<Self::Local>>;
 }

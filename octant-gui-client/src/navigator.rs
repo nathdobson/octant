@@ -2,12 +2,11 @@ use std::sync::Arc;
 
 use web_sys::Navigator;
 
-use octant_gui_core::{navigator::NavigatorMethod, HandleId};
+use octant_gui_core::{HandleId, navigator::NavigatorMethod};
 use octant_gui_core::navigator::NavigatorTag;
-use octant_gui_core::window::WindowTag;
 use octant_object::define_class;
 
-use crate::{credentials_container, HasLocalType, navigator, object, peer};
+use crate::{credentials_container, HasLocalType, object, peer};
 
 define_class! {
     pub class extends object {
