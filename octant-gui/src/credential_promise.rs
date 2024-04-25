@@ -1,12 +1,5 @@
 use octant_gui_core::{
-    Credential,
-    {
-        CredentialPromiseMethod, CredentialPromiseTag, CredentialPromiseUpMessage,
-    },
-    Error
-
-
-    ,
+    Credential, CredentialPromiseMethod, CredentialPromiseTag, CredentialPromiseUpMessage, Error,
     Method,
 };
 use octant_object::define_class;

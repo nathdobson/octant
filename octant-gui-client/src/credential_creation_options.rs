@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use web_sys::{
-    CredentialCreationOptions,
-    js_sys::Uint8Array,
-};
+use web_sys::CredentialCreationOptions;
 
 use octant_gui_core::{
     {CredentialCreationOptionsMethod, CredentialCreationOptionsTag}
@@ -15,6 +12,7 @@ use octant_gui_core::{
 use octant_object::define_class;
 
 use crate::{HasLocalType, object, peer};
+use crate::export::Export;
 
 define_class! {
     pub class extends object {
@@ -32,7 +30,7 @@ impl Value {
     pub fn invoke_with(
         &self,
         method: &CredentialCreationOptionsMethod,
-        handle: HandleId,
+        _handle: HandleId,
     ) -> Option<Arc<dyn peer::Trait>> {
         match method {
             CredentialCreationOptionsMethod::PublicKey(options) => {
@@ -42,26 +40,7 @@ impl Value {
         }
     }
     pub fn public_key(&self, options: &PublicKeyCredentialCreationOptions) {
-        let mut rp = web_sys::PublicKeyCredentialRpEntity::new(&options.rp.name);
-        if let Some(id) = &options.rp.id {
-            rp.id(id);
-        }
-        if let Some(icon) = &options.rp.icon {
-            rp.icon(icon);
-        }
-        let user = web_sys::PublicKeyCredentialUserEntity::new(
-            &options.user.name,
-            &options.user.display_name,
-            &Uint8Array::from(&*options.user.id.0),
-        );
-        let cco = web_sys::PublicKeyCredentialCreationOptions::new(
-            &Uint8Array::from(&*options.challenge.0),
-            &serde_wasm_bindgen::to_value(&options.pub_key_cred_params).unwrap(),
-            &rp,
-            &user,
-        );
-        web_sys::console::log_1(&cco);
-        self.credentials_creation_options.clone().public_key(&cco);
+        self.credentials_creation_options.clone().public_key(&options.export());
     }
     pub fn native(&self) -> &CredentialCreationOptions {
         &self.credentials_creation_options

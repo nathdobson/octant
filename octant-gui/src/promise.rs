@@ -2,8 +2,8 @@ use parking_lot::Mutex;
 use tokio::sync::oneshot;
 
 use octant_gui_core::{
-    Method,
     {PromiseMethod, PromiseTag, PromiseUpMessage},
+    Method,
 };
 use octant_object::define_class;
 

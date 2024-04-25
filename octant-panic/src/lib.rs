@@ -1,6 +1,8 @@
+#![feature(panic_update_hook)]
+
 use std::{
     cell::Cell,
-    panic::{catch_unwind, PanicInfo, set_hook, UnwindSafe},
+    panic::{catch_unwind, PanicInfo,  UnwindSafe, update_hook},
     sync::Once,
 };
 
@@ -29,10 +31,14 @@ pub fn catch_error<T>(f: impl UnwindSafe + FnOnce() -> T) -> anyhow::Result<T> {
 static REGISTER: Once = Once::new();
 
 pub fn register_handler() {
-    REGISTER.call_once(|| set_hook(Box::new(panic_handler)))
+    REGISTER.call_once(|| update_hook(Box::new(panic_handler)))
 }
 
-pub fn panic_handler(info: &PanicInfo<'_>) {
+pub fn panic_handler(
+    prev: &(dyn Fn(&PanicInfo<'_>) + Send + Sync + 'static),
+    info: &PanicInfo<'_>,
+) {
+    prev(info);
     let payload = if let Some(payload) = info.payload().downcast_ref::<String>() {
         payload
     } else if let Some(payload) = info.payload().downcast_ref::<&str>() {

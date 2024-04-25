@@ -1,19 +1,19 @@
 #![feature(future_join)]
 #![deny(unused_must_use)]
 
-use std::{collections::HashMap, future::join, net::SocketAddr, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
 use anyhow::anyhow;
 use clap::Parser;
 use futures::{
-    SinkExt,
     stream::{SplitSink, SplitStream, StreamExt},
+    SinkExt,
 };
 use tokio::try_join;
 use url::Url;
 use warp::{
-    Filter,
-    Reply, ws::{Message, WebSocket},
+    ws::{Message, WebSocket},
+    Filter, Reply,
 };
 
 use octant_gui::{

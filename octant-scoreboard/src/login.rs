@@ -1,23 +1,22 @@
-use anyhow::anyhow;
-use std::{future, mem, sync::Arc};
+use std::sync::Arc;
 
+use anyhow::anyhow;
 use atomic_refcell::AtomicRefCell;
 use url::Url;
-use webauthn_rs::{
-    prelude::{RegisterPublicKeyCredential, Uuid},
-    WebauthnBuilder,
-};
-use webauthn_rs_core::proto::{
-    AuthenticatorAttestationResponseRaw, RegistrationExtensionsClientOutputs,
-};
+use webauthn_rs::{prelude::Uuid, WebauthnBuilder};
+use webauthn_rs_core::proto::{AuthenticatorAttestationResponseRaw, RegisterPublicKeyCredential};
 
 use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
-    credential_creation_options,
     event_loop::Page,
-    CredentialCreationOptions,
 };
-use octant_gui_core::{AttestationConveyancePreference, AuthenticatorAttachment, AuthenticatorResponse, AuthenticatorSelectionCriteria, Credential, PubKeyCredParams, PublicKeyCredentialCreationOptions, PublicKeyCredentialRpEntity, PublicKeyCredentialUserEntity, UserVerificationRequirement};
+use octant_gui_core::{
+    AttestationConveyancePreference, AuthenticatorAttachment, AuthenticatorAttestationResponse,
+    AuthenticatorResponse, AuthenticatorSelectionCriteria, Credential, PubKeyCredParams,
+    PublicKeyCredential, PublicKeyCredentialCreationOptions, PublicKeyCredentialRpEntity,
+    PublicKeyCredentialUserEntity, RegistrationExtensionsClientOutputs,
+    UserVerificationRequirement,
+};
 use octant_server::{
     session::{Session, SessionData},
     Handler,
@@ -39,6 +38,196 @@ struct LoginSession {
 
 impl SessionData for LoginSession {}
 
+trait IntoOctant<O> {
+    fn into_octant(self) -> O;
+}
+
+impl IntoOctant<PublicKeyCredentialCreationOptions>
+    for webauthn_rs_core::proto::PublicKeyCredentialCreationOptions
+{
+    fn into_octant(self) -> PublicKeyCredentialCreationOptions {
+        PublicKeyCredentialCreationOptions {
+            challenge: self.challenge,
+            rp: self.rp.into_octant(),
+            user: self.user.into_octant(),
+            pub_key_cred_params: self.pub_key_cred_params.into_octant(),
+            authenticator_selection: self.authenticator_selection.into_octant(),
+            timeout: self.timeout,
+            attestation: self.attestation.into_octant(),
+        }
+    }
+}
+
+impl IntoOctant<PublicKeyCredentialRpEntity> for webauthn_rs_core::proto::RelyingParty {
+    fn into_octant(self) -> PublicKeyCredentialRpEntity {
+        PublicKeyCredentialRpEntity {
+            name: self.name,
+            icon: None,
+            id: Some(self.id),
+        }
+    }
+}
+
+impl IntoOctant<PublicKeyCredentialUserEntity> for webauthn_rs_core::proto::User {
+    fn into_octant(self) -> PublicKeyCredentialUserEntity {
+        PublicKeyCredentialUserEntity {
+            name: self.name,
+            display_name: self.display_name,
+            id: self.id,
+            icon: None,
+        }
+    }
+}
+
+impl IntoOctant<PubKeyCredParams> for webauthn_rs_core::proto::PubKeyCredParams {
+    fn into_octant(self) -> PubKeyCredParams {
+        PubKeyCredParams {
+            typ: self.type_,
+            alg: self.alg as i32,
+        }
+    }
+}
+
+impl IntoOctant<AttestationConveyancePreference>
+    for Option<webauthn_rs_core::proto::AttestationConveyancePreference>
+{
+    fn into_octant(self) -> AttestationConveyancePreference {
+        match self {
+            None => AttestationConveyancePreference::None,
+            Some(this) => match this {
+                webauthn_rs_core::proto::AttestationConveyancePreference::None => {
+                    AttestationConveyancePreference::None
+                }
+                webauthn_rs_core::proto::AttestationConveyancePreference::Indirect => {
+                    AttestationConveyancePreference::Indirect
+                }
+                webauthn_rs_core::proto::AttestationConveyancePreference::Direct => {
+                    AttestationConveyancePreference::Direct
+                }
+            },
+        }
+    }
+}
+
+impl IntoOctant<AuthenticatorSelectionCriteria>
+    for webauthn_rs_core::proto::AuthenticatorSelectionCriteria
+{
+    fn into_octant(self) -> AuthenticatorSelectionCriteria {
+        AuthenticatorSelectionCriteria {
+            authenticator_attachment: self.authenticator_attachment.into_octant(),
+            require_resident_key: self.require_resident_key,
+            user_verification: self.user_verification.into_octant(),
+        }
+    }
+}
+
+impl IntoOctant<AuthenticatorAttachment> for webauthn_rs_core::proto::AuthenticatorAttachment {
+    fn into_octant(self) -> AuthenticatorAttachment {
+        match self {
+            webauthn_rs_core::proto::AuthenticatorAttachment::Platform => {
+                AuthenticatorAttachment::Platform
+            }
+            webauthn_rs_core::proto::AuthenticatorAttachment::CrossPlatform => {
+                AuthenticatorAttachment::CrossPlatform
+            }
+        }
+    }
+}
+
+impl IntoOctant<UserVerificationRequirement> for webauthn_rs_core::proto::UserVerificationPolicy {
+    fn into_octant(self) -> UserVerificationRequirement {
+        match self {
+            webauthn_rs_core::proto::UserVerificationPolicy::Required => {
+                UserVerificationRequirement::Required
+            }
+            webauthn_rs_core::proto::UserVerificationPolicy::Preferred => {
+                UserVerificationRequirement::Preferred
+            }
+            webauthn_rs_core::proto::UserVerificationPolicy::Discouraged_DO_NOT_USE => {
+                UserVerificationRequirement::Discouraged
+            }
+        }
+    }
+}
+
+impl<A, B> IntoOctant<Vec<B>> for Vec<A>
+where
+    A: IntoOctant<B>,
+{
+    fn into_octant(self) -> Vec<B> {
+        self.into_iter().map(|x| x.into_octant()).collect()
+    }
+}
+
+impl<A, B> IntoOctant<Option<B>> for Option<A>
+where
+    A: IntoOctant<B>,
+{
+    fn into_octant(self) -> Option<B> {
+        self.map(|x| x.into_octant())
+    }
+}
+
+trait IntoAuth<O> {
+    fn into_auth(self) -> O;
+}
+
+impl IntoAuth<RegisterPublicKeyCredential> for Credential {
+    fn into_auth(self) -> RegisterPublicKeyCredential {
+        match self {
+            Credential::PublicKeyCredential(credential) => credential.into_auth(),
+        }
+    }
+}
+
+impl IntoAuth<RegisterPublicKeyCredential> for PublicKeyCredential {
+    fn into_auth(self) -> RegisterPublicKeyCredential {
+        RegisterPublicKeyCredential {
+            id: self.id,
+            raw_id: self.raw_id,
+            response: self.response.into_auth(),
+            type_: "PublicKeyCredential".to_string(),
+            extensions: self.extensions.into_auth(),
+        }
+    }
+}
+
+impl IntoAuth<webauthn_rs_core::proto::AuthenticatorAttestationResponseRaw>
+    for AuthenticatorResponse
+{
+    fn into_auth(self) -> webauthn_rs_core::proto::AuthenticatorAttestationResponseRaw {
+        match self {
+            AuthenticatorResponse::AuthenticatorAttestationResponse(resp) => resp.into_auth(),
+        }
+    }
+}
+
+impl IntoAuth<webauthn_rs_core::proto::RegistrationExtensionsClientOutputs>
+    for RegistrationExtensionsClientOutputs
+{
+    fn into_auth(self) -> webauthn_rs_core::proto::RegistrationExtensionsClientOutputs {
+        webauthn_rs_core::proto::RegistrationExtensionsClientOutputs {
+            appid: None,
+            cred_props: None,
+            hmac_secret: None,
+            cred_protect: None,
+            min_pin_length: None,
+        }
+    }
+}
+
+impl IntoAuth<webauthn_rs_core::proto::AuthenticatorAttestationResponseRaw>
+    for AuthenticatorAttestationResponse
+{
+    fn into_auth(self) -> AuthenticatorAttestationResponseRaw {
+        AuthenticatorAttestationResponseRaw {
+            attestation_object: self.attestation_object,
+            client_data_json: self.client_data_json,
+            transports: None,
+        }
+    }
+}
+
 impl LoginHandler {
     pub fn do_register(session: Arc<Session>, url: &Url) -> anyhow::Result<()> {
         let host = url
@@ -46,78 +235,13 @@ impl LoginHandler {
             .ok_or_else(|| anyhow!("host not included in URL"))?;
         let rp_id = format!("{}", host);
         let rp_origin = url.join("/").expect("Invalid URL");
-        let mut builder = WebauthnBuilder::new(&rp_id, &rp_origin).expect("Invalid configuration");
+        let builder = WebauthnBuilder::new(&rp_id, &rp_origin).expect("Invalid configuration");
         let webauthn = builder.build().expect("Invalid configuration");
-
-        // Initiate a basic registration flow to enroll a cryptographic authenticator
         let (ccr, skr) = webauthn
             .start_passkey_registration(Uuid::new_v4(), "claire", "Claire", None)
             .expect("Failed to start registration.");
         let options = session.global().new_credential_creation_options();
-        options.public_key(PublicKeyCredentialCreationOptions {
-            challenge: ccr.public_key.challenge,
-            rp: PublicKeyCredentialRpEntity {
-                name: ccr.public_key.rp.name,
-                icon: None,
-                id: Some(ccr.public_key.rp.id),
-            },
-            user: PublicKeyCredentialUserEntity {
-                name: ccr.public_key.user.name,
-                display_name: ccr.public_key.user.display_name,
-                id: ccr.public_key.user.id,
-                icon: None,
-            },
-            pub_key_cred_params: ccr
-                .public_key
-                .pub_key_cred_params
-                .into_iter()
-                .map(|params| PubKeyCredParams {
-                    typ: params.type_,
-                    alg: params.alg,
-                })
-                .collect(),
-            authenticator_selection: ccr.public_key.authenticator_selection.map(|selection| {
-                AuthenticatorSelectionCriteria {
-                    authenticator_attachment: selection.authenticator_attachment.map(
-                        |attachment| match attachment {
-                            webauthn_rs_core::proto::AuthenticatorAttachment::Platform => {
-                                AuthenticatorAttachment::Platform
-                            }
-                            webauthn_rs_core::proto::AuthenticatorAttachment::CrossPlatform => {
-                                AuthenticatorAttachment::CrossPlatform
-                            }
-                        },
-                    ),
-                    require_resident_key: selection.require_resident_key,
-                    user_verification: match selection.user_verification {
-                        webauthn_rs_core::proto::UserVerificationPolicy::Required => {
-                            UserVerificationRequirement::Required
-                        }
-                        webauthn_rs_core::proto::UserVerificationPolicy::Preferred => {
-                            UserVerificationRequirement::Preferred
-                        }
-                        webauthn_rs_core::proto::UserVerificationPolicy::Discouraged_DO_NOT_USE => {
-                            UserVerificationRequirement::Discouraged
-                        }
-                    },
-                }
-            }),
-            timeout: ccr.public_key.timeout,
-            attestation: match ccr.public_key.attestation {
-                None => AttestationConveyancePreference::None,
-                Some(attestation) => match attestation {
-                    webauthn_rs_core::proto::AttestationConveyancePreference::None => {
-                        AttestationConveyancePreference::None
-                    }
-                    webauthn_rs_core::proto::AttestationConveyancePreference::Indirect => {
-                        AttestationConveyancePreference::Indirect
-                    }
-                    webauthn_rs_core::proto::AttestationConveyancePreference::Direct => {
-                        AttestationConveyancePreference::Direct
-                    }
-                },
-            },
-        });
+        options.public_key(ccr.public_key.into_octant());
         let p = session
             .global()
             .window()
@@ -133,35 +257,9 @@ impl LoginHandler {
                 }
                 Ok(x) => x,
             };
-            let cred = match cred {
-                Credential::PublicKeyCredential(cred) => cred,
-            };
-            let response = match cred.response {
-                AuthenticatorResponse::AuthenticatorAttestationResponse(response) => response,
-            };
-            let result = webauthn
-                .finish_passkey_registration(
-                    &RegisterPublicKeyCredential {
-                        id: cred.id,
-                        raw_id: cred.raw_id,
-                        response: AuthenticatorAttestationResponseRaw {
-                            attestation_object: response.attestation_object,
-                            client_data_json: response.client_data_json,
-                            transports: None,
-                        },
-                        extensions: RegistrationExtensionsClientOutputs {
-                            appid: None,
-                            cred_props: None,
-                            cred_protect: None,
-                            hmac_secret: None,
-                            min_pin_length: None,
-                        },
-                        type_: "PublicKeyCredential".to_string(),
-                    },
-                    &skr,
-                )
-                .unwrap();
-            println!("{:?}", result);
+            let cred = cred.into_auth();
+            let result = webauthn.finish_passkey_registration(&cred, &skr).unwrap();
+            log::info!("{:?}", result);
         });
         Ok(())
     }

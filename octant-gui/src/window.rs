@@ -1,8 +1,8 @@
 use std::sync::OnceLock;
 
 use octant_gui_core::{
-    Method,
     {WindowMethod, WindowTag},
+    Method,
 };
 use octant_object::define_class;
 

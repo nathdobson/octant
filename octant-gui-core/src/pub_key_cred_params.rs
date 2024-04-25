@@ -4,5 +4,5 @@ use serde::{Deserialize, Serialize};
 pub struct PubKeyCredParams {
     #[serde(rename = "type")]
     pub typ: String,
-    pub alg: i64,
+    pub alg: i32,
 }

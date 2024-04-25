@@ -1,9 +1,9 @@
 use std::sync::OnceLock;
 
 use octant_gui_core::{
-    Method
+    {NavigatorMethod, NavigatorTag}
     ,
-    {NavigatorMethod, NavigatorTag},
+    Method,
 };
 use octant_object::define_class;
 

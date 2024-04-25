@@ -3,8 +3,8 @@ use std::sync::Arc;
 use web_sys::Window;
 
 use octant_gui_core::{
-    HandleId,
     {WindowMethod, WindowTag},
+    HandleId,
 };
 use octant_object::define_class;
 

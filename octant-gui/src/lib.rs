@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #![deny(unused_must_use)]
 #![feature(try_blocks)]
 #![feature(trait_alias)]

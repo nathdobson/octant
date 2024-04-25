@@ -3,8 +3,8 @@ use std::{marker::PhantomData, sync::Arc};
 use js_sys::Promise;
 
 use octant_gui_core::{
-    HandleId,
-    {PromiseMethod, PromiseTag}, TypedHandle,
+    {PromiseMethod, PromiseTag},
+    HandleId, TypedHandle,
 };
 use octant_object::define_class;
 
@@ -34,7 +34,7 @@ impl Value {
 impl dyn Trait {
     pub fn invoke_with(
         self: &Arc<Self>,
-        runtime: &Arc<Runtime>,
+        _runtime: &Arc<Runtime>,
         method: &PromiseMethod,
         _handle: HandleId,
     ) -> Option<Arc<dyn peer::Trait>> {

@@ -1,19 +1,16 @@
-use base64urlsafedata::Base64UrlSafeData;
 use std::{marker::PhantomData, sync::Arc};
 
-use js_sys::{ArrayBuffer, Promise, Uint8Array};
-use wasm_bindgen::{JsCast, JsValue};
-use wasm_bindgen_futures::{spawn_local, JsFuture};
-use web_sys::{console, PublicKeyCredential};
-
+use js_sys::Promise;
 use octant_gui_core::{
-    AuthenticationExtensionsClientOutputs, AuthenticatorAttestationResponse, AuthenticatorResponse,
-    Credential, CredentialPromiseMethod, CredentialPromiseTag, CredentialPromiseUpMessage, Error,
-    HandleId, PromiseMethod, PromiseTag, PromiseUpMessage, TypedHandle, UpMessage, UpMessageList,
+    CredentialPromiseMethod, CredentialPromiseTag, CredentialPromiseUpMessage, HandleId,
+    TypedHandle, UpMessage, UpMessageList,
 };
+use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::{spawn_local, JsFuture};
+
 use octant_object::define_class;
 
-use crate::{import::Import, object, peer, promise, HasLocalType, Runtime};
+use crate::{import::Import, peer, promise, HasLocalType, Runtime};
 
 define_class! {
     pub class extends promise {
@@ -56,15 +53,11 @@ impl dyn Trait {
                 if let Err(err) = runtime.send(UpMessageList {
                     commands: vec![UpMessage::CredentialPromise(
                         this.handle(),
-                        CredentialPromiseUpMessage::Done(match result {
-                            Ok(cred) => {
-                                console::log_2(&JsValue::from_str("credential="), &cred);
-                                Ok(cred.dyn_into::<web_sys::Credential>().unwrap().import())
-                            }
-                            Err(x) => Err(Error {
-                                content: x.as_string().unwrap(),
-                            }),
-                        }),
+                        CredentialPromiseUpMessage::Done(
+                            result
+                                .map(|x| x.dyn_into::<web_sys::Credential>().unwrap())
+                                .import(),
+                        ),
                     )],
                 }) {
                     log::error!("Cannot send event {:?}", err);

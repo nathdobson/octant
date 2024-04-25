@@ -1,68 +1,76 @@
 #![deny(unused_must_use)]
 
+use std::{
+    fmt::{Debug, Formatter},
+    hash::Hash,
+    marker::PhantomData,
+};
+
+use serde::{Deserialize, Serialize};
+
+pub use attestation_conveyance_preference::*;
+pub use authentication_extensions_client_outputs::*;
+pub use authenticator_attachment::*;
+pub use authenticator_attestation_response::*;
+pub use authenticator_response::*;
+pub use authenticator_selection_criteria::*;
+pub use authenticator_transport::*;
+pub use credential::*;
+pub use credential_creation_options::*;
+pub use credential_promise::*;
+pub use credentials_container::*;
+pub use document::*;
+pub use element::*;
+pub use error::*;
+pub use global::*;
+pub use html_form_element::*;
+pub use html_input_element::*;
+pub use navigator::*;
+pub use node::*;
+pub use object::*;
+pub use promise::*;
+pub use pub_key_cred_params::*;
+pub use public_key_credential::*;
+pub use public_key_credential_creation_options::*;
+pub use public_key_credential_rp_entity::*;
+pub use public_key_credential_user_entity::*;
+pub use registration_extensions_client_outputs::*;
+pub use user_verification_requirement::*;
+pub use value::*;
+pub use window::*;
+
 mod attestation_conveyance_preference;
 
-use std::fmt::{Debug, Formatter};
-use std::hash::Hash;
-use std::marker::PhantomData;
-use serde::{Deserialize, Serialize};
-pub use attestation_conveyance_preference::*;
 mod authenticator_attachment;
-pub use authenticator_attachment::*;
 mod authenticator_selection_criteria;
-pub use authenticator_selection_criteria::*;
 mod credential_creation_options;
-pub use credential_creation_options::*;
 mod credentials_container;
-pub use credentials_container::*;
 mod document;
-pub use document::*;
 mod element;
-pub use element::*;
 mod global;
-pub use global::*;
 mod html_form_element;
-pub use html_form_element::*;
 mod html_input_element;
-pub use html_input_element::*;
 mod navigator;
-pub use navigator::*;
 mod node;
-pub use node::*;
 mod object;
-pub use object::*;
 mod promise;
-pub use promise::*;
 mod pub_key_cred_params;
-pub use pub_key_cred_params::*;
 mod public_key_credential_creation_options;
-pub use public_key_credential_creation_options::*;
 mod public_key_credential_rp_entity;
-pub use public_key_credential_rp_entity::*;
 mod public_key_credential_user_entity;
-pub use public_key_credential_user_entity::*;
 mod user_verification_requirement;
-pub use user_verification_requirement::*;
 mod value;
-pub use value::*;
 mod window;
-pub use window::*;
 mod credential;
-pub use credential::*;
 mod public_key_credential;
-pub use public_key_credential::*;
 mod credential_promise;
-pub use credential_promise::*;
 mod error;
-pub use error::*;
 mod authenticator_response;
-pub use authenticator_response::*;
 mod authentication_extensions_client_outputs;
-pub use authentication_extensions_client_outputs::*;
 mod authenticator_attestation_response;
-pub use authenticator_attestation_response::*;
 mod authenticator_transport;
-pub use authenticator_transport::*;
+
+mod registration_extensions_client_outputs;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DownMessageList {
@@ -124,7 +132,10 @@ pub enum UpMessage {
     VisitPage(String),
     HtmlFormElement(TypedHandle<HtmlFormElementTag>, HtmlFormElementUpMessage),
     HtmlInputElement(TypedHandle<HtmlInputElementTag>, HtmlInputElementUpMessage),
-    CredentialPromise(TypedHandle<CredentialPromiseTag>, CredentialPromiseUpMessage),
+    CredentialPromise(
+        TypedHandle<CredentialPromiseTag>,
+        CredentialPromiseUpMessage,
+    ),
 }
 
 #[derive(Serialize, Deserialize, Debug)]

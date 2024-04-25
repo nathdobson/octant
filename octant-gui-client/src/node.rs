@@ -5,8 +5,8 @@ use atomic_refcell::AtomicRefCell;
 use by_address::ByAddress;
 use web_sys::Node;
 
-use octant_gui_core::HandleId;
 use octant_gui_core::{NodeMethod, NodeTag};
+use octant_gui_core::HandleId;
 use octant_object::define_class;
 
 use crate::{HasLocalType, node, object, peer, Runtime};
