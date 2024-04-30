@@ -1,16 +1,16 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use js_sys::Promise;
+use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::{JsFuture, spawn_local};
+
 use octant_gui_core::{
     CredentialPromiseMethod, CredentialPromiseTag, CredentialPromiseUpMessage, HandleId,
     TypedHandle, UpMessage, UpMessageList,
 };
-use wasm_bindgen::JsCast;
-use wasm_bindgen_futures::{spawn_local, JsFuture};
-
 use octant_object::define_class;
 
-use crate::{import::Import, peer, promise, HasLocalType, Runtime};
+use crate::{HasLocalType, import::Import, peer, promise, Runtime};
 
 define_class! {
     pub class extends promise {

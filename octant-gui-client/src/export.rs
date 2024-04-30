@@ -40,14 +40,14 @@ impl Export<web_sys::PublicKeyCredentialUserEntity> for PublicKeyCredentialUserE
         web_sys::PublicKeyCredentialUserEntity::new(
             &self.name,
             &self.display_name,
-            &Uint8Array::from(&*self.id.0),
+            &Uint8Array::from(&**self.id),
         )
     }
 }
 
 impl Export<Uint8Array> for Base64UrlSafeData {
     fn export(&self) -> Uint8Array {
-        Uint8Array::from(&*self.0)
+        Uint8Array::from(&***self)
     }
 }
 

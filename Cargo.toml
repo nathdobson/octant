@@ -4,7 +4,7 @@ resolver = "2"
 members = ["octant-build",
     "octant-client", "octant-gui", "octant-gui-client", "octant-gui-core", "octant-object", "octant-panic", "octant-scoreboard",
     "octant-server"
-    , "wasm-error", "octant-build", "octant-database"]
+    , "wasm-error", "octant-build", "octant-database", "octant-account"]
 
 [profile.release]
 opt-level = "s"

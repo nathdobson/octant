@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.5.1", features = ["derive"] }
-tokio = { version = "1.36.0", features = ["rt", "process", "fs", "macros", "rt-multi-thread"] }
+clap = { version = "4.5.4", features = ["derive"] }
+tokio = { version = "1.37.0", features = ["rt", "process", "fs", "macros", "rt-multi-thread"] }
 futures = "0.3.30"
-anyhow = "1.0.80"
+anyhow = "1.0.82"

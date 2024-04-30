@@ -6,14 +6,14 @@ use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use anyhow::anyhow;
 use clap::Parser;
 use futures::{
-    stream::{SplitSink, SplitStream, StreamExt},
     SinkExt,
+    stream::{SplitSink, SplitStream, StreamExt},
 };
 use tokio::try_join;
 use url::Url;
 use warp::{
-    ws::{Message, WebSocket},
-    Filter, Reply,
+    Filter,
+    Reply, ws::{Message, WebSocket},
 };
 
 use octant_gui::{

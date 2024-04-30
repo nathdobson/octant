@@ -4,15 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.4.18", features = ["derive"] }
-warp = { version = "0.3.5", features = ["tls"] }
-futures = "0.3.28"
-anyhow = "1.0.75"
-log = "0.4.20"
+clap = { version = "4.5.4", features = ["derive"] }
+warp = { version = "0.3.7", features = ["tls"] }
+futures = "0.3.30"
+anyhow = "1.0.82"
+log = "0.4.21"
 octant-gui = { path = "../octant-gui" }
 octant-gui-core = { path = "../octant-gui-core" }
-serde_json = "1.0.113"
-tokio = "1.32.0"
+serde_json = "1.0.116"
+tokio = "1.37.0"
 memo-map = "0.3.2"
 atomic_refcell = "0.1.13"
 url = "2.5.0"

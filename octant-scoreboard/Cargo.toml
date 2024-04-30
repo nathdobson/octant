@@ -6,14 +6,15 @@ edition = "2021"
 [dependencies]
 octant-server = { path = "../octant-server" }
 octant-panic = { path = "../octant-panic" }
-simple_logger = "4.3.3"
-tokio = { version = "1.32.0", features = ["rt", "rt-multi-thread", "macros"] }
+simple_logger = "5.0.0"
+tokio = { version = "1.37.0", features = ["rt", "rt-multi-thread", "macros"] }
 octant-gui = { path = "../octant-gui" }
 octant-gui-core = { path = "../octant-gui-core" }
-anyhow = "1.0.75"
+anyhow = "1.0.82"
 atomic_refcell = "0.1.13"
 url = "2.5.0"
-webauthn-rs = "0.4.8"
-webauthn-rs-core = "0.4.8"
+webauthn-rs = "0.5.0"
+webauthn-rs-core = "0.5.0"
 js-sys = "0.3.69"
-log = "0.4.20"
+log = "0.4.21"
+octant-account = {path="../octant-account"}

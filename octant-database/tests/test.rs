@@ -30,7 +30,7 @@ mod no_imports {
 #[tokio::test]
 async fn test_file() -> io::Result<()> {
     let path = path::absolute(Path::new("../target/test.db"))?;
-    tokio::fs::remove_dir_all(&path).await?;
+    tokio::fs::remove_dir_all(&path).await.ok();
     tokio::fs::create_dir_all(&path).await?;
     {
         let root = Arc::new_cyclic(|this| {
