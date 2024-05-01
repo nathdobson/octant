@@ -29,6 +29,7 @@ mod test;
 pub mod tree;
 mod unique_arc;
 pub mod value;
+pub mod json;
 
 pub mod reexports {
     pub use serde;

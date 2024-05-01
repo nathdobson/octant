@@ -1,10 +1,7 @@
-use octant_gui_core::{
-    {CredentialsContainerMethod, CredentialsContainerTag},
-    Method,
-};
+use octant_gui_core::{CredentialsContainerMethod, CredentialsContainerTag, Method};
 use octant_object::define_class;
 
-use crate::{credential_promise, CredentialCreationOptions, CredentialPromise, handle, object, runtime::HasTypedHandle};
+use crate::{credential_promise, CredentialCreationOptions, CredentialPromise, CredentialRequestOptions, handle, object, runtime::HasTypedHandle};
 
 define_class! {
     #[derive(Debug)]
@@ -24,10 +21,22 @@ impl Value {
         }
     }
     pub fn create_with_options(&self, options: &CredentialCreationOptions) -> CredentialPromise {
-        self.runtime()
-            .add(credential_promise::Value::new(self.invoke(
-                CredentialsContainerMethod::CreateWithOptions(options.typed_handle()),
-            )))
+        let promise: CredentialPromise =
+            self.runtime()
+                .add(credential_promise::Value::new(self.invoke(
+                    CredentialsContainerMethod::CreateWithOptions(options.typed_handle()),
+                )));
+        promise.wait();
+        promise
+    }
+    pub fn get_with_options(&self, options: &CredentialRequestOptions) -> CredentialPromise {
+        let promise: CredentialPromise =
+            self.runtime()
+                .add(credential_promise::Value::new(self.invoke(
+                    CredentialsContainerMethod::GetWithOptions(options.typed_handle()),
+                )));
+        promise.wait();
+        promise
     }
 }
 

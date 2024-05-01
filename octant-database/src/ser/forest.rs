@@ -3,11 +3,11 @@ use std::sync::Weak;
 use serde::Serializer;
 use weak_table::WeakValueHashMap;
 
-use crate::forest::Forest;
-use crate::ser::proxy::SerializerProxy;
-use crate::ser::tree::SerializeTree;
-use crate::ser::update::SerializeUpdate;
-use crate::tree::{Tree, TreeId};
+use crate::{
+    forest::Forest,
+    ser::{proxy::SerializerProxy, tree::SerializeTree, update::SerializeUpdate},
+    tree::{Tree, TreeId},
+};
 
 pub struct SerializeForest<SP> {
     pub(crate) trees: WeakValueHashMap<TreeId, Weak<Tree<dyn SerializeTree<SP>>>>,

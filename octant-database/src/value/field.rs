@@ -6,16 +6,20 @@ use std::{
 use serde::{de::DeserializeSeed, Deserializer, Serialize, Serializer};
 
 use crate::{
+    de::{
+        forest::DeserializeForest,
+        proxy::DeserializerProxy,
+        seed::option_seed::OptionSeed,
+        update::{DeserializeUpdate, DeserializeUpdateSeed},
+    },
     forest::Forest,
+    ser::{
+        forest::SerializeForest,
+        proxy::SerializerProxy,
+        update::{SerializeUpdate, SerializeUpdateAdapter},
+    },
     tack::Tack,
 };
-use crate::de::forest::DeserializeForest;
-use crate::de::proxy::DeserializerProxy;
-use crate::de::seed::option_seed::OptionSeed;
-use crate::de::update::{DeserializeUpdate, DeserializeUpdateSeed};
-use crate::ser::forest::SerializeForest;
-use crate::ser::proxy::SerializerProxy;
-use crate::ser::update::{SerializeUpdate, SerializeUpdateAdapter};
 
 pub struct Field<T: ?Sized> {
     modified: bool,
@@ -43,6 +47,12 @@ impl<T: ?Sized> Field<T> {
 impl<T: ?Sized + Debug> Debug for Field<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         self.value.fmt(f)
+    }
+}
+
+impl<T: Default> Default for Field<T> {
+    fn default() -> Self {
+        Field::new(T::default())
     }
 }
 

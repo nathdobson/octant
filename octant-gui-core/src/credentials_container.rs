@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{TypedHandle, TypeTag};
+use crate::{CredentialRequestOptionsTag, TypedHandle, TypeTag};
 use crate::credential_creation_options::CredentialCreationOptionsTag;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
@@ -12,5 +12,8 @@ impl TypeTag for CredentialsContainerTag {}
 pub enum CredentialsContainerMethod {
     CreateWithOptions(
         TypedHandle<CredentialCreationOptionsTag>,
+    ),
+    GetWithOptions(
+        TypedHandle<CredentialRequestOptionsTag>,
     ),
 }

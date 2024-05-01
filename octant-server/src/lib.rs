@@ -36,6 +36,8 @@ pub struct OctantServerOptions {
     pub cert_path: Option<String>,
     #[arg(long)]
     pub key_path: Option<String>,
+    #[arg(long, required = true)]
+    pub db_path: String,
 }
 
 pub struct OctantServer {

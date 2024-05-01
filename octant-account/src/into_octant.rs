@@ -1,11 +1,17 @@
-use octant_gui_core::{AttestationConveyancePreference, AuthenticatorAttachment, AuthenticatorSelectionCriteria, PubKeyCredParams, PublicKeyCredentialCreationOptions, PublicKeyCredentialRpEntity, PublicKeyCredentialUserEntity, UserVerificationRequirement};
+use octant_gui_core::{
+    AllowCredentials, AllowCredentialsType, AttestationConveyancePreference,
+    AuthenticationExtensionsClientInputs, AuthenticatorAttachment, AuthenticatorSelectionCriteria,
+    AuthenticatorTransport, PubKeyCredParams, PublicKeyCredentialCreationOptions,
+    PublicKeyCredentialRequestOptions, PublicKeyCredentialRpEntity, PublicKeyCredentialUserEntity,
+    UserVerificationRequirement,
+};
 
 pub trait IntoOctant<O> {
     fn into_octant(self) -> O;
 }
 
 impl IntoOctant<PublicKeyCredentialCreationOptions>
-for webauthn_rs_core::proto::PublicKeyCredentialCreationOptions
+    for webauthn_rs_core::proto::PublicKeyCredentialCreationOptions
 {
     fn into_octant(self) -> PublicKeyCredentialCreationOptions {
         PublicKeyCredentialCreationOptions {
@@ -16,6 +22,7 @@ for webauthn_rs_core::proto::PublicKeyCredentialCreationOptions
             authenticator_selection: self.authenticator_selection.into_octant(),
             timeout: self.timeout,
             attestation: self.attestation.into_octant(),
+            extensions: self.extensions.into_octant(),
         }
     }
 }
@@ -51,7 +58,7 @@ impl IntoOctant<PubKeyCredParams> for webauthn_rs_core::proto::PubKeyCredParams 
 }
 
 impl IntoOctant<AttestationConveyancePreference>
-for Option<webauthn_rs_core::proto::AttestationConveyancePreference>
+    for Option<webauthn_rs_core::proto::AttestationConveyancePreference>
 {
     fn into_octant(self) -> AttestationConveyancePreference {
         match self {
@@ -72,7 +79,7 @@ for Option<webauthn_rs_core::proto::AttestationConveyancePreference>
 }
 
 impl IntoOctant<AuthenticatorSelectionCriteria>
-for webauthn_rs_core::proto::AuthenticatorSelectionCriteria
+    for webauthn_rs_core::proto::AuthenticatorSelectionCriteria
 {
     fn into_octant(self) -> AuthenticatorSelectionCriteria {
         AuthenticatorSelectionCriteria {
@@ -112,9 +119,73 @@ impl IntoOctant<UserVerificationRequirement> for webauthn_rs_core::proto::UserVe
     }
 }
 
+impl IntoOctant<AuthenticationExtensionsClientInputs>
+    for webauthn_rs_core::proto::RequestRegistrationExtensions
+{
+    fn into_octant(self) -> AuthenticationExtensionsClientInputs {
+        AuthenticationExtensionsClientInputs {}
+    }
+}
+
+impl IntoOctant<PublicKeyCredentialRequestOptions>
+    for webauthn_rs_core::proto::PublicKeyCredentialRequestOptions
+{
+    fn into_octant(self) -> PublicKeyCredentialRequestOptions {
+        PublicKeyCredentialRequestOptions {
+            challenge: self.challenge,
+            timeout: self.timeout,
+            rp_id: self.rp_id,
+            allow_credentials: self.allow_credentials.into_octant(),
+            user_verification: self.user_verification.into_octant(),
+            extensions: self.extensions.into_octant(),
+        }
+    }
+}
+
+impl IntoOctant<AllowCredentials> for webauthn_rs_core::proto::AllowCredentials {
+    fn into_octant(self) -> AllowCredentials {
+        AllowCredentials {
+            id: self.id,
+            transports: self.transports.unwrap_or_default().into_octant(),
+            typ: match &*self.type_ {
+                "public-key" => AllowCredentialsType::PublicKey,
+                _ => todo!(),
+            },
+        }
+    }
+}
+
+impl IntoOctant<AuthenticatorTransport> for webauthn_rs_core::proto::AuthenticatorTransport {
+    fn into_octant(self) -> AuthenticatorTransport {
+        match self {
+            webauthn_rs_core::proto::AuthenticatorTransport::Usb => AuthenticatorTransport::Usb,
+            webauthn_rs_core::proto::AuthenticatorTransport::Nfc => AuthenticatorTransport::Nfc,
+            webauthn_rs_core::proto::AuthenticatorTransport::Ble => AuthenticatorTransport::Ble,
+            webauthn_rs_core::proto::AuthenticatorTransport::Internal => {
+                AuthenticatorTransport::Internal
+            }
+            webauthn_rs_core::proto::AuthenticatorTransport::Hybrid => {
+                AuthenticatorTransport::Hybrid
+            }
+            webauthn_rs_core::proto::AuthenticatorTransport::Test => AuthenticatorTransport::Test,
+            webauthn_rs_core::proto::AuthenticatorTransport::Unknown => {
+                AuthenticatorTransport::Unknown
+            }
+        }
+    }
+}
+
+impl IntoOctant<AuthenticationExtensionsClientInputs>
+    for webauthn_rs_core::proto::RequestAuthenticationExtensions
+{
+    fn into_octant(self) -> AuthenticationExtensionsClientInputs {
+        todo!()
+    }
+}
+
 impl<A, B> IntoOctant<Vec<B>> for Vec<A>
-    where
-        A: IntoOctant<B>,
+where
+    A: IntoOctant<B>,
 {
     fn into_octant(self) -> Vec<B> {
         self.into_iter().map(|x| x.into_octant()).collect()
@@ -122,8 +193,8 @@ impl<A, B> IntoOctant<Vec<B>> for Vec<A>
 }
 
 impl<A, B> IntoOctant<Option<B>> for Option<A>
-    where
-        A: IntoOctant<B>,
+where
+    A: IntoOctant<B>,
 {
     fn into_octant(self) -> Option<B> {
         self.map(|x| x.into_octant())

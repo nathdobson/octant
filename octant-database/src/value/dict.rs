@@ -11,15 +11,21 @@ use serde::{
     Deserializer, ser::SerializeMap, Serialize, Serializer,
 };
 
-use crate::de::forest::DeserializeForest;
-use crate::de::proxy::DeserializerProxy;
-use crate::de::seed::map_seed::{DeserializeEntry, MapSeed};
-use crate::de::update::{DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed};
-use crate::forest::Forest;
-use crate::ser::forest::SerializeForest;
-use crate::ser::proxy::SerializerProxy;
-use crate::ser::update::{SerializeUpdate, SerializeUpdateAdapter};
-use crate::tack::Tack;
+use crate::{
+    de::{
+        forest::DeserializeForest,
+        proxy::DeserializerProxy,
+        seed::map_seed::{DeserializeEntry, MapSeed},
+        update::{DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed},
+    },
+    forest::Forest,
+    ser::{
+        forest::SerializeForest,
+        proxy::SerializerProxy,
+        update::{SerializeUpdate, SerializeUpdateAdapter},
+    },
+    tack::Tack,
+};
 
 pub struct Dict<K, V> {
     entries: BTreeMap<K, V>,
@@ -206,5 +212,11 @@ impl<K: Ord + Serialize, V: SerializeUpdate> SerializeUpdate for Dict<K, V> {
         } else {
             self.modified = Some(BTreeSet::new());
         }
+    }
+}
+
+impl<K: Ord + Hash + Clone, V: SerializeUpdate> Default for Dict<K, V> {
+    fn default() -> Self {
+        Dict::new()
     }
 }

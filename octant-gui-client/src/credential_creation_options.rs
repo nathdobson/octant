@@ -16,15 +16,15 @@ use crate::export::Export;
 
 define_class! {
     pub class extends object {
-        credentials_creation_options: CredentialCreationOptions,
+        credential_creation_options: CredentialCreationOptions,
     }
 }
 
 impl Value {
-    pub fn new(handle: HandleId, credentials_creation_options: CredentialCreationOptions) -> Self {
+    pub fn new(handle: HandleId, credential_creation_options: CredentialCreationOptions) -> Self {
         Value {
-            parent: object::Value::new(handle, credentials_creation_options.clone().into()),
-            credentials_creation_options,
+            parent: object::Value::new(handle, credential_creation_options.clone().into()),
+            credential_creation_options,
         }
     }
     pub fn invoke_with(
@@ -40,10 +40,10 @@ impl Value {
         }
     }
     pub fn public_key(&self, options: &PublicKeyCredentialCreationOptions) {
-        self.credentials_creation_options.clone().public_key(&options.export());
+        self.credential_creation_options.clone().public_key(&options.export());
     }
     pub fn native(&self) -> &CredentialCreationOptions {
-        &self.credentials_creation_options
+        &self.credential_creation_options
     }
 }
 

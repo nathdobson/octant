@@ -1,9 +1,9 @@
 use std::{
     fmt::{Debug, Formatter},
     marker::PhantomData,
+    mem::MaybeUninit,
     sync::{Arc, OnceLock, Weak},
 };
-use std::mem::MaybeUninit;
 
 use parking_lot::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{
@@ -107,7 +107,7 @@ impl<T: ?Sized + Debug> Debug for Tree<T> {
     }
 }
 
-impl<T: SerializeUpdate + 'static> SerializeUpdate for Arc<Tree<T>> {
+impl<T: SerializeUpdate + 'static + Sync + Send> SerializeUpdate for Arc<Tree<T>> {
     fn begin_stream(&mut self) {}
 
     fn begin_update(&mut self) -> bool {
@@ -278,5 +278,11 @@ impl<'de, T: 'static + Sync + Send> DeserializeUpdate<'de> for Weak<Tree<T>> {
 impl Debug for TreeId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "${}", self.0)
+    }
+}
+
+impl<T: Default> Default for Tree<T> {
+    fn default() -> Self {
+        Tree::new(T::default())
     }
 }

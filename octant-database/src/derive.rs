@@ -33,10 +33,10 @@ macro_rules! database_struct {
                 s: S,
             ) -> ::std::result::Result<S::Ok, S::Error> {
                 use $crate::reexports::serde::ser::SerializeStruct;
-                let mut s = s.serialize_struct("MyStruct", 4)?;
+                let mut s = s.serialize_struct(stringify!($str), 4)?;
                 $(
                     s.serialize_field(
-                        ::std::stringify!($field),
+                        stringify!($field),
                         &$crate::value::field::SerializeFieldAdapter::new(&self.$field, forest, ser_forest),
                     )?;
                 )*
@@ -69,8 +69,8 @@ macro_rules! database_struct {
                     }
                 }
                 $crate::de::seed::struct_seed::StructSeed::new(
-                    "MyStruct",
-                    &["this", "field1", "field2", "field3"],
+                    stringify!($str),
+                    &[$(stringify!($field),)*],
                     V { forest },
                 )
                     .deserialize(d)
@@ -110,7 +110,12 @@ macro_rules! database_struct {
                     .deserialize(d)
             }
         }
-        impl MyStruct {
+        impl $str {
+            pub fn new($($field: $type),*) -> Self {
+                $str {
+                    $($field: $crate::value::field::Field::new($field)),*
+                }
+            }
             $(
                 $vf fn $field<'a>(self: $crate::tack::Tack<'a, Self>) -> $crate::tack::Tack<'a, $type> {
                     $crate::tack::Tack::new(&mut self.into_inner_unchecked().$field)

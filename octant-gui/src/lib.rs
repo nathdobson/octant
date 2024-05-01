@@ -34,6 +34,7 @@ mod credential_promise;
 pub mod credentials_container;
 pub mod navigator;
 mod promise;
+mod credential_request_options;
 
 pub type DownMessageSink = Pin<Box<dyn Send + Sync + Sink<DownMessageList, Error = anyhow::Error>>>;
 pub type UpMessageStream =
@@ -48,6 +49,7 @@ pub type Navigator = Arc<dyn navigator::Trait>;
 
 pub type CredentialsContainer = Arc<dyn credentials_container::Trait>;
 pub type CredentialCreationOptions = Arc<dyn credential_creation_options::Trait>;
+pub type CredentialRequestOptions = Arc<dyn credential_request_options::Trait>;
 
 pub type HtmlElement = Arc<dyn html_element::Trait>;
 pub type HtmlFormElement = Arc<dyn html_form_element::Trait>;

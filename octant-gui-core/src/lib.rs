@@ -8,7 +8,10 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
+pub use allow_credentials::*;
+pub use allow_credentials_type::*;
 pub use attestation_conveyance_preference::*;
+pub use authentication_extensions_client_inputs::*;
 pub use authentication_extensions_client_outputs::*;
 pub use authenticator_attachment::*;
 pub use authenticator_attestation_response::*;
@@ -18,6 +21,7 @@ pub use authenticator_transport::*;
 pub use credential::*;
 pub use credential_creation_options::*;
 pub use credential_promise::*;
+pub use credential_request_options::*;
 pub use credentials_container::*;
 pub use document::*;
 pub use element::*;
@@ -32,6 +36,7 @@ pub use promise::*;
 pub use pub_key_cred_params::*;
 pub use public_key_credential::*;
 pub use public_key_credential_creation_options::*;
+pub use public_key_credential_request_options::*;
 pub use public_key_credential_rp_entity::*;
 pub use public_key_credential_user_entity::*;
 pub use registration_extensions_client_outputs::*;
@@ -41,12 +46,19 @@ pub use window::*;
 
 mod attestation_conveyance_preference;
 
+mod authentication_extensions_client_outputs;
 mod authenticator_attachment;
+mod authenticator_attestation_response;
+mod authenticator_response;
 mod authenticator_selection_criteria;
+mod authenticator_transport;
+mod credential;
 mod credential_creation_options;
+mod credential_promise;
 mod credentials_container;
 mod document;
 mod element;
+mod error;
 mod global;
 mod html_form_element;
 mod html_input_element;
@@ -55,21 +67,19 @@ mod node;
 mod object;
 mod promise;
 mod pub_key_cred_params;
+mod public_key_credential;
 mod public_key_credential_creation_options;
 mod public_key_credential_rp_entity;
 mod public_key_credential_user_entity;
 mod user_verification_requirement;
 mod value;
 mod window;
-mod credential;
-mod public_key_credential;
-mod credential_promise;
-mod error;
-mod authenticator_response;
-mod authentication_extensions_client_outputs;
-mod authenticator_attestation_response;
-mod authenticator_transport;
 
+mod allow_credentials;
+mod allow_credentials_type;
+mod authentication_extensions_client_inputs;
+mod credential_request_options;
+mod public_key_credential_request_options;
 mod registration_extensions_client_outputs;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -98,6 +108,10 @@ pub enum Method {
     ),
     Promise(TypedHandle<PromiseTag>, PromiseMethod),
     CredentialPromise(TypedHandle<CredentialPromiseTag>, CredentialPromiseMethod),
+    CredentialRequestOptions(
+        TypedHandle<CredentialRequestOptionsTag>,
+        CredentialRequestOptionsMethod,
+    ),
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]

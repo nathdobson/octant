@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     attestation_conveyance_preference::AttestationConveyancePreference,
+    authentication_extensions_client_inputs::AuthenticationExtensionsClientInputs,
     authenticator_selection_criteria::AuthenticatorSelectionCriteria,
     pub_key_cred_params::PubKeyCredParams,
     public_key_credential_rp_entity::PublicKeyCredentialRpEntity,
@@ -18,4 +19,5 @@ pub struct PublicKeyCredentialCreationOptions {
     pub authenticator_selection: Option<AuthenticatorSelectionCriteria>,
     pub timeout: Option<u32>,
     pub attestation: AttestationConveyancePreference,
+    pub extensions: Option<AuthenticationExtensionsClientInputs>,
 }

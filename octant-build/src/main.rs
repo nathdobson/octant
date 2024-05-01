@@ -82,12 +82,14 @@ async fn main_impl() -> anyhow::Result<()> {
         .exit_ok()
         .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
     create_dir_all("target/www").await?;
+    create_dir_all("target/db").await?;
     copy_dir_all("octant-client/www".as_ref(), "target/www".as_ref()).await?;
     Command::new(&format!("target/{profile_dir_name}/octant-scoreboard"))
         .args(&["--bind-http", "0.0.0.0:8080"])
         .args(&["--bind-https", "0.0.0.0:8081"])
         .args(&["--cert-path", "octant-server/cert/certificate.pem"])
         .args(&["--key-path", "octant-server/cert/key.pem"])
+        .args(&["--db-path", "target/db"])
         .env("RUST_BACKTRACE", "1")
         .env("RUST_LOG", "info")
         .status()

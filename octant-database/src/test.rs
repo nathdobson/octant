@@ -24,6 +24,7 @@ use crate::{
     tree::{Tree, TreeId},
     value::{field::Field, prim::Prim},
 };
+use crate::json::JsonProxy;
 
 const EXPECTED: &str = r#"{
   "id": 0,
@@ -59,18 +60,7 @@ fn deserializer(buf: &str) -> serde_json::Deserializer<SliceRead> {
     serde_json::Deserializer::new(serde_json::de::SliceRead::new(buf.as_bytes()))
 }
 
-struct JsonProxy;
 
-impl DeserializerProxy for JsonProxy {
-    type Error = serde_json::Error;
-    type DeserializerValue<'up, 'de: 'up> = &'up mut serde_json::Deserializer<SliceRead<'de>>;
-}
-
-impl SerializerProxy for JsonProxy {
-    type Error = serde_json::Error;
-    type SerializerValue<'up> =
-        &'up mut serde_json::Serializer<&'up mut Vec<u8>, PrettyFormatter<'up>>;
-}
 
 #[derive(Debug)]
 struct MyStruct {

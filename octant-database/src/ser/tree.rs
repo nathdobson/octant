@@ -1,11 +1,11 @@
 use serde::Serializer;
 
-use crate::forest::Forest;
-use crate::ser::forest::SerializeForest;
-use crate::ser::proxy::SerializerProxy;
-use crate::ser::update::SerializeUpdate;
+use crate::{
+    forest::Forest,
+    ser::{forest::SerializeForest, proxy::SerializerProxy, update::SerializeUpdate},
+};
 
-pub(crate) trait SerializeTree<SP: SerializerProxy> {
+pub(crate) trait SerializeTree<SP: SerializerProxy>: Sync + Send {
     fn tree_begin_stream(&mut self);
     fn tree_begin_update(&mut self) -> bool;
     fn tree_serialize_update<'up>(
@@ -17,7 +17,7 @@ pub(crate) trait SerializeTree<SP: SerializerProxy> {
     fn tree_end_update(&mut self);
 }
 
-impl<SP: SerializerProxy, T: SerializeUpdate> SerializeTree<SP> for T {
+impl<SP: SerializerProxy, T: SerializeUpdate + Sync + Send> SerializeTree<SP> for T {
     fn tree_begin_stream(&mut self) {
         self.begin_stream();
     }

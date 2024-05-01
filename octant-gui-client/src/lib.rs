@@ -41,6 +41,8 @@ mod window;
 mod credential_promise;
 mod import;
 mod export;
+mod credential_request_options;
+
 pub type DownMessageStream = Pin<Box<dyn Stream<Item = anyhow::Result<DownMessageList>>>>;
 pub type UpMessageSink = Box<dyn Fn(UpMessageList) -> anyhow::Result<()>>;
 
@@ -176,6 +178,9 @@ impl Runtime {
                     .await
             }
             Method::CredentialCreationOptions(node, method) => {
+                self.handle(*node).invoke_with(method, handle)
+            }
+            Method::CredentialRequestOptions(node, method) => {
                 self.handle(*node).invoke_with(method, handle)
             }
             Method::Promise(node, method) => {

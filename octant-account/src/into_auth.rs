@@ -1,23 +1,31 @@
-use webauthn_rs::prelude::RegisterPublicKeyCredential;
 use webauthn_rs_core::proto::AuthenticatorAttestationResponseRaw;
 
-use octant_gui_core::{AuthenticatorAttestationResponse, AuthenticatorResponse, Credential, PublicKeyCredential, RegistrationExtensionsClientOutputs};
+use octant_gui_core::{
+    AuthenticatorAttestationResponse, AuthenticatorResponse, Credential, PublicKeyCredential,
+    RegistrationExtensionsClientOutputs,
+};
 
 pub trait IntoAuth<O> {
     fn into_auth(self) -> O;
 }
 
-impl IntoAuth<RegisterPublicKeyCredential> for Credential {
-    fn into_auth(self) -> RegisterPublicKeyCredential {
+impl IntoAuth<webauthn_rs_core::proto::RegisterPublicKeyCredential> for Credential {
+    fn into_auth(self) -> webauthn_rs_core::proto::RegisterPublicKeyCredential {
         match self {
             Credential::PublicKeyCredential(credential) => credential.into_auth(),
         }
     }
 }
 
-impl IntoAuth<RegisterPublicKeyCredential> for PublicKeyCredential {
-    fn into_auth(self) -> RegisterPublicKeyCredential {
-        RegisterPublicKeyCredential {
+impl IntoAuth<webauthn_rs_core::proto::PublicKeyCredential> for Credential {
+    fn into_auth(self) -> webauthn_rs_core::proto::PublicKeyCredential {
+        todo!()
+    }
+}
+
+impl IntoAuth<webauthn_rs_core::proto::RegisterPublicKeyCredential> for PublicKeyCredential {
+    fn into_auth(self) -> webauthn_rs_core::proto::RegisterPublicKeyCredential {
+        webauthn_rs_core::proto::RegisterPublicKeyCredential {
             id: self.id,
             raw_id: self.raw_id,
             response: self.response.into_auth(),
@@ -28,7 +36,7 @@ impl IntoAuth<RegisterPublicKeyCredential> for PublicKeyCredential {
 }
 
 impl IntoAuth<webauthn_rs_core::proto::AuthenticatorAttestationResponseRaw>
-for AuthenticatorResponse
+    for AuthenticatorResponse
 {
     fn into_auth(self) -> webauthn_rs_core::proto::AuthenticatorAttestationResponseRaw {
         match self {
@@ -38,7 +46,7 @@ for AuthenticatorResponse
 }
 
 impl IntoAuth<webauthn_rs_core::proto::RegistrationExtensionsClientOutputs>
-for RegistrationExtensionsClientOutputs
+    for RegistrationExtensionsClientOutputs
 {
     fn into_auth(self) -> webauthn_rs_core::proto::RegistrationExtensionsClientOutputs {
         webauthn_rs_core::proto::RegistrationExtensionsClientOutputs {
@@ -52,7 +60,7 @@ for RegistrationExtensionsClientOutputs
 }
 
 impl IntoAuth<webauthn_rs_core::proto::AuthenticatorAttestationResponseRaw>
-for AuthenticatorAttestationResponse
+    for AuthenticatorAttestationResponse
 {
     fn into_auth(self) -> AuthenticatorAttestationResponseRaw {
         AuthenticatorAttestationResponseRaw {

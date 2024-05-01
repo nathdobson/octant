@@ -1,7 +1,7 @@
 use std::{io, path::Path, sync::Arc, time::Duration};
 
 use serde::{Deserialize, Serialize};
-use serde_json::{de::SliceRead, ser::PrettyFormatter};
+use serde_json::ser::PrettyFormatter;
 use tokio::{
     fs,
     fs::{File, read_dir},
@@ -10,11 +10,10 @@ use tokio::{
 };
 
 use crate::de::forest::DeserializeForest;
-use crate::de::proxy::DeserializerProxy;
 use crate::de::update::DeserializeUpdate;
 use crate::forest::Forest;
+use crate::json::JsonProxy;
 use crate::ser::forest::SerializeForest;
-use crate::ser::proxy::SerializerProxy;
 use crate::ser::update::SerializeUpdate;
 use crate::tree::{Tree, TreeId};
 
@@ -22,19 +21,6 @@ pub struct Database {
     forest: Arc<RwLock<Forest>>,
     file: File,
     ser_forest: SerializeForest<JsonProxy>,
-}
-
-struct JsonProxy;
-
-impl DeserializerProxy for JsonProxy {
-    type Error = serde_json::Error;
-    type DeserializerValue<'up, 'de: 'up> = &'up mut serde_json::Deserializer<SliceRead<'de>>;
-}
-
-impl SerializerProxy for JsonProxy {
-    type Error = serde_json::Error;
-    type SerializerValue<'up> =
-        &'up mut serde_json::Serializer<&'up mut Vec<u8>, PrettyFormatter<'up>>;
 }
 
 impl Database {
