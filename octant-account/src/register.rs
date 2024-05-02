@@ -10,10 +10,10 @@ use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
     event_loop::Page,
 };
-use octant_server::{Handler, session::Session};
+use octant_server::{session::Session, Handler};
 
 use crate::{
-    Account, AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant,
+    build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, Account, AccountDatabase,
 };
 
 pub struct RegisterHandler {
@@ -55,7 +55,7 @@ impl RegisterHandler {
     async fn register(&self, email: String, name: String, passkey: Passkey) -> anyhow::Result<()> {
         let read = self.forest.read().await;
         let mut accounts = read.write(&self.accounts);
-        let mut users = accounts.get_mut().users();
+        let users = accounts.get_mut().users();
         if let Some(account) = users.get(&email) {
             return Err(anyhow!("already registered"));
         }

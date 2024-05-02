@@ -1,7 +1,7 @@
-use anyhow::anyhow;
 use std::sync::Arc;
 
-use tokio::sync::{Mutex, RwLock};
+use anyhow::anyhow;
+use tokio::sync::RwLock;
 use url::Url;
 use webauthn_rs::prelude::Passkey;
 
@@ -29,7 +29,7 @@ impl LoginHandler {
         let webauthn = build_webauthn(url)?;
         let passkeys: Vec<Passkey> = {
             let forest = self.forest.read().await;
-            let mut accounts = forest.write(&self.accounts);
+            let accounts = forest.read(&self.accounts);
             let user = accounts
                 .users
                 .get(email)

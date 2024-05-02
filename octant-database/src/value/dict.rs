@@ -8,8 +8,8 @@ use std::{
 
 use serde::{
     de::{DeserializeSeed, MapAccess, Visitor},
-    ser::SerializeMap,
-    Deserialize, Deserializer, Serialize, Serializer,
+    Deserialize,
+    Deserializer, ser::SerializeMap, Serialize, Serializer,
 };
 
 use crate::{

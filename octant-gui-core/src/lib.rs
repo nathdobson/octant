@@ -13,7 +13,6 @@ pub use allow_credentials_type::*;
 pub use attestation_conveyance_preference::*;
 pub use authentication_extensions_client_inputs::*;
 pub use authentication_extensions_client_outputs::*;
-pub use authentication_extensions_client_outputs::*;
 pub use authenticator_assertion_response::*;
 pub use authenticator_attachment::*;
 pub use authenticator_attestation_response::*;
