@@ -174,6 +174,9 @@ impl<K: Debug, V: Debug> Debug for Dict<K, V> {
 impl<K: Ord + Serialize, V: SerializeUpdate> SerializeUpdate for Dict<K, V> {
     fn begin_stream(&mut self) {
         self.modified = None;
+        for value in self.entries.values_mut() {
+            value.begin_stream();
+        }
     }
 
     fn begin_update(&mut self) -> bool {

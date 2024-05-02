@@ -74,6 +74,7 @@ impl<T: ?Sized> DerefMut for Field<T> {
 impl<T: ?Sized + SerializeUpdate> SerializeUpdate for Field<T> {
     fn begin_stream(&mut self) {
         self.modified = true;
+        self.value.begin_stream();
     }
 
     fn begin_update(&mut self) -> bool {
