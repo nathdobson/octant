@@ -1,24 +1,42 @@
+use anyhow::anyhow;
 use std::sync::Arc;
 
+use tokio::sync::{Mutex, RwLock};
 use url::Url;
+use webauthn_rs::prelude::Passkey;
 
-use octant_database::tree::Tree;
+use octant_database::{forest::Forest, tree::Tree};
 use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
     event_loop::Page,
 };
-use octant_server::{Handler, session::Session};
+use octant_server::{session::Session, Handler};
 
-use crate::{AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant};
+use crate::{build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, AccountDatabase};
 
 pub struct LoginHandler {
-    pub database: Arc<Tree<AccountDatabase>>,
+    pub forest: Arc<RwLock<Forest>>,
+    pub accounts: Arc<Tree<AccountDatabase>>,
 }
 
 impl LoginHandler {
-    pub fn do_login(session: Arc<Session>, url: &Url, email: &str) -> anyhow::Result<()> {
+    pub async fn do_login(
+        self: Arc<Self>,
+        session: Arc<Session>,
+        url: &Url,
+        email: &str,
+    ) -> anyhow::Result<()> {
         let webauthn = build_webauthn(url)?;
-        let (rcr, skr) = webauthn.start_passkey_authentication(&[])?;
+        let passkeys: Vec<Passkey> = {
+            let forest = self.forest.read().await;
+            let mut accounts = forest.write(&self.accounts);
+            let user = accounts
+                .users
+                .get(email)
+                .ok_or_else(|| anyhow!("account does not exist"))?;
+            user.passkeys.iter().map(|(k, v)| (*v).clone()).collect()
+        };
+        let (rcr, skr) = webauthn.start_passkey_authentication(&passkeys)?;
         let options = session.global().new_credential_request_options();
         options.public_key(rcr.public_key.into_octant());
         let p = session
@@ -27,18 +45,11 @@ impl LoginHandler {
             .navigator()
             .credentials()
             .get_with_options(&options);
-        tokio::spawn(async move {
-            let cred = match p.get().await {
-                Err(e) => {
-                    log::error!("{:?}", e);
-                    return;
-                }
-                Ok(x) => x,
-            };
-            let cred = cred.into_auth();
-            let result = webauthn.finish_passkey_authentication(&cred, &skr).unwrap();
-            log::info!("{:?}", result);
-        });
+        session.global().runtime().flush().await?;
+        let cred = p.get().await?;
+        let cred = cred.into_auth();
+        let result = webauthn.finish_passkey_authentication(&cred, &skr).unwrap();
+        log::info!("{:?}", result);
         Ok(())
     }
 }
@@ -48,7 +59,7 @@ impl Handler for LoginHandler {
         "login".to_string()
     }
 
-    fn handle(&self, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
+    fn handle(self: Arc<Self>, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
         let url = url.clone();
         let d = session.global().window().document();
         let text = d.create_text_node("Register");
@@ -68,11 +79,19 @@ impl Handler for LoginHandler {
             )
             .handler({
                 let session = session.clone();
-                let email = email.clone();
                 move || {
-                    if let Err(e) = Self::do_login(session.clone(), &url, &email.input_value()) {
-                        session.global().fail(e);
-                    }
+                    let url = url.clone();
+                    let session = session.clone();
+                    let email = email.clone();
+                    let this = self.clone();
+                    tokio::spawn(async move {
+                        if let Err(e) = this
+                            .do_login(session.clone(), &url, &email.input_value())
+                            .await
+                        {
+                            session.global().fail(e);
+                        }
+                    });
                 }
             });
         let page = d.create_element("div").child(text).child(form);

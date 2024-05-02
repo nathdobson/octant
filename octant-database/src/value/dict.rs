@@ -1,4 +1,5 @@
 use std::{
+    borrow::Borrow,
     collections::{btree_map::Entry, BTreeMap, BTreeSet},
     fmt::{Debug, Formatter},
     hash::Hash,
@@ -7,8 +8,8 @@ use std::{
 
 use serde::{
     de::{DeserializeSeed, MapAccess, Visitor},
-    Deserialize,
-    Deserializer, ser::SerializeMap, Serialize, Serializer,
+    ser::SerializeMap,
+    Deserialize, Deserializer, Serialize, Serializer,
 };
 
 use crate::{
@@ -54,7 +55,11 @@ impl<K: Eq + Ord + Hash + Clone, V: SerializeUpdate> Dict<K, V> {
             modified.insert(key.clone());
         }
     }
-    pub fn get(&self, key: &K) -> Option<&V> {
+    pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
+    where
+        K: Borrow<Q>,
+        Q: Ord + Eq,
+    {
         self.entries.get(key)
     }
     pub fn get_mut<'a>(self: Tack<'a, Self>, key: &K) -> Option<&'a mut V> {
@@ -63,6 +68,9 @@ impl<K: Eq + Ord + Hash + Clone, V: SerializeUpdate> Dict<K, V> {
             modified.insert(key.clone());
         }
         this.entries.get_mut(key)
+    }
+    pub fn iter<'a>(&'a self) -> impl 'a + Iterator<Item = (&'a K, &'a V)> {
+        self.entries.iter()
     }
 }
 

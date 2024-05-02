@@ -31,7 +31,7 @@ impl Handler for ScoreHandler {
         "score".to_string()
     }
 
-    fn handle(&self, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
+    fn handle(self: Arc<Self>, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
         let d = session.global().window().document();
         let text = d.create_text_node(&format!("{:?}", url));
         let input = d.create_input_element().attr("type", "text");

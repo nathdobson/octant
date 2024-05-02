@@ -42,7 +42,7 @@ pub struct OctantServerOptions {
 
 pub struct OctantServer {
     options: OctantServerOptions,
-    handlers: HashMap<String, Box<dyn Handler>>,
+    handlers: HashMap<String, Arc<dyn Handler>>,
 }
 
 impl OctantServerOptions {
@@ -53,7 +53,7 @@ impl OctantServerOptions {
 
 pub trait Handler: 'static + Sync + Send {
     fn prefix(&self) -> String;
-    fn handle(&self, url: &Url, session: Arc<Session>) -> anyhow::Result<Page>;
+    fn handle(self: Arc<Self>, url: &Url, session: Arc<Session>) -> anyhow::Result<Page>;
 }
 
 struct OctantApplication {
@@ -76,6 +76,7 @@ impl Application for OctantApplication {
             .handlers
             .get(prefix)
             .ok_or_else(|| anyhow::Error::msg("Cannot find handler"))?
+            .clone()
             .handle(&url, self.session.clone())
     }
 }
@@ -88,7 +89,7 @@ impl OctantServer {
         }
     }
     pub fn add_handler(&mut self, handler: impl Handler) {
-        self.handlers.insert(handler.prefix(), Box::new(handler));
+        self.handlers.insert(handler.prefix(), Arc::new(handler));
     }
     async fn encode(x: DownMessageList) -> anyhow::Result<Message> {
         Ok(Message::binary(serde_json::to_vec(&x)?))

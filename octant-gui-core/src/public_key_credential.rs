@@ -1,7 +1,7 @@
-use crate::AuthenticationExtensionsClientOutputs;
 use base64urlsafedata::Base64UrlSafeData;
 use serde::{Deserialize, Serialize};
 
+use crate::AuthenticationExtensionsClientOutputs;
 use crate::authenticator_response::AuthenticatorResponse;
 
 #[derive(Serialize, Deserialize, Debug)]

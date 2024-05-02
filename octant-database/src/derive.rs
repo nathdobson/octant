@@ -111,7 +111,7 @@ macro_rules! database_struct {
             }
         }
         impl $str {
-            pub fn new($($field: $type),*) -> Self {
+            fn new_raw($($field: $type),*) -> Self {
                 $str {
                     $($field: $crate::value::field::Field::new($field)),*
                 }

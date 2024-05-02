@@ -15,3 +15,4 @@ atomic_refcell = "0.1.13"
 octant-server ={path="../octant-server"}
 octant-gui-core = {path="../octant-gui-core"}
 octant-database = {path="../octant-database"}
+base64urlsafedata = "0.5.0"

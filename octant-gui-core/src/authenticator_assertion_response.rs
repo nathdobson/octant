@@ -1,6 +1,5 @@
 use base64urlsafedata::Base64UrlSafeData;
 use serde::{Deserialize, Serialize};
-use crate::AuthenticatorTransport;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AuthenticatorAssertionResponse {
