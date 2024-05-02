@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::anyhow;
 use url::Url;
-use webauthn_rs::{prelude::Uuid, WebauthnBuilder};
 
 use octant_database::tree::Tree;
 use octant_gui::{
@@ -63,11 +61,10 @@ impl Handler for LoginHandler {
             .create_form_element()
             .child(email.clone())
             .child(d.create_element("br"))
-            .child(d.create_element("br"))
             .child(
                 d.create_input_element()
                     .attr("type", "submit")
-                    .attr("value", "Register"),
+                    .attr("value", "Login"),
             )
             .handler({
                 let session = session.clone();

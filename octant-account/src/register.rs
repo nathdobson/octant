@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
-use anyhow::{anyhow, Context};
+use anyhow::{ Context};
 use url::Url;
-use webauthn_rs::{prelude::Uuid, WebauthnBuilder};
+use webauthn_rs::{prelude::Uuid};
 
 use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
     event_loop::Page,
 };
-use octant_server::{session::Session, Handler};
+use octant_server::{Handler, session::Session};
 
 use crate::{build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant};
 
@@ -23,7 +23,6 @@ impl RegisterHandler {
     ) -> anyhow::Result<()> {
         let webauthn = build_webauthn(url)?;
         let (ccr, skr) = webauthn.start_passkey_registration(Uuid::new_v4(), email, name, None)?;
-        log::info!("{:#?}", ccr);
         let options = session.global().new_credential_creation_options();
         options.public_key(ccr.public_key.into_octant());
         let p = session

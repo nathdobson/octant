@@ -8,3 +8,9 @@ members = ["octant-build",
 
 [profile.release]
 opt-level = "s"
+
+[patch.crates-io]
+base64urlsafedata = {git = "https://github.com/nathdobson/webauthn-rs.git"}
+webauthn-rs = {git=  "https://github.com/nathdobson/webauthn-rs.git"}
+webauthn-rs-core = {git=  "https://github.com/nathdobson/webauthn-rs.git"}
+webauthn-rs-proto = {git=  "https://github.com/nathdobson/webauthn-rs.git"}

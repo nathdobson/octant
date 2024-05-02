@@ -14,22 +14,26 @@ use anyhow::anyhow;
 use atomic_refcell::AtomicRefCell;
 use futures::{Stream, StreamExt};
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
-use web_sys::{console, Event, HtmlAnchorElement, window};
+use web_sys::{console, window, Event, HtmlAnchorElement};
 
 use octant_gui_core::{
-    DownMessage, DownMessageList, HandleId, Method, TypedHandle, TypeTag, UpMessage, UpMessageList,
+    DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle, UpMessage, UpMessageList,
 };
 use octant_object::cast::Cast;
 use wasm_error::WasmError;
 
 mod credential_creation_options;
+mod credential_promise;
+mod credential_request_options;
 mod credentials_container;
 mod document;
 mod element;
+mod export;
 mod global;
 mod html_element;
 mod html_form_element;
 mod html_input_element;
+mod import;
 mod js_value;
 mod navigator;
 mod node;
@@ -38,10 +42,6 @@ mod peer;
 mod promise;
 mod text;
 mod window;
-mod credential_promise;
-mod import;
-mod export;
-mod credential_request_options;
 
 pub type DownMessageStream = Pin<Box<dyn Stream<Item = anyhow::Result<DownMessageList>>>>;
 pub type UpMessageSink = Box<dyn Fn(UpMessageList) -> anyhow::Result<()>>;
@@ -140,7 +140,7 @@ impl Runtime {
             .expect("unknown handle")
             .clone()
             .downcast_trait()
-            .unwrap()
+            .unwrap_or_else(|| panic!("Wrong class for {:?}", handle))
     }
     async fn invoke_with(
         self: &Arc<Self>,
@@ -184,10 +184,12 @@ impl Runtime {
                 self.handle(*node).invoke_with(method, handle)
             }
             Method::Promise(node, method) => {
-                self.handle(*node).invoke_with(&self.clone(),method, handle)
+                self.handle(*node)
+                    .invoke_with(&self.clone(), method, handle)
             }
             Method::CredentialPromise(node, method) => {
-                self.handle(*node).invoke_with(&self.clone(),method, handle)
+                self.handle(*node)
+                    .invoke_with(&self.clone(), method, handle)
             }
         })
     }

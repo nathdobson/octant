@@ -13,6 +13,7 @@ pub use allow_credentials_type::*;
 pub use attestation_conveyance_preference::*;
 pub use authentication_extensions_client_inputs::*;
 pub use authentication_extensions_client_outputs::*;
+pub use authenticator_assertion_response::*;
 pub use authenticator_attachment::*;
 pub use authenticator_attestation_response::*;
 pub use authenticator_response::*;
@@ -39,7 +40,7 @@ pub use public_key_credential_creation_options::*;
 pub use public_key_credential_request_options::*;
 pub use public_key_credential_rp_entity::*;
 pub use public_key_credential_user_entity::*;
-pub use registration_extensions_client_outputs::*;
+pub use authentication_extensions_client_outputs::*;
 pub use user_verification_requirement::*;
 pub use value::*;
 pub use window::*;
@@ -78,9 +79,9 @@ mod window;
 mod allow_credentials;
 mod allow_credentials_type;
 mod authentication_extensions_client_inputs;
+mod authenticator_assertion_response;
 mod credential_request_options;
 mod public_key_credential_request_options;
-mod registration_extensions_client_outputs;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DownMessageList {

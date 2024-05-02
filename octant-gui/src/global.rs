@@ -33,7 +33,7 @@ impl Global {
     pub fn new_credential_request_options(&self) -> CredentialRequestOptions {
         self.runtime
             .add(credential_request_options::Value::new(self.runtime.invoke(
-                Method::Global(GlobalMethod::NewCredentialCreationOptions),
+                Method::Global(GlobalMethod::NewCredentialRequestOptions),
             )))
     }
     pub fn fail(&self, e: anyhow::Error) {

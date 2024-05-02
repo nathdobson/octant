@@ -1,6 +1,7 @@
 #![feature(trait_upcasting)]
 #![allow(dead_code)]
 #![feature(arbitrary_self_types)]
+#![allow(unused_variables)]
 
 use anyhow::anyhow;
 use atomic_refcell::AtomicRefCell;
@@ -49,7 +50,8 @@ fn build_webauthn(url: &Url) -> anyhow::Result<Webauthn> {
         .ok_or_else(|| anyhow!("host not included in URL"))?
         .to_string();
     let rp_origin = url.join("/")?;
-    let builder = WebauthnBuilder::new(&rp_id, &rp_origin)?;
-    let webauthn = builder.build()?;
+    let webauthn = WebauthnBuilder::new(&rp_id, &rp_origin)?
+        .set_user_presence_only_passkeys(true)
+        .build()?;
     Ok(webauthn)
 }

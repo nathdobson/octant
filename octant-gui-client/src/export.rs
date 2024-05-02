@@ -1,9 +1,11 @@
 use base64urlsafedata::Base64UrlSafeData;
 use js_sys::{Array, Object, Reflect, Uint8Array};
+use wasm_bindgen::JsValue;
 
 use octant_gui_core::{
-    AttestationConveyancePreference, AuthenticationExtensionsClientInputs, AuthenticatorAttachment,
-    AuthenticatorSelectionCriteria, PubKeyCredParams, PublicKeyCredentialCreationOptions,
+    AllowCredentials, AllowCredentialsType, AttestationConveyancePreference,
+    AuthenticationExtensionsClientInputs, AuthenticatorAttachment, AuthenticatorSelectionCriteria,
+    AuthenticatorTransport, PubKeyCredParams, PublicKeyCredentialCreationOptions,
     PublicKeyCredentialRequestOptions, PublicKeyCredentialRpEntity, PublicKeyCredentialUserEntity,
     UserVerificationRequirement,
 };
@@ -31,6 +33,23 @@ impl Export<web_sys::PublicKeyCredentialCreationOptions> for PublicKeyCredential
         if let Some(timeout) = self.timeout {
             result.timeout(timeout);
         }
+        result
+    }
+}
+
+impl Export<web_sys::PublicKeyCredentialRequestOptions> for PublicKeyCredentialRequestOptions {
+    fn export(&self) -> web_sys::PublicKeyCredentialRequestOptions {
+        let mut result = web_sys::PublicKeyCredentialRequestOptions::new(&self.challenge.export());
+        result.allow_credentials(&self.allow_credentials.export());
+        result.challenge(&self.challenge.export());
+        if let Some(extensions) = &self.extensions {
+            result.extensions(&extensions.export());
+        }
+        result.rp_id(&self.rp_id);
+        if let Some(timeout) = self.timeout {
+            result.timeout(timeout);
+        }
+        result.user_verification(self.user_verification.export());
         result
     }
 }
@@ -117,12 +136,6 @@ impl Export<web_sys::PublicKeyCredentialUserEntity> for PublicKeyCredentialUserE
     }
 }
 
-impl Export<web_sys::PublicKeyCredentialRequestOptions> for PublicKeyCredentialRequestOptions {
-    fn export(&self) -> web_sys::PublicKeyCredentialRequestOptions {
-        todo!()
-    }
-}
-
 impl Export<Uint8Array> for Base64UrlSafeData {
     fn export(&self) -> Uint8Array {
         Uint8Array::from(&***self)
@@ -141,5 +154,55 @@ impl Export<Object> for PubKeyCredParams {
         Reflect::set(&ret, &"alg".into(), &self.alg.into()).unwrap();
         Reflect::set(&ret, &"type".into(), &(&self.typ).into()).unwrap();
         ret
+    }
+}
+
+impl Export<Object> for AllowCredentials {
+    fn export(&self) -> Object {
+        let ret = Object::new();
+        Reflect::set(&ret, &"id".into(), &self.id.export()).unwrap();
+        Reflect::set(&ret, &"transports".into(), &self.transports.export()).unwrap();
+        Reflect::set(&ret, &"type".into(), &self.typ.export()).unwrap();
+        ret
+    }
+}
+
+impl Export<JsValue> for Vec<AuthenticatorTransport> {
+    fn export(&self) -> JsValue {
+        self.into_iter()
+            .map(|x| x.export())
+            .collect::<Array>()
+            .into()
+    }
+}
+
+impl Export<JsValue> for AuthenticatorTransport{
+    fn export(&self) -> JsValue {
+        match self{
+            AuthenticatorTransport::Usb => "usb",
+            AuthenticatorTransport::Nfc => "nfc",
+            AuthenticatorTransport::Ble => "ble",
+            AuthenticatorTransport::Internal => "internal",
+            AuthenticatorTransport::Hybrid => "hybrid",
+            AuthenticatorTransport::Test => "test",
+            AuthenticatorTransport::Unknown => "unknown",
+        }.into()
+    }
+}
+
+impl Export<JsValue> for Vec<AllowCredentials> {
+    fn export(&self) -> JsValue {
+        self.into_iter()
+            .map(|x| x.export())
+            .collect::<Array>()
+            .into()
+    }
+}
+
+impl Export<JsValue> for AllowCredentialsType {
+    fn export(&self) -> JsValue {
+        match self {
+            AllowCredentialsType::PublicKey => "public-key".into(),
+        }
     }
 }
