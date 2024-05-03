@@ -47,8 +47,7 @@ impl RegisterHandler {
         let cred = cred.into_auth();
         let result = webauthn
             .finish_passkey_registration(&cred, &skr)
-            .context("while verifying passkey")
-            .unwrap();
+            .context("while verifying passkey")?;
         this.register(email, name, result).await?;
         Ok(())
     }
