@@ -1,18 +1,18 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{CredentialData, TypeTag};
+use crate::TypeTag;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
-pub struct CredentialTag;
+pub struct AnyValueTag;
 
-impl TypeTag for CredentialTag {}
+impl TypeTag for AnyValueTag {}
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum CredentialMethod {
-    Materialize,
+pub enum AnyValueMethod {
+    Downcast(JsClass),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum CredentialUpMessage {
-    Materialize(CredentialData),
+pub enum JsClass {
+    Credential,
 }

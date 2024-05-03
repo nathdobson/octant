@@ -44,7 +44,11 @@ impl RegisterHandler {
         let this = self.clone();
 
         let cred = p.get().await?;
-        let cred = cred.into_auth();
+        session.global().runtime().flush().await?;
+        let cred = cred.downcast_credential();
+        let cred = cred.materialize();
+        session.global().runtime().flush().await?;
+        let cred = cred.await.into_auth();
         let result = webauthn
             .finish_passkey_registration(&cred, &skr)
             .context("while verifying passkey")?;

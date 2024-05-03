@@ -1,21 +1,19 @@
 use parking_lot::Mutex;
 use tokio::sync::oneshot;
 
-use octant_gui_core::{
-    {PromiseMethod, PromiseTag, PromiseUpMessage},
-    Method,
-};
+use octant_gui_core::{Error, Method, PromiseMethod, PromiseTag, PromiseUpMessage};
 use octant_object::define_class;
 
 use crate::{
-    handle, object,
+    any_value, handle, object,
     runtime::{HasLocalType, HasTypedHandle},
+    AnyValue,
 };
 
 define_class! {
     #[derive(Debug)]
     pub class extends object{
-
+        completable: Completable<Result<(), Error>>,
     }
 }
 
@@ -23,6 +21,7 @@ impl Value {
     pub fn new(handle: handle::Value) -> Self {
         Value {
             parent: object::Value::new(handle),
+            completable: Completable::new(),
         }
     }
 }
@@ -32,7 +31,20 @@ impl dyn Trait {
         (**self).invoke(Method::Promise(self.typed_handle(), method))
     }
     pub fn handle_event(&self, message: PromiseUpMessage) {
-        match message {}
+        log::info!("promise done");
+        match message {
+            PromiseUpMessage::Done(x) => self.completable.send(x),
+        }
+    }
+    pub fn wait(&self) {
+        self.invoke(PromiseMethod::Wait);
+    }
+    pub async fn get(&self) -> Result<AnyValue, Error> {
+        self.completable.recv().await?;
+        log::info!("starting get");
+        Ok(self
+            .runtime()
+            .add(any_value::Value::new(self.invoke(PromiseMethod::Get))))
     }
 }
 

@@ -23,7 +23,6 @@ use octant_object::cast::Cast;
 use wasm_error::WasmError;
 
 mod credential_creation_options;
-mod credential_promise;
 mod credential_request_options;
 mod credentials_container;
 mod document;
@@ -42,6 +41,8 @@ mod peer;
 mod promise;
 mod text;
 mod window;
+mod any_value;
+mod credential;
 
 pub type DownMessageStream = Pin<Box<dyn Stream<Item = anyhow::Result<DownMessageList>>>>;
 pub type UpMessageSink = Box<dyn Fn(UpMessageList) -> anyhow::Result<()>>;
@@ -187,7 +188,11 @@ impl Runtime {
                 self.handle(*node)
                     .invoke_with(&self.clone(), method, handle)
             }
-            Method::CredentialPromise(node, method) => {
+            Method::AnyValueMethod(node, method) => {
+                self.handle(*node)
+                    .invoke_with(&self.clone(), method, handle)
+            }
+            Method::Credential(node, method) => {
                 self.handle(*node)
                     .invoke_with(&self.clone(), method, handle)
             }

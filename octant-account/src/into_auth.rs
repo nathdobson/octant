@@ -2,25 +2,25 @@ use webauthn_rs_proto::{AuthenticatorAssertionResponseRaw, AuthenticatorAttestat
 
 use octant_gui_core::{
     AuthenticationExtensionsClientOutputs, AuthenticatorAssertionResponse,
-    AuthenticatorAttestationResponse, AuthenticatorResponse, Credential, PublicKeyCredential,
+    AuthenticatorAttestationResponse, AuthenticatorResponse, CredentialData, PublicKeyCredential,
 };
 
 pub trait IntoAuth<O> {
     fn into_auth(self) -> O;
 }
 
-impl IntoAuth<webauthn_rs_proto::RegisterPublicKeyCredential> for Credential {
+impl IntoAuth<webauthn_rs_proto::RegisterPublicKeyCredential> for CredentialData {
     fn into_auth(self) -> webauthn_rs_proto::RegisterPublicKeyCredential {
         match self {
-            Credential::PublicKeyCredential(credential) => credential.into_auth(),
+            CredentialData::PublicKeyCredential(credential) => credential.into_auth(),
         }
     }
 }
 
-impl IntoAuth<webauthn_rs_proto::PublicKeyCredential> for Credential {
+impl IntoAuth<webauthn_rs_proto::PublicKeyCredential> for CredentialData {
     fn into_auth(self) -> webauthn_rs_proto::PublicKeyCredential {
         match self {
-            Credential::PublicKeyCredential(credential) => credential.into_auth(),
+            CredentialData::PublicKeyCredential(credential) => credential.into_auth(),
         }
     }
 }

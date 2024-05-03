@@ -9,10 +9,10 @@ pub trait Import<T> {
     fn import(&self) -> T;
 }
 
-impl Import<octant_gui_core::Credential> for web_sys::Credential {
-    fn import(&self) -> octant_gui_core::Credential {
+impl Import<octant_gui_core::CredentialData> for web_sys::Credential {
+    fn import(&self) -> octant_gui_core::CredentialData {
         if let Some(this) = self.dyn_ref::<PublicKeyCredential>() {
-            octant_gui_core::Credential::PublicKeyCredential(this.import())
+            octant_gui_core::CredentialData::PublicKeyCredential(this.import())
         } else {
             todo!();
         }

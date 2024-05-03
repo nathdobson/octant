@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 pub use allow_credentials::*;
 pub use allow_credentials_type::*;
+pub use any_value::*;
 pub use attestation_conveyance_preference::*;
 pub use authentication_extensions_client_inputs::*;
 pub use authentication_extensions_client_outputs::*;
@@ -21,7 +22,7 @@ pub use authenticator_selection_criteria::*;
 pub use authenticator_transport::*;
 pub use credential::*;
 pub use credential_creation_options::*;
-pub use credential_promise::*;
+pub use credential_data::*;
 pub use credential_request_options::*;
 pub use credentials_container::*;
 pub use document::*;
@@ -52,9 +53,8 @@ mod authenticator_attestation_response;
 mod authenticator_response;
 mod authenticator_selection_criteria;
 mod authenticator_transport;
-mod credential;
+mod credential_data;
 mod credential_creation_options;
-mod credential_promise;
 mod credentials_container;
 mod document;
 mod element;
@@ -81,6 +81,8 @@ mod authentication_extensions_client_inputs;
 mod authenticator_assertion_response;
 mod credential_request_options;
 mod public_key_credential_request_options;
+mod any_value;
+mod credential;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DownMessageList {
@@ -107,11 +109,12 @@ pub enum Method {
         CredentialCreationOptionsMethod,
     ),
     Promise(TypedHandle<PromiseTag>, PromiseMethod),
-    CredentialPromise(TypedHandle<CredentialPromiseTag>, CredentialPromiseMethod),
     CredentialRequestOptions(
         TypedHandle<CredentialRequestOptionsTag>,
         CredentialRequestOptionsMethod,
     ),
+    AnyValueMethod(TypedHandle<AnyValueTag>, AnyValueMethod),
+    Credential(TypedHandle<CredentialTag>, CredentialMethod),
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
@@ -146,10 +149,8 @@ pub enum UpMessage {
     VisitPage(String),
     HtmlFormElement(TypedHandle<HtmlFormElementTag>, HtmlFormElementUpMessage),
     HtmlInputElement(TypedHandle<HtmlInputElementTag>, HtmlInputElementUpMessage),
-    CredentialPromise(
-        TypedHandle<CredentialPromiseTag>,
-        CredentialPromiseUpMessage,
-    ),
+    Promise(TypedHandle<PromiseTag>, PromiseUpMessage),
+    Credential(TypedHandle<CredentialTag>, CredentialUpMessage),
 }
 
 #[derive(Serialize, Deserialize, Debug)]

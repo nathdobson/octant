@@ -1,12 +1,12 @@
 use std::sync::Arc;
-
 use web_sys::console::log_1;
+
 use web_sys::CredentialsContainer;
 
 use octant_gui_core::{CredentialsContainerMethod, CredentialsContainerTag, HandleId};
 use octant_object::define_class;
 
-use crate::{credential_promise, HasLocalType, object, peer, Runtime};
+use crate::{object, peer, promise, HasLocalType, Runtime};
 
 define_class! {
     pub class extends object {
@@ -31,7 +31,7 @@ impl Value {
             CredentialsContainerMethod::CreateWithOptions(options) => {
                 let options = runtime.handle(*options);
                 log_1(&options.native());
-                Some(Arc::new(credential_promise::Value::new(
+                Some(Arc::new(promise::Value::new(
                     handle,
                     self.credentials_container
                         .create_with_options(options.native())
@@ -40,7 +40,7 @@ impl Value {
             }
             CredentialsContainerMethod::GetWithOptions(options) => {
                 let options = runtime.handle(*options);
-                Some(Arc::new(credential_promise::Value::new(
+                Some(Arc::new(promise::Value::new(
                     handle,
                     self.credentials_container
                         .get_with_options(options.native())

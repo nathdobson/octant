@@ -86,8 +86,11 @@ impl EventLoop {
                 self.page = None;
                 self.page = Some(self.app.create_page(&page, self.global.clone())?);
             }
-            UpMessage::CredentialPromise(promise, message) => {
-                self.global.runtime().handle(promise).handle_event(message)
+            UpMessage::Credential(credential, data) => {
+                self.global.runtime().handle(credential).handle_event(data);
+            }
+            UpMessage::Promise(promise, message) => {
+                self.global.runtime().handle(promise).handle_event(message);
             }
         }
         Ok(())

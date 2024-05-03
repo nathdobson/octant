@@ -29,12 +29,13 @@ pub mod runtime;
 pub mod text;
 pub mod window;
 
+mod any_value;
+mod credential;
 pub mod credential_creation_options;
-mod credential_promise;
+mod credential_request_options;
 pub mod credentials_container;
 pub mod navigator;
 mod promise;
-mod credential_request_options;
 
 pub type DownMessageSink = Pin<Box<dyn Send + Sync + Sink<DownMessageList, Error = anyhow::Error>>>;
 pub type UpMessageStream =
@@ -60,5 +61,8 @@ pub type Element = Arc<dyn element::Trait>;
 pub type Node = Arc<dyn node::Trait>;
 
 pub type Text = Arc<dyn text::Trait>;
+pub type AnyValue = Arc<dyn any_value::Trait>;
 
-pub type CredentialPromise = Arc<dyn credential_promise::Trait>;
+pub type Promise = Arc<dyn promise::Trait>;
+
+pub type Credential = Arc<dyn credential::Trait>;
