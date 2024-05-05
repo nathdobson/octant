@@ -5,9 +5,9 @@ use octant_gui_core::{Error, Method, PromiseMethod, PromiseTag, PromiseUpMessage
 use octant_object::define_class;
 
 use crate::{
-    any_value, handle, object,
+    any_value, AnyValue, handle,
+    object,
     runtime::{HasLocalType, HasTypedHandle},
-    AnyValue,
 };
 
 define_class! {

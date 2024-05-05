@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use octant_gui_core::{
     AnyValueMethod, AnyValueTag, JsClass, Method,
 };

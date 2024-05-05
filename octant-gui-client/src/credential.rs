@@ -37,7 +37,7 @@ impl dyn Trait {
         self: &Arc<Self>,
         runtime: &Arc<Runtime>,
         method: &CredentialMethod,
-        handle: HandleId,
+        _handle: HandleId,
     ) -> Option<Arc<dyn peer::Trait>> {
         match method {
             CredentialMethod::Materialize => {

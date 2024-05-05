@@ -1,12 +1,12 @@
 use std::sync::Arc;
-use web_sys::console::log_1;
 
+use web_sys::console::log_1;
 use web_sys::CredentialsContainer;
 
 use octant_gui_core::{CredentialsContainerMethod, CredentialsContainerTag, HandleId};
 use octant_object::define_class;
 
-use crate::{object, peer, promise, HasLocalType, Runtime};
+use crate::{HasLocalType, object, peer, promise, Runtime};
 
 define_class! {
     pub class extends object {

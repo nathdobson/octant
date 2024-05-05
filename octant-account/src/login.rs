@@ -10,9 +10,9 @@ use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
     event_loop::Page,
 };
-use octant_server::{session::Session, Handler};
+use octant_server::{Handler, session::Session};
 
-use crate::{build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, AccountDatabase};
+use crate::{AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant};
 
 pub struct LoginHandler {
     pub forest: Arc<RwLock<Forest>>,

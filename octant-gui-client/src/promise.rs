@@ -5,7 +5,7 @@ use std::{
 
 use js_sys::Promise;
 use wasm_bindgen::JsValue;
-use wasm_bindgen_futures::{spawn_local, JsFuture};
+use wasm_bindgen_futures::{JsFuture, spawn_local};
 
 use octant_gui_core::{
     Error, HandleId, PromiseMethod, PromiseTag, PromiseUpMessage, TypedHandle, UpMessage,
@@ -13,7 +13,7 @@ use octant_gui_core::{
 };
 use octant_object::define_class;
 
-use crate::{any_value, object, peer, HasLocalType, Runtime};
+use crate::{any_value, HasLocalType, object, peer, Runtime};
 
 define_class! {
     pub class extends object {

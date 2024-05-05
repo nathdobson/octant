@@ -6,7 +6,7 @@ use web_sys::Credential;
 use octant_gui_core::{AnyValueMethod, AnyValueTag, HandleId, JsClass};
 use octant_object::define_class;
 
-use crate::{credential, peer, HasLocalType, Runtime};
+use crate::{credential, HasLocalType, peer, Runtime};
 
 define_class! {
     pub class extends peer {

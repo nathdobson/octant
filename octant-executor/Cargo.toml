@@ -1,0 +1,10 @@
+[package]
+name = "octant-executor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.82"
+tokio = "1.37.0"
+futures = "0.3.30"
+parking_lot = "0.12.2"
