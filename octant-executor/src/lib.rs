@@ -4,7 +4,6 @@
 use std::{
     future::{poll_fn, Future},
     mem,
-    pin::{pin, Pin},
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -12,12 +11,9 @@ use std::{
     task::{ready, Context, Poll, Wake, Waker},
 };
 
-use futures::{
-    future::{BoxFuture, Fuse, FusedFuture},
-    FutureExt,
-};
+use futures::future::BoxFuture;
 use parking_lot::Mutex;
-use tokio::{select, sync::mpsc, task::yield_now};
+use tokio::{sync::mpsc, task::yield_now};
 
 struct Task {
     woken: AtomicBool,

@@ -10,7 +10,7 @@ use std::{pin::Pin, sync::Arc};
 use futures::{sink::Sink, Stream};
 
 pub use global::Global;
-use octant_gui_core::{DownMessageList, UpMessageList};
+use octant_gui_core::UpMessageList;
 pub use runtime::Runtime;
 
 pub mod builder;

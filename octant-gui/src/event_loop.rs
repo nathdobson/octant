@@ -2,7 +2,7 @@ use std::{panic::AssertUnwindSafe, sync::Arc};
 
 use futures::StreamExt;
 
-use octant_gui_core::{DownMessage, UpMessage};
+use octant_gui_core::UpMessage;
 use octant_panic::catch_error;
 
 use crate::{Global, Node, UpMessageStream};

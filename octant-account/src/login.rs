@@ -10,9 +10,9 @@ use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
     event_loop::Page,
 };
-use octant_server::{Handler, session::Session};
+use octant_server::{session::Session, Handler};
 
-use crate::{AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant};
+use crate::{build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, AccountDatabase};
 
 pub struct LoginHandler {
     pub forest: Arc<RwLock<Forest>>,
@@ -85,13 +85,10 @@ impl Handler for LoginHandler {
                     let session = session.clone();
                     let email = email.clone();
                     let this = self.clone();
-                    tokio::spawn(async move {
-                        if let Err(e) = this
-                            .do_login(session.clone(), &url, &email.input_value())
+                    let spawner = session.global().runtime().spawner().clone();
+                    spawner.spawn(async move {
+                        this.do_login(session.clone(), &url, &email.input_value())
                             .await
-                        {
-                            session.global().fail(e);
-                        }
                     });
                 }
             });

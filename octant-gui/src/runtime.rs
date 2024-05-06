@@ -1,24 +1,20 @@
 use std::{
     any::type_name,
     marker::PhantomData,
-    mem,
     ptr::{DynMetadata, Pointee},
     sync::{Arc, Weak},
 };
 
 use atomic_refcell::AtomicRefCell;
 use futures::SinkExt;
-use octant_executor::Spawn;
 use parking_lot::Mutex;
 use weak_table::WeakValueHashMap;
 
-use octant_gui_core::{DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle};
+use octant_executor::Spawn;
+use octant_gui_core::{DownMessage, HandleId, Method, TypeTag, TypedHandle};
 use octant_object::cast::Cast;
 
-use crate::{
-    handle,
-    sink::{BufferedDownMessageSink, DownMessageSink},
-};
+use crate::{handle, sink::BufferedDownMessageSink};
 
 struct State {
     next_handle: usize,
@@ -57,6 +53,9 @@ impl Runtime {
     }
     pub fn send(&self, command: DownMessage) {
         self.sink.lock().send(command);
+    }
+    pub fn spawner(&self) -> &Arc<Spawn> {
+        &self.spawn
     }
     // pub async fn flush(&self) -> anyhow::Result<()> {
     //     let ref mut this = *self.state.borrow_mut();

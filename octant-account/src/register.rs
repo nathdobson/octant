@@ -10,10 +10,10 @@ use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
     event_loop::Page,
 };
-use octant_server::{Handler, session::Session};
+use octant_server::{session::Session, Handler};
 
 use crate::{
-    Account, AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant,
+    build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, Account, AccountDatabase,
 };
 
 pub struct RegisterHandler {
@@ -106,18 +106,15 @@ impl Handler for RegisterHandler {
                     let url = url.clone();
                     let email = email.clone();
                     let name = name.clone();
-                    tokio::spawn(async move {
-                        if let Err(e) = this
-                            .do_register(
-                                session.clone(),
-                                &url,
-                                (*email.input_value()).clone(),
-                                (*name.input_value()).clone(),
-                            )
-                            .await
-                        {
-                            session.global().fail(e);
-                        }
+                    let spawner = session.global().runtime().spawner().clone();
+                    spawner.spawn(async move {
+                        this.do_register(
+                            session.clone(),
+                            &url,
+                            (*email.input_value()).clone(),
+                            (*name.input_value()).clone(),
+                        )
+                        .await
                     });
                 }
             });

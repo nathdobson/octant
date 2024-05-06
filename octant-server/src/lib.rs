@@ -9,7 +9,6 @@ use futures::{
     stream::{SplitSink, SplitStream, StreamExt},
     SinkExt,
 };
-use octant_executor::Pool;
 use parking_lot::Mutex;
 use tokio::try_join;
 use url::Url;
@@ -18,6 +17,7 @@ use warp::{
     Filter, Reply,
 };
 
+use octant_executor::Pool;
 use octant_gui::{
     event_loop::{Application, EventLoop, Page},
     sink::BufferedDownMessageSink,
@@ -26,6 +26,7 @@ use octant_gui::{
 use octant_gui_core::{DownMessageList, UpMessageList};
 
 use crate::session::Session;
+
 pub mod session;
 
 #[derive(Parser, Debug)]
@@ -116,7 +117,9 @@ impl OctantServer {
         ))));
         let (spawn, mut pool) = Pool::new({
             let sink = sink.clone();
-            move |cx| sink.lock().poll_flush(cx)
+            move |cx| {
+                sink.lock().poll_flush(cx)
+            }
         });
         let root = Arc::new(Runtime::new(sink, spawn.clone()));
         let global = Global::new(root);
