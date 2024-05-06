@@ -6,14 +6,15 @@ use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use anyhow::anyhow;
 use clap::Parser;
 use futures::{
-    SinkExt,
     stream::{SplitSink, SplitStream, StreamExt},
+    SinkExt,
 };
+use octant_executor::Pool;
 use tokio::try_join;
 use url::Url;
 use warp::{
-    Filter,
-    Reply, ws::{Message, WebSocket},
+    ws::{Message, WebSocket},
+    Filter, Reply,
 };
 
 use octant_gui::{
@@ -23,7 +24,6 @@ use octant_gui::{
 use octant_gui_core::{DownMessageList, UpMessageList};
 
 use crate::session::Session;
-
 pub mod session;
 
 #[derive(Parser, Debug)]
@@ -109,7 +109,8 @@ impl OctantServer {
         tx: SplitSink<WebSocket, Message>,
         rx: SplitStream<WebSocket>,
     ) -> anyhow::Result<()> {
-        let root = Runtime::new(Box::pin(tx.with(Self::encode)));
+        let (spawn, pool) = Pool::new(|cx| todo!());
+        let root = Runtime::new(Box::pin(tx.with(Self::encode)), todo!());
         let global = Global::new(root);
         let events = Box::pin(rx.map(|x| Self::decode(x?)));
         let session = Arc::new(Session::new(global.clone()));

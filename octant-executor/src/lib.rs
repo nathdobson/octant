@@ -4,16 +4,20 @@
 use std::{
     future::{poll_fn, Future},
     mem,
+    pin::{pin, Pin},
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
-    task::{Context, Poll, Wake, Waker},
+    task::{ready, Context, Poll, Wake, Waker},
 };
 
-use futures::future::BoxFuture;
+use futures::{
+    future::{BoxFuture, Fuse, FusedFuture},
+    FutureExt,
+};
 use parking_lot::Mutex;
-use tokio::{sync::mpsc, task::yield_now};
+use tokio::{select, sync::mpsc, task::yield_now};
 
 struct Task {
     woken: AtomicBool,
@@ -29,7 +33,8 @@ pub struct Spawn {
 pub struct Pool {
     microtasks: mpsc::UnboundedReceiver<Arc<Task>>,
     macrotasks: mpsc::UnboundedReceiver<Arc<Task>>,
-    on_yield: Box<dyn Fn() -> anyhow::Result<()>>,
+    flushing: bool,
+    poll_flush: Box<dyn Fn(&mut Context<'_>) -> Poll<anyhow::Result<()>>>,
 }
 
 impl Task {
@@ -67,7 +72,9 @@ impl Wake for Task {
 }
 
 impl Pool {
-    pub fn new<F: 'static + Sync + Fn() -> anyhow::Result<()>>(on_yield: F) -> (Arc<Spawn>, Self) {
+    pub fn new<F: 'static + Sync + Fn(&mut Context<'_>) -> Poll<anyhow::Result<()>>>(
+        poll_flush: F,
+    ) -> (Arc<Spawn>, Self) {
         let (micro_tx, micro_rx) = mpsc::unbounded_channel();
         let (macro_tx, macro_rx) = mpsc::unbounded_channel();
         let spawn = Arc::new(Spawn {
@@ -77,48 +84,52 @@ impl Pool {
         let pool = Pool {
             microtasks: micro_rx,
             macrotasks: macro_rx,
-            on_yield: Box::new(move || on_yield()),
+            flushing: false,
+            poll_flush: Box::new(poll_flush),
         };
         (spawn, pool)
     }
-    fn poll_once(&mut self, cx: &mut Context) -> Poll<anyhow::Result<()>> {
-        let mut progress = false;
-        let mut pending = false;
-        loop {
-            match self.microtasks.poll_recv(cx) {
-                Poll::Ready(Some(microtask)) => {
-                    progress = true;
-                    microtask.poll_once()?
+
+    fn poll_step(&mut self, cx: &mut Context<'_>) -> Poll<anyhow::Result<()>> {
+        'system: loop {
+            if self.flushing {
+                ready!((self.poll_flush)(cx))?;
+                self.flushing = false;
+            }
+            'user: loop {
+                let mut pending = false;
+                pending |= match self.microtasks.poll_recv(cx) {
+                    Poll::Ready(Some(task)) => {
+                        task.poll_once()?;
+                        self.flushing = true;
+                        continue 'user;
+                    }
+                    Poll::Ready(None) => false,
+                    Poll::Pending => true,
+                };
+                pending |= match self.macrotasks.poll_recv(cx) {
+                    Poll::Ready(Some(task)) => {
+                        task.poll_once()?;
+                        self.flushing = true;
+                        continue 'system;
+                    }
+                    Poll::Ready(None) => false,
+                    Poll::Pending => true,
+                };
+                if self.flushing {
+                    ready!((self.poll_flush)(cx))?;
+                    self.flushing = false;
                 }
-                Poll::Ready(None) => break,
-                Poll::Pending => {
-                    pending = true;
-                    break;
-                }
+                return if pending {
+                    Poll::Pending
+                } else {
+                    Poll::Ready(Ok(()))
+                };
             }
-        }
-        match self.macrotasks.poll_recv(cx) {
-            Poll::Ready(Some(macrotask)) => {
-                progress = true;
-                macrotask.poll_once()?;
-            }
-            Poll::Ready(None) => {}
-            Poll::Pending => {
-                pending = true;
-            }
-        };
-        if progress {
-            (self.on_yield)()?;
-        }
-        if pending {
-            Poll::Pending
-        } else {
-            Poll::Ready(Ok(()))
         }
     }
     pub async fn run(&mut self) -> anyhow::Result<()> {
-        poll_fn(|cx| self.poll_once(cx)).await?;
-        Ok(())
+        poll_fn(|cx| self.poll_step(cx)).await
     }
 }
 
@@ -137,9 +148,9 @@ impl Spawn {
 #[tokio::test]
 async fn test() -> anyhow::Result<()> {
     static LOG: Mutex<Vec<String>> = Mutex::new(vec![]);
-    let (spawn, mut pool) = Pool::new(|| {
+    let (spawn, mut pool) = Pool::new(|_| {
         LOG.lock().push(format!("yield"));
-        Ok(())
+        Poll::Ready(Ok(()))
     });
     spawn.spawn(async move {
         LOG.lock().push(format!("starting"));
@@ -159,9 +170,9 @@ async fn test() -> anyhow::Result<()> {
 #[tokio::test]
 async fn test2() -> anyhow::Result<()> {
     static LOG: Mutex<Vec<String>> = Mutex::new(vec![]);
-    let (spawn, mut pool) = Pool::new(|| {
+    let (spawn, mut pool) = Pool::new(|cx| {
         LOG.lock().push(format!("yield"));
-        Ok(())
+        Poll::Ready(Ok(()))
     });
     spawn.spawn({
         let spawn = spawn.clone();

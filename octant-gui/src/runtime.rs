@@ -8,12 +8,13 @@ use std::{
 
 use atomic_refcell::AtomicRefCell;
 use futures::SinkExt;
+use octant_executor::Spawn;
 use weak_table::WeakValueHashMap;
 
-use octant_gui_core::{DownMessage, DownMessageList, HandleId, Method, TypedHandle, TypeTag};
+use octant_gui_core::{DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle};
 use octant_object::cast::Cast;
 
-use crate::{DownMessageSink, handle};
+use crate::{handle, DownMessageSink};
 
 struct State {
     buffer: Vec<DownMessage>,
@@ -24,10 +25,11 @@ struct State {
 
 pub struct Runtime {
     state: AtomicRefCell<State>,
+    spawn: Arc<Spawn>,
 }
 
 impl Runtime {
-    pub fn new(consumer: DownMessageSink) -> Arc<Self> {
+    pub fn new(consumer: DownMessageSink, spawn: Arc<Spawn>) -> Arc<Self> {
         Arc::new(Runtime {
             state: AtomicRefCell::new(State {
                 buffer: vec![],
@@ -35,6 +37,7 @@ impl Runtime {
                 next_handle: 0,
                 handles: WeakValueHashMap::new(),
             }),
+            spawn,
         })
     }
     pub fn invoke(self: &Arc<Self>, method: Method) -> handle::Value {

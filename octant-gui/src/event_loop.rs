@@ -49,17 +49,17 @@ impl EventLoop {
             page: None,
         }
     }
+    // pub async fn handle_events(&mut self) -> anyhow::Result<()> {
+    //     if let Err(e) = self.handle_events_impl().await {
+    //         self.global
+    //             .runtime()
+    //             .send(DownMessage::Fail(format!("{:?}", e)));
+    //         self.global.runtime().flush().await?;
+    //         return Err(e);
+    //     }
+    //     Ok(())
+    // }
     pub async fn handle_events(&mut self) -> anyhow::Result<()> {
-        if let Err(e) = self.handle_events_impl().await {
-            self.global
-                .runtime()
-                .send(DownMessage::Fail(format!("{:?}", e)));
-            self.global.runtime().flush().await?;
-            return Err(e);
-        }
-        Ok(())
-    }
-    pub async fn handle_events_impl(&mut self) -> anyhow::Result<()> {
         self.global.runtime().flush().await?;
         while let Some(events) = self.events.next().await {
             let events = events?;
