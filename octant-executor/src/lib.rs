@@ -34,7 +34,7 @@ pub struct Pool {
     microtasks: mpsc::UnboundedReceiver<Arc<Task>>,
     macrotasks: mpsc::UnboundedReceiver<Arc<Task>>,
     flushing: bool,
-    poll_flush: Box<dyn Fn(&mut Context<'_>) -> Poll<anyhow::Result<()>>>,
+    poll_flush: Box<dyn Send + FnMut(&mut Context<'_>) -> Poll<anyhow::Result<()>>>,
 }
 
 impl Task {
@@ -72,7 +72,7 @@ impl Wake for Task {
 }
 
 impl Pool {
-    pub fn new<F: 'static + Sync + Fn(&mut Context<'_>) -> Poll<anyhow::Result<()>>>(
+    pub fn new<F: 'static + Send + FnMut(&mut Context<'_>) -> Poll<anyhow::Result<()>>>(
         poll_flush: F,
     ) -> (Arc<Spawn>, Self) {
         let (micro_tx, micro_rx) = mpsc::unbounded_channel();

@@ -45,11 +45,9 @@ impl LoginHandler {
             .navigator()
             .credentials()
             .get_with_options(&options);
-        session.global().runtime().flush().await?;
         let cred = p.get().await?;
         let cred = cred.downcast_credential();
         let cred = cred.materialize();
-        session.global().runtime().flush().await?;
         let cred = cred.await.into_auth();
         let result = webauthn.finish_passkey_authentication(&cred, &skr).unwrap();
         log::info!("{:?}", result);

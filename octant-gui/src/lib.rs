@@ -36,8 +36,8 @@ mod credential_request_options;
 pub mod credentials_container;
 pub mod navigator;
 mod promise;
+pub mod sink;
 
-pub type DownMessageSink = Pin<Box<dyn Send + Sync + Sink<DownMessageList, Error = anyhow::Error>>>;
 pub type UpMessageStream =
     Pin<Box<dyn Send + Sync + Stream<Item = anyhow::Result<Option<UpMessageList>>>>>;
 pub type Handle = Arc<dyn handle::Trait>;

@@ -9,16 +9,18 @@ use std::{
 use atomic_refcell::AtomicRefCell;
 use futures::SinkExt;
 use octant_executor::Spawn;
+use parking_lot::Mutex;
 use weak_table::WeakValueHashMap;
 
 use octant_gui_core::{DownMessage, DownMessageList, HandleId, Method, TypeTag, TypedHandle};
 use octant_object::cast::Cast;
 
-use crate::{handle, DownMessageSink};
+use crate::{
+    handle,
+    sink::{BufferedDownMessageSink, DownMessageSink},
+};
 
 struct State {
-    buffer: Vec<DownMessage>,
-    consumer: DownMessageSink,
     next_handle: usize,
     handles: WeakValueHashMap<HandleId, Weak<dyn handle::Trait>>,
 }
@@ -26,25 +28,25 @@ struct State {
 pub struct Runtime {
     state: AtomicRefCell<State>,
     spawn: Arc<Spawn>,
+    sink: Arc<Mutex<BufferedDownMessageSink>>,
 }
 
 impl Runtime {
-    pub fn new(consumer: DownMessageSink, spawn: Arc<Spawn>) -> Arc<Self> {
-        Arc::new(Runtime {
+    pub fn new(sink: Arc<Mutex<BufferedDownMessageSink>>, spawn: Arc<Spawn>) -> Self {
+        Runtime {
             state: AtomicRefCell::new(State {
-                buffer: vec![],
-                consumer,
                 next_handle: 0,
                 handles: WeakValueHashMap::new(),
             }),
             spawn,
-        })
+            sink,
+        }
     }
     pub fn invoke(self: &Arc<Self>, method: Method) -> handle::Value {
         let ref mut this = *self.state.borrow_mut();
         let handle = HandleId(this.next_handle);
         this.next_handle += 1;
-        this.buffer.push(DownMessage::Invoke {
+        self.sink.lock().send(DownMessage::Invoke {
             assign: handle,
             method,
         });
@@ -54,18 +56,16 @@ impl Runtime {
         self.send(DownMessage::Delete(handle));
     }
     pub fn send(&self, command: DownMessage) {
-        let ref mut this = *self.state.borrow_mut();
-        this.buffer.push(command);
+        self.sink.lock().send(command);
     }
-    pub async fn flush(&self) -> anyhow::Result<()> {
-        let ref mut this = *self.state.borrow_mut();
-        this.consumer
-            .send(DownMessageList {
-                commands: mem::replace(&mut this.buffer, vec![]),
-            })
-            .await?;
-        Ok(())
-    }
+    // pub async fn flush(&self) -> anyhow::Result<()> {
+    //     let ref mut this = *self.state.borrow_mut();
+    //     self.sink
+    //         .lock()
+    //         .flush();
+    //         .await?;
+    //     Ok(())
+    // }
     pub fn add<T: handle::Trait>(&self, value: T) -> Arc<T> {
         let result = Arc::new(value);
         self.state

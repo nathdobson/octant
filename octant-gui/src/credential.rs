@@ -38,7 +38,7 @@ impl Value {
     }
     pub async fn materialize(&self) -> CredentialData {
         self.invoke(CredentialMethod::Materialize);
-        self.runtime().flush().await.unwrap();
+        // self.runtime().flush().await.unwrap();
         self.data.recv().await
     }
 }

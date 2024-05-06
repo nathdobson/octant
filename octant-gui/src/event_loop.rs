@@ -60,14 +60,14 @@ impl EventLoop {
     //     Ok(())
     // }
     pub async fn handle_events(&mut self) -> anyhow::Result<()> {
-        self.global.runtime().flush().await?;
+        // self.global.runtime().flush().await?;
         while let Some(events) = self.events.next().await {
             let events = events?;
             if let Some(events) = events {
                 for event in events.commands {
                     catch_error(AssertUnwindSafe(|| self.handle_event(event)))??
                 }
-                self.global.runtime().flush().await?;
+                // self.global.runtime().flush().await?;
             } else {
                 break;
             }

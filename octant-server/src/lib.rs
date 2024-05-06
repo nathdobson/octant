@@ -10,6 +10,7 @@ use futures::{
     SinkExt,
 };
 use octant_executor::Pool;
+use parking_lot::Mutex;
 use tokio::try_join;
 use url::Url;
 use warp::{
@@ -19,6 +20,7 @@ use warp::{
 
 use octant_gui::{
     event_loop::{Application, EventLoop, Page},
+    sink::BufferedDownMessageSink,
     Global, Runtime,
 };
 use octant_gui_core::{DownMessageList, UpMessageList};
@@ -109,8 +111,14 @@ impl OctantServer {
         tx: SplitSink<WebSocket, Message>,
         rx: SplitStream<WebSocket>,
     ) -> anyhow::Result<()> {
-        let (spawn, pool) = Pool::new(|cx| todo!());
-        let root = Runtime::new(Box::pin(tx.with(Self::encode)), todo!());
+        let sink = Arc::new(Mutex::new(BufferedDownMessageSink::new(Box::pin(
+            tx.with(Self::encode),
+        ))));
+        let (spawn, mut pool) = Pool::new({
+            let sink = sink.clone();
+            move |cx| sink.lock().poll_flush(cx)
+        });
+        let root = Arc::new(Runtime::new(sink, spawn.clone()));
         let global = Global::new(root);
         let events = Box::pin(rx.map(|x| Self::decode(x?)));
         let session = Arc::new(Session::new(global.clone()));
@@ -122,7 +130,8 @@ impl OctantServer {
                 session,
             }),
         );
-        event_loop.handle_events().await?;
+        spawn.spawn(async move { event_loop.handle_events().await });
+        pool.run().await?;
         Ok(())
     }
     pub async fn run(self) -> anyhow::Result<()> {
