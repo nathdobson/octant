@@ -8,6 +8,7 @@ use std::{
 use atomic_refcell::AtomicRefCell;
 use futures::SinkExt;
 use parking_lot::Mutex;
+use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
 
 use octant_executor::Spawn;
@@ -24,11 +25,11 @@ struct State {
 pub struct Runtime {
     state: AtomicRefCell<State>,
     spawn: Arc<Spawn>,
-    sink: Arc<Mutex<BufferedDownMessageSink>>,
+    sink: UnboundedSender<DownMessage>,
 }
 
 impl Runtime {
-    pub fn new(sink: Arc<Mutex<BufferedDownMessageSink>>, spawn: Arc<Spawn>) -> Self {
+    pub fn new(sink: UnboundedSender<DownMessage>, spawn: Arc<Spawn>) -> Self {
         Runtime {
             state: AtomicRefCell::new(State {
                 next_handle: 0,
@@ -42,17 +43,17 @@ impl Runtime {
         let ref mut this = *self.state.borrow_mut();
         let handle = HandleId(this.next_handle);
         this.next_handle += 1;
-        self.sink.lock().send(DownMessage::Invoke {
+        self.sink.send(DownMessage::Invoke {
             assign: handle,
             method,
-        });
+        }).ok();
         handle::Value::new(self.clone(), handle)
     }
     pub fn delete(&self, handle: HandleId) {
         self.send(DownMessage::Delete(handle));
     }
     pub fn send(&self, command: DownMessage) {
-        self.sink.lock().send(command);
+        self.sink.send(command).ok();
     }
     pub fn spawner(&self) -> &Arc<Spawn> {
         &self.spawn

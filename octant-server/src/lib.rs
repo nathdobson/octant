@@ -10,7 +10,7 @@ use futures::{
     SinkExt,
 };
 use parking_lot::Mutex;
-use tokio::try_join;
+use tokio::{sync::mpsc, try_join};
 use url::Url;
 use warp::{
     ws::{Message, WebSocket},
@@ -112,16 +112,10 @@ impl OctantServer {
         tx: SplitSink<WebSocket, Message>,
         rx: SplitStream<WebSocket>,
     ) -> anyhow::Result<()> {
-        let sink = Arc::new(Mutex::new(BufferedDownMessageSink::new(Box::pin(
-            tx.with(Self::encode),
-        ))));
-        let (spawn, mut pool) = Pool::new({
-            let sink = sink.clone();
-            move |cx| {
-                sink.lock().poll_flush(cx)
-            }
-        });
-        let root = Arc::new(Runtime::new(sink, spawn.clone()));
+        let (tx_inner, rx_inner) = mpsc::unbounded_channel();
+        let mut sink = BufferedDownMessageSink::new(rx_inner, Box::pin(tx.with(Self::encode)));
+        let (spawn, mut pool) = Pool::new({ move |cx| sink.poll_flush(cx) });
+        let root = Arc::new(Runtime::new(tx_inner, spawn.clone()));
         let global = Global::new(root);
         let events = Box::pin(rx.map(|x| Self::decode(x?)));
         let session = Arc::new(Session::new(global.clone()));

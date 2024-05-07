@@ -6,27 +6,30 @@ use std::{
 };
 
 use futures::{Sink, SinkExt};
+use tokio::sync::mpsc::UnboundedReceiver;
 
 use octant_gui_core::{DownMessage, DownMessageList};
 
 pub type DownMessageSink = Pin<Box<dyn Send + Sync + Sink<DownMessageList, Error = anyhow::Error>>>;
 
 pub struct BufferedDownMessageSink {
+    source: UnboundedReceiver<DownMessage>,
     buffer: Vec<DownMessage>,
     sink: DownMessageSink,
 }
 
 impl BufferedDownMessageSink {
-    pub fn new(sink: DownMessageSink) -> Self {
+    pub fn new(source: UnboundedReceiver<DownMessage>, sink: DownMessageSink) -> Self {
         BufferedDownMessageSink {
+            source,
             buffer: vec![],
             sink,
         }
     }
-    pub fn send(&mut self, item: DownMessage) {
-        self.buffer.push(item);
-    }
     pub fn poll_flush(&mut self, cx: &mut Context<'_>) -> Poll<anyhow::Result<()>> {
+        self.source
+            .poll_recv_many(cx, &mut self.buffer, usize::MAX)
+            .is_ready();
         let mut pending = false;
         if !self.buffer.is_empty() {
             if let Poll::Ready(()) = self.sink.poll_ready_unpin(cx)? {
