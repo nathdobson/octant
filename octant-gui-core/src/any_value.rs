@@ -15,4 +15,5 @@ pub enum AnyValueMethod {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum JsClass {
     Credential,
+    Response,
 }

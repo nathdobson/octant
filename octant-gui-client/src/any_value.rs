@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use wasm_bindgen::{JsCast, JsValue};
-use web_sys::Credential;
+use web_sys::{Credential, Response};
 
 use octant_gui_core::{AnyValueMethod, AnyValueTag, HandleId, JsClass};
 use octant_object::define_class;
 
-use crate::{credential, HasLocalType, peer, Runtime};
+use crate::{credential, HasLocalType, peer, response, Runtime};
 
 define_class! {
     pub class extends peer {
@@ -36,6 +36,10 @@ impl dyn Trait {
                     handle,
                     self.js_value.dyn_ref::<Credential>().unwrap().clone(),
                 ))),
+                JsClass::Response => Some(Arc::new(response::Value::new(
+                    handle,
+                    Clone::clone(self.js_value.dyn_ref::<Response>().unwrap()),
+                )))
             },
         }
     }

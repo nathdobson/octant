@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use atomic_refcell::AtomicRefCell;
+use octant_account::SessionTable;
 use url::Url;
 
 use octant_gui::{
@@ -8,11 +9,15 @@ use octant_gui::{
     event_loop::Page,
 };
 use octant_server::{
-    Handler,
+    cookies::{CookieData, CookieRouter},
     session::{Session, SessionData},
+    Handler,
 };
 
-pub struct ScoreHandler {}
+pub struct ScoreHandler {
+    pub cookie_router: Arc<CookieRouter>,
+    pub session_table: Arc<SessionTable>,
+}
 
 #[derive(Default)]
 struct ScoreState {
@@ -54,6 +59,15 @@ impl Handler for ScoreHandler {
                 }
             });
         let page = d.create_element("div").child(text).child(form);
+        session.global().runtime().spawner().spawn({
+            let session = session.clone();
+            async move {
+                self.cookie_router.update(&session).await?;
+                let user = self.session_table.get(&session);
+                log::info!("verified user = {:?}", user);
+                Ok(())
+            }
+        });
         Ok(Page::new(session.global().clone(), page))
     }
 }

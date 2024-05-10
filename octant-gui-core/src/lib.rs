@@ -41,6 +41,9 @@ pub use public_key_credential_creation_options::*;
 pub use public_key_credential_request_options::*;
 pub use public_key_credential_rp_entity::*;
 pub use public_key_credential_user_entity::*;
+pub use request::*;
+pub use request_init::*;
+pub use response::*;
 pub use user_verification_requirement::*;
 pub use value::*;
 pub use window::*;
@@ -53,8 +56,8 @@ mod authenticator_attestation_response;
 mod authenticator_response;
 mod authenticator_selection_criteria;
 mod authenticator_transport;
-mod credential_data;
 mod credential_creation_options;
+mod credential_data;
 mod credentials_container;
 mod document;
 mod element;
@@ -77,12 +80,15 @@ mod window;
 
 mod allow_credentials;
 mod allow_credentials_type;
+mod any_value;
 mod authentication_extensions_client_inputs;
 mod authenticator_assertion_response;
+mod credential;
 mod credential_request_options;
 mod public_key_credential_request_options;
-mod any_value;
-mod credential;
+mod request;
+mod request_init;
+mod response;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DownMessageList {
@@ -113,8 +119,11 @@ pub enum Method {
         TypedHandle<CredentialRequestOptionsTag>,
         CredentialRequestOptionsMethod,
     ),
-    AnyValueMethod(TypedHandle<AnyValueTag>, AnyValueMethod),
+    AnyValue(TypedHandle<AnyValueTag>, AnyValueMethod),
     Credential(TypedHandle<CredentialTag>, CredentialMethod),
+    Request(TypedHandle<RequestTag>, RequestMethod),
+    RequestInit(TypedHandle<RequestInitTag>, RequestInitMethod),
+    Response(TypedHandle<ResponseTag>, ResponseMethod),
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]

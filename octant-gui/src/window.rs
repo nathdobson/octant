@@ -1,12 +1,9 @@
 use std::sync::OnceLock;
 
-use octant_gui_core::{
-    {WindowMethod, WindowTag},
-    Method,
-};
+use octant_gui_core::{Method, WindowMethod, WindowTag};
 use octant_object::define_class;
 
-use crate::{document, Document, handle, Navigator, navigator, node, runtime::HasTypedHandle};
+use crate::{document, Document, handle, navigator, Navigator, node, promise, Promise, Request, Response, runtime::HasTypedHandle};
 
 define_class! {
     #[derive(Debug)]
@@ -45,5 +42,14 @@ impl Value {
             self.runtime()
                 .add(navigator::Value::new(self.invoke(WindowMethod::Navigator)))
         })
+    }
+    pub async fn fetch(&self, request: &Request) -> anyhow::Result<Response> {
+        let promise: Promise = self.runtime().add(promise::Value::new(
+            self.invoke(WindowMethod::Fetch(request.typed_handle())),
+        ));
+        promise.wait();
+        let resp = promise.get().await?;
+        let resp = resp.downcast_response();
+        Ok(resp)
     }
 }

@@ -16,3 +16,5 @@ octant-server ={path="../octant-server"}
 octant-gui-core = {path="../octant-gui-core"}
 octant-database = {path="../octant-database"}
 base64urlsafedata = "0.5.0"
+parking_lot = "0.12.2"
+uuid = "1.8.0"

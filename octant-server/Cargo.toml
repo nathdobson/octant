@@ -18,3 +18,7 @@ atomic_refcell = "0.1.13"
 url = "2.5.0"
 octant-executor = {path = "../octant-executor"}
 parking_lot = "0.12.2"
+uuid = { version = "1.8.0", features = ["v4"] }
+weak-table = "0.3.2"
+cookie = "0.18.1"
+itertools = "0.12.1"

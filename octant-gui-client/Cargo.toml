@@ -12,7 +12,7 @@ log = "0.4.21"
 wasm-bindgen = "0.2.92"
 serde-wasm-bindgen = "0.6.5"
 wasm-error = { path = "../wasm-error" }
-web-sys = { version = "0.3.69", features = ["AuthenticatorAssertionResponse","PublicKeyCredentialRequestOptions", "CredentialRequestOptions", "AuthenticatorAttestationResponse", "Document", "Window", "HtmlElement", "Text", "HtmlFormElement", "InputEvent", "HtmlCollection", "HtmlInputElement", "HtmlAnchorElement", "History", "PopStateEvent", "Navigator", "CredentialsContainer", "CredentialCreationOptions", "PublicKeyCredentialCreationOptions", "PublicKeyCredentialRpEntity", "PublicKeyCredentialUserEntity", "PublicKeyCredential", "AuthenticatorResponse", "AuthenticatorSelectionCriteria", "AttestationConveyancePreference", "AuthenticationExtensionsClientInputs", "AuthenticatorAttachment", "UserVerificationRequirement"] }
+web-sys = { version = "0.3.69", features = ["Response","Request","RequestInit","AuthenticatorAssertionResponse","PublicKeyCredentialRequestOptions", "CredentialRequestOptions", "AuthenticatorAttestationResponse", "Document", "Window", "HtmlElement", "Text", "HtmlFormElement", "InputEvent", "HtmlCollection", "HtmlInputElement", "HtmlAnchorElement", "History", "PopStateEvent", "Navigator", "CredentialsContainer", "CredentialCreationOptions", "PublicKeyCredentialCreationOptions", "PublicKeyCredentialRpEntity", "PublicKeyCredentialUserEntity", "PublicKeyCredential", "AuthenticatorResponse", "AuthenticatorSelectionCriteria", "AttestationConveyancePreference", "AuthenticationExtensionsClientInputs", "AuthenticatorAttachment", "UserVerificationRequirement"] }
 atomic_refcell = "0.1.13"
 prokio = "0.1.0"
 by_address = "1.2.1"

@@ -1,22 +1,31 @@
 #![feature(future_join)]
 #![deny(unused_must_use)]
 
-use std::{collections::HashMap, net::SocketAddr, sync::Arc};
+use std::{
+    collections::HashMap,
+    net::SocketAddr,
+    sync::{Arc, Weak},
+};
 
 use anyhow::anyhow;
 use clap::Parser;
+use cookie::Cookie;
 use futures::{
     stream::{SplitSink, SplitStream, StreamExt},
     SinkExt,
 };
+use itertools::Itertools;
 use parking_lot::Mutex;
 use tokio::{sync::mpsc, try_join};
 use url::Url;
+use uuid::Uuid;
 use warp::{
     ws::{Message, WebSocket},
     Filter, Reply,
 };
+use weak_table::WeakValueHashMap;
 
+use crate::cookies::CookieRouter;
 use octant_executor::Pool;
 use octant_gui::{
     event_loop::{Application, EventLoop, Page},
@@ -27,6 +36,7 @@ use octant_gui_core::{DownMessageList, UpMessageList};
 
 use crate::session::Session;
 
+pub mod cookies;
 pub mod session;
 
 #[derive(Parser, Debug)]
@@ -46,6 +56,7 @@ pub struct OctantServerOptions {
 pub struct OctantServer {
     options: OctantServerOptions,
     handlers: HashMap<String, Arc<dyn Handler>>,
+    cookie_router: Arc<CookieRouter>,
 }
 
 impl OctantServerOptions {
@@ -89,7 +100,11 @@ impl OctantServer {
         OctantServer {
             options,
             handlers: HashMap::new(),
+            cookie_router: CookieRouter::new(),
         }
+    }
+    pub fn cookie_router(&self) -> &Arc<CookieRouter> {
+        &self.cookie_router
     }
     pub fn add_handler(&mut self, handler: impl Handler) {
         self.handlers.insert(handler.prefix(), Arc::new(handler));
@@ -114,7 +129,7 @@ impl OctantServer {
     ) -> anyhow::Result<()> {
         let (tx_inner, rx_inner) = mpsc::unbounded_channel();
         let mut sink = BufferedDownMessageSink::new(rx_inner, Box::pin(tx.with(Self::encode)));
-        let (spawn, mut pool) = Pool::new({ move |cx| sink.poll_flush(cx) });
+        let (spawn, mut pool) = Pool::new(move |cx| sink.poll_flush(cx));
         let root = Arc::new(Runtime::new(tx_inner, spawn.clone()));
         let global = Global::new(root);
         let events = Box::pin(rx.map(|x| Self::decode(x?)));
@@ -145,6 +160,34 @@ impl OctantServer {
         let site = warp::path("site")
             .and(warp::fs::file("./target/www/index.html"))
             .map(Self::add_header);
+        let create_cookie = warp::path("create_cookie")
+            .and(warp::query::<HashMap<String, String>>())
+            .map({
+                let this = self.clone();
+                move |q: HashMap<String, String>| {
+                    let token: Uuid = q.get("token").unwrap().parse().unwrap();
+                    let cookie = this.cookie_router.create_finish(token).unwrap();
+                    let res = warp::reply::json(&());
+                    let res = warp::reply::with_header(res, "set-cookie", format!("{}", cookie));
+                    res
+                }
+            });
+        let update_cookie = warp::path("update_cookie")
+            .and(warp::query::<HashMap<String, String>>())
+            .and(warp::header("Cookie"))
+            .map({
+                let this = self.clone();
+                move |q: HashMap<String, String>, cookie: String| {
+                    let cookies = Cookie::split_parse(&cookie)
+                        .map_ok(|x| (x.name().to_string(), Arc::new(x.value().to_string())))
+                        .collect::<Result<HashMap<_, _>, _>>()
+                        .unwrap();
+                    let token: Uuid = q.get("token").unwrap().parse().unwrap();
+                    this.cookie_router.update_finish(token, cookies);
+                    let res = warp::reply::json(&());
+                    res
+                }
+            });
         let socket = warp::path("socket")
             .and(warp::path::param())
             .and(warp::ws())
@@ -162,7 +205,11 @@ impl OctantServer {
                     })
                 }
             });
-        let routes = statik.or(site).or(socket);
+        let routes = statik
+            .or(site)
+            .or(create_cookie)
+            .or(update_cookie)
+            .or(socket);
         let http = async {
             if let Some(bind_http) = self.options.bind_http {
                 warp::serve(routes.clone()).run(bind_http).await;

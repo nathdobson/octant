@@ -22,6 +22,8 @@ use octant_gui_core::{
 use octant_object::cast::Cast;
 use wasm_error::WasmError;
 
+mod any_value;
+mod credential;
 mod credential_creation_options;
 mod credential_request_options;
 mod credentials_container;
@@ -39,10 +41,11 @@ mod node;
 mod object;
 mod peer;
 mod promise;
+mod request;
+mod request_init;
 mod text;
 mod window;
-mod any_value;
-mod credential;
+mod response;
 
 pub type DownMessageStream = Pin<Box<dyn Stream<Item = anyhow::Result<DownMessageList>>>>;
 pub type UpMessageSink = Box<dyn Fn(UpMessageList) -> anyhow::Result<()>>;
@@ -149,8 +152,10 @@ impl Runtime {
         handle: HandleId,
     ) -> anyhow::Result<Option<Arc<dyn peer::Trait>>> {
         Ok(match method {
-            Method::Global(method) => global::invoke_with(method, handle),
-            Method::Window(window, method) => self.handle(*window).invoke_with(method, handle),
+            Method::Global(method) => global::invoke_with(self, method, handle),
+            Method::Window(window, method) => {
+                self.handle(*window).invoke_with(self, method, handle)
+            }
             Method::Document(document, method) => {
                 self.handle(*document).handle_with(method, handle)
             }
@@ -188,11 +193,23 @@ impl Runtime {
                 self.handle(*node)
                     .invoke_with(&self.clone(), method, handle)
             }
-            Method::AnyValueMethod(node, method) => {
+            Method::AnyValue(node, method) => {
                 self.handle(*node)
                     .invoke_with(&self.clone(), method, handle)
             }
             Method::Credential(node, method) => {
+                self.handle(*node)
+                    .invoke_with(&self.clone(), method, handle)
+            }
+            Method::Request(node, method) => {
+                self.handle(*node)
+                    .invoke_with(&self.clone(), method, handle)
+            }
+            Method::RequestInit(node, method) => {
+                self.handle(*node)
+                    .invoke_with(&self.clone(), method, handle)
+            }
+            Method::Response(node, method) => {
                 self.handle(*node)
                     .invoke_with(&self.clone(), method, handle)
             }

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use tokio::sync::RwLock;
 use url::Url;
+use uuid::Uuid;
 use webauthn_rs::prelude::Passkey;
 
 use octant_database::{forest::Forest, tree::Tree};
@@ -10,14 +11,17 @@ use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
     event_loop::Page,
 };
-use octant_server::{session::Session, Handler};
+use octant_server::{cookies::CookieRouter, session::Session, Handler};
 
-use crate::{build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, AccountDatabase};
+use crate::{build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, AccountDatabase, SessionTable, VerifiedLogin, SESSION_COOKIE};
 
 pub struct LoginHandler {
     pub forest: Arc<RwLock<Forest>>,
     pub accounts: Arc<Tree<AccountDatabase>>,
+    pub cookie_router: Arc<CookieRouter>,
+    pub session_table: Arc<SessionTable>,
 }
+
 
 impl LoginHandler {
     pub async fn do_login(
@@ -39,18 +43,33 @@ impl LoginHandler {
         let (rcr, skr) = webauthn.start_passkey_authentication(&passkeys)?;
         let options = session.global().new_credential_request_options();
         options.public_key(rcr.public_key.into_octant());
-        let p = session
+        let cred = session
             .global()
             .window()
             .navigator()
             .credentials()
-            .get_with_options(&options);
-        let cred = p.get().await?;
-        let cred = cred.downcast_credential();
-        let cred = cred.materialize();
-        let cred = cred.await.into_auth();
+            .get_with_options(&options)
+            .await?;
+        let cred = cred.into_auth();
         let result = webauthn.finish_passkey_authentication(&cred, &skr).unwrap();
-        log::info!("{:?}", result);
+        let session_id = Uuid::new_v4();
+        self.session_table.sessions.lock().insert(
+            session_id,
+            Arc::new(VerifiedLogin {
+                email: email.to_string(),
+            }),
+        );
+        self.cookie_router
+            .create(
+                &session,
+                format!(
+                    "{}={}; HttpOnly; Secure; SameSite=Strict; Max-Age={}",
+                    SESSION_COOKIE,
+                    session_id,
+                    60 * 60 * 24 * 365
+                ),
+            )
+            .await?;
         Ok(())
     }
 }

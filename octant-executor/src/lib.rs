@@ -3,7 +3,6 @@
 
 use std::{
     future::{poll_fn, Future},
-    mem,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -13,7 +12,7 @@ use std::{
 
 use futures::future::BoxFuture;
 use parking_lot::Mutex;
-use tokio::{sync::mpsc, task::yield_now};
+use tokio::{sync::mpsc};
 
 struct Task {
     woken: AtomicBool,
@@ -141,54 +140,63 @@ impl Spawn {
     }
 }
 
-#[tokio::test]
-async fn test() -> anyhow::Result<()> {
-    static LOG: Mutex<Vec<String>> = Mutex::new(vec![]);
-    let (spawn, mut pool) = Pool::new(|_| {
-        LOG.lock().push(format!("yield"));
-        Poll::Ready(Ok(()))
-    });
-    spawn.spawn(async move {
-        LOG.lock().push(format!("starting"));
-        yield_now().await;
-        LOG.lock().push(format!("finishing"));
-        Ok(())
-    });
-    mem::drop(spawn);
-    pool.run().await?;
-    assert_eq!(
-        LOG.lock().iter().collect::<Vec<_>>(),
-        vec!["starting", "yield", "finishing", "yield"]
-    );
-    Ok(())
-}
+#[cfg(test)]
+mod test {
+    use std::mem;
+    use std::task::Poll;
+    use parking_lot::Mutex;
+    use tokio::task::yield_now;
+    use crate::Pool;
 
-#[tokio::test]
-async fn test2() -> anyhow::Result<()> {
-    static LOG: Mutex<Vec<String>> = Mutex::new(vec![]);
-    let (spawn, mut pool) = Pool::new(|cx| {
-        LOG.lock().push(format!("yield"));
-        Poll::Ready(Ok(()))
-    });
-    spawn.spawn({
-        let spawn = spawn.clone();
-        async move {
-            LOG.lock().push(format!("a"));
-            spawn.spawn(async move {
-                LOG.lock().push(format!("c"));
-                Ok(())
-            });
-            LOG.lock().push(format!("b"));
+    #[tokio::test]
+    async fn test() -> anyhow::Result<()> {
+        static LOG: Mutex<Vec<String>> = Mutex::new(vec![]);
+        let (spawn, mut pool) = Pool::new(|_| {
+            LOG.lock().push(format!("yield"));
+            Poll::Ready(Ok(()))
+        });
+        spawn.spawn(async move {
+            LOG.lock().push(format!("starting"));
             yield_now().await;
-            LOG.lock().push(format!("d"));
+            LOG.lock().push(format!("finishing"));
             Ok(())
-        }
-    });
-    mem::drop(spawn);
-    pool.run().await?;
-    assert_eq!(
-        LOG.lock().iter().collect::<Vec<_>>(),
-        vec!["a", "b", "c", "yield", "d", "yield"]
-    );
-    Ok(())
+        });
+        mem::drop(spawn);
+        pool.run().await?;
+        assert_eq!(
+            LOG.lock().iter().collect::<Vec<_>>(),
+            vec!["starting", "yield", "finishing", "yield"]
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test2() -> anyhow::Result<()> {
+        static LOG: Mutex<Vec<String>> = Mutex::new(vec![]);
+        let (spawn, mut pool) = Pool::new(|_| {
+            LOG.lock().push(format!("yield"));
+            Poll::Ready(Ok(()))
+        });
+        spawn.spawn({
+            let spawn = spawn.clone();
+            async move {
+                LOG.lock().push(format!("a"));
+                spawn.spawn(async move {
+                    LOG.lock().push(format!("c"));
+                    Ok(())
+                });
+                LOG.lock().push(format!("b"));
+                yield_now().await;
+                LOG.lock().push(format!("d"));
+                Ok(())
+            }
+        });
+        mem::drop(spawn);
+        pool.run().await?;
+        assert_eq!(
+            LOG.lock().iter().collect::<Vec<_>>(),
+            vec!["a", "b", "c", "yield", "d", "yield"]
+        );
+        Ok(())
+    }
 }

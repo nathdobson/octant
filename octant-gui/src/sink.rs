@@ -1,8 +1,7 @@
-use anyhow::Error;
 use std::{
     mem,
     pin::Pin,
-    task::{ready, Context, Poll},
+    task::{Context, Poll},
 };
 
 use futures::{Sink, SinkExt};

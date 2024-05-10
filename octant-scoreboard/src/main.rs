@@ -8,7 +8,9 @@ use std::{path::Path, sync::Arc, time::Duration};
 
 use anyhow::Context;
 
-use octant_account::{AccountDatabase, login::LoginHandler, register::RegisterHandler};
+use octant_account::{
+    login::LoginHandler, register::RegisterHandler, AccountDatabase, SessionTable,
+};
 use octant_database::{database_struct, file::Database, tree::Tree};
 use octant_panic::register_handler;
 use octant_server::{OctantServer, OctantServerOptions};
@@ -41,7 +43,11 @@ async fn main() -> anyhow::Result<()> {
     {
         let forest_read = forest.read().await;
         let accounts = forest_read.read(&db).accounts.clone();
-        server.add_handler(ScoreHandler {});
+        let session_table = SessionTable::new();
+        server.add_handler(ScoreHandler {
+            cookie_router: server.cookie_router().clone(),
+            session_table: session_table.clone(),
+        });
         server.add_handler(RegisterHandler {
             forest: forest.clone(),
             accounts: accounts.clone(),
@@ -49,6 +55,8 @@ async fn main() -> anyhow::Result<()> {
         server.add_handler(LoginHandler {
             forest: forest.clone(),
             accounts: accounts.clone(),
+            cookie_router: server.cookie_router().clone(),
+            session_table,
         });
     }
     server.run().await?;

@@ -1,4 +1,6 @@
-use octant_gui_core::{CredentialsContainerMethod, CredentialsContainerTag, Method};
+use octant_gui_core::{
+    CredentialData, CredentialsContainerMethod, CredentialsContainerTag, Method,
+};
 use octant_object::define_class;
 
 use crate::{
@@ -23,19 +25,31 @@ impl Value {
             parent: object::Value::new(handle),
         }
     }
-    pub fn create_with_options(&self, options: &CredentialCreationOptions) -> Promise {
+    pub async fn create_with_options(
+        &self,
+        options: &CredentialCreationOptions,
+    ) -> anyhow::Result<CredentialData> {
         let promise: Promise = self.runtime().add(promise::Value::new(self.invoke(
             CredentialsContainerMethod::CreateWithOptions(options.typed_handle()),
         )));
         promise.wait();
-        promise
+        let cred = promise.get().await?;
+        let cred = cred.downcast_credential();
+        let cred = cred.materialize().await;
+        Ok(cred)
     }
-    pub fn get_with_options(&self, options: &CredentialRequestOptions) -> Promise {
+    pub async fn get_with_options(
+        &self,
+        options: &CredentialRequestOptions,
+    ) -> anyhow::Result<CredentialData> {
         let promise: Promise = self.runtime().add(promise::Value::new(self.invoke(
             CredentialsContainerMethod::GetWithOptions(options.typed_handle()),
         )));
         promise.wait();
-        promise
+        let cred = promise.get().await?;
+        let cred = cred.downcast_credential();
+        let cred = cred.materialize().await;
+        Ok(cred)
     }
 }
 

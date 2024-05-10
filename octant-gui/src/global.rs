@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use octant_gui_core::{DownMessage, GlobalMethod, Method};
 
-use crate::{credential_creation_options, credential_request_options, CredentialCreationOptions, CredentialRequestOptions, runtime::Runtime, window, Window};
+use crate::{credential_creation_options, credential_request_options, CredentialCreationOptions, CredentialRequestOptions, Request, request, request_init, RequestInit, runtime::Runtime, window, Window};
+use crate::runtime::HasTypedHandle;
 
 pub struct Global {
     runtime: Arc<Runtime>,
@@ -34,6 +35,18 @@ impl Global {
         self.runtime
             .add(credential_request_options::Value::new(self.runtime.invoke(
                 Method::Global(GlobalMethod::NewCredentialRequestOptions),
+            )))
+    }
+    pub fn new_request_init(&self) -> RequestInit {
+        self.runtime.add(request_init::Value::new(
+            self.runtime
+                .invoke(Method::Global(GlobalMethod::NewRequestInit)),
+        ))
+    }
+    pub fn new_request(&self, url: String, init: &RequestInit) -> Request {
+        self.runtime
+            .add(request::Value::new(self.runtime.invoke(
+                Method::Global(GlobalMethod::NewRequest(url, init.typed_handle())),
             )))
     }
     pub fn fail(&self, e: anyhow::Error) {

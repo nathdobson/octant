@@ -3,7 +3,7 @@ use octant_gui_core::{
 };
 use octant_object::define_class;
 
-use crate::{credential, Credential, handle, runtime::HasTypedHandle};
+use crate::{credential, Credential, handle, Response, response, runtime::HasTypedHandle};
 
 define_class! {
     #[derive(Debug)]
@@ -18,11 +18,16 @@ impl Value {
 
 impl dyn Trait {
     fn invoke(&self, method: AnyValueMethod) -> handle::Value {
-        (**self).invoke(Method::AnyValueMethod(self.typed_handle(), method))
+        (**self).invoke(Method::AnyValue(self.typed_handle(), method))
     }
     pub fn downcast_credential(&self) -> Credential {
         self.runtime().add(credential::Value::new(
             self.invoke(AnyValueMethod::Downcast(JsClass::Credential)),
+        ))
+    }
+    pub fn downcast_response(&self) -> Response {
+        self.runtime().add(response::Value::new(
+            self.invoke(AnyValueMethod::Downcast(JsClass::Response)),
         ))
     }
 }

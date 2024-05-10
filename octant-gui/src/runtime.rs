@@ -6,16 +6,14 @@ use std::{
 };
 
 use atomic_refcell::AtomicRefCell;
-use futures::SinkExt;
-use parking_lot::Mutex;
 use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
 
 use octant_executor::Spawn;
-use octant_gui_core::{DownMessage, HandleId, Method, TypeTag, TypedHandle};
+use octant_gui_core::{DownMessage, HandleId, Method, TypedHandle, TypeTag};
 use octant_object::cast::Cast;
 
-use crate::{handle, sink::BufferedDownMessageSink};
+use crate::handle;
 
 struct State {
     next_handle: usize,

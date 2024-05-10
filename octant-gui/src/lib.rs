@@ -7,7 +7,7 @@
 
 use std::{pin::Pin, sync::Arc};
 
-use futures::{sink::Sink, Stream};
+use futures::{Stream};
 
 pub use global::Global;
 use octant_gui_core::UpMessageList;
@@ -36,6 +36,9 @@ mod credential_request_options;
 pub mod credentials_container;
 pub mod navigator;
 mod promise;
+mod request;
+mod request_init;
+mod response;
 pub mod sink;
 
 pub type UpMessageStream =
@@ -51,6 +54,8 @@ pub type Navigator = Arc<dyn navigator::Trait>;
 pub type CredentialsContainer = Arc<dyn credentials_container::Trait>;
 pub type CredentialCreationOptions = Arc<dyn credential_creation_options::Trait>;
 pub type CredentialRequestOptions = Arc<dyn credential_request_options::Trait>;
+pub type RequestInit = Arc<dyn request_init::Trait>;
+pub type Request = Arc<dyn request::Trait>;
 
 pub type HtmlElement = Arc<dyn html_element::Trait>;
 pub type HtmlFormElement = Arc<dyn html_form_element::Trait>;
@@ -66,3 +71,4 @@ pub type AnyValue = Arc<dyn any_value::Trait>;
 pub type Promise = Arc<dyn promise::Trait>;
 
 pub type Credential = Arc<dyn credential::Trait>;
+pub type Response = Arc<dyn response::Trait>;

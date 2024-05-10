@@ -10,10 +10,10 @@ use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
     event_loop::Page,
 };
-use octant_server::{session::Session, Handler};
+use octant_server::{Handler, session::Session};
 
 use crate::{
-    build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, Account, AccountDatabase,
+    Account, AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant,
 };
 
 pub struct RegisterHandler {
@@ -34,18 +34,15 @@ impl RegisterHandler {
             webauthn.start_passkey_registration(Uuid::new_v4(), &email, &name, None)?;
         let options = session.global().new_credential_creation_options();
         options.public_key(ccr.public_key.into_octant());
-        let p = session
+        let cred = session
             .global()
             .window()
             .navigator()
             .credentials()
             .create_with_options(&options);
-        let this = self.clone();
 
-        let cred = p.get().await?;
-        let cred = cred.downcast_credential();
-        let cred = cred.materialize();
-        let cred = cred.await.into_auth();
+        let this = self.clone();
+        let cred = cred.await?.into_auth();
         let result = webauthn
             .finish_passkey_registration(&cred, &skr)
             .context("while verifying passkey")?;
