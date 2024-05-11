@@ -3,9 +3,8 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use js_sys::Promise;
 use wasm_bindgen::JsValue;
-use wasm_bindgen_futures::{JsFuture, spawn_local};
+use wasm_bindgen_futures::{spawn_local, JsFuture};
 
 use octant_gui_core::{
     Error, HandleId, PromiseMethod, PromiseTag, PromiseUpMessage, TypedHandle, UpMessage,
@@ -13,24 +12,27 @@ use octant_gui_core::{
 };
 use octant_object::define_class;
 
-use crate::{any_value, HasLocalType, object, peer, Runtime};
+use crate::{any_value, object, object::Object, peer, HasLocalType, Runtime};
+use crate::any_value::AnyValueValue;
+use crate::object::ObjectValue;
+use crate::peer::ArcPeer;
 
 define_class! {
-    pub class extends object {
-        promise: Promise,
+    pub class Promise extends Object {
+        promise: js_sys::Promise,
         value: OnceLock<JsValue>,
     }
 }
 
-impl Value {
-    pub fn new(handle: HandleId, promise: Promise) -> Self {
-        Value {
-            parent: object::Value::new(handle, promise.clone().into()),
+impl PromiseValue {
+    pub fn new(handle: HandleId, promise: js_sys::Promise) -> Self {
+        PromiseValue {
+            parent: ObjectValue::new(handle, promise.clone().into()),
             promise,
             value: OnceLock::new(),
         }
     }
-    pub fn native(&self) -> &Promise {
+    pub fn native(&self) -> &js_sys::Promise {
         &self.promise
     }
     pub fn handle(&self) -> TypedHandle<PromiseTag> {
@@ -38,19 +40,19 @@ impl Value {
     }
 }
 
-impl dyn Trait {
+impl dyn Promise {
     pub fn invoke_with(
         self: &Arc<Self>,
         runtime: &Arc<Runtime>,
         method: &PromiseMethod,
         handle: HandleId,
-    ) -> Option<Arc<dyn peer::Trait>> {
+    ) -> Option<ArcPeer> {
         match method {
             PromiseMethod::Wait => {
                 self.wait(runtime);
                 None
             }
-            PromiseMethod::Get => Some(Arc::new(any_value::Value::new(
+            PromiseMethod::Get => Some(Arc::new(AnyValueValue::new(
                 handle,
                 self.value.get().unwrap().clone(),
             ))),
@@ -87,5 +89,5 @@ impl dyn Trait {
 }
 
 impl HasLocalType for PromiseTag {
-    type Local = dyn Trait;
+    type Local = dyn Promise;
 }

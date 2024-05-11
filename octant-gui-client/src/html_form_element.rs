@@ -1,30 +1,31 @@
-use std::marker::PhantomData;
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
-use wasm_bindgen::closure::Closure;
-use wasm_bindgen::JsCast;
-use web_sys::{HtmlFormElement, InputEvent};
+use wasm_bindgen::{closure::Closure, JsCast};
+use web_sys::InputEvent;
 
-use octant_gui_core::{HandleId, TypedHandle, UpMessage, UpMessageList};
 use octant_gui_core::{
-    HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage,
+    HandleId, HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage,
+    HtmlInputElementUpMessage, TypedHandle, UpMessage, UpMessageList,
 };
-use octant_gui_core::HtmlInputElementUpMessage;
-use octant_object::cast::Cast;
-use octant_object::define_class;
+use octant_object::{cast::Cast, define_class};
 
-use crate::{HasLocalType, html_element, html_input_element, peer, Runtime};
+use crate::{
+    html_element, html_element::HtmlElement, html_input_element, peer, HasLocalType, Runtime,
+};
+use crate::html_element::HtmlElementValue;
+use crate::html_input_element::HtmlInputElement;
+use crate::peer::ArcPeer;
 
 define_class! {
-    pub class extends html_element {
-        html_form_element: HtmlFormElement,
+    pub class HtmlFormElement extends HtmlElement {
+        html_form_element: web_sys::HtmlFormElement,
     }
 }
 
-impl Value {
-    pub fn new(handle: HandleId, html_form_element: HtmlFormElement) -> Self {
-        Value {
-            parent: html_element::Value::new(handle, html_form_element.clone().into()),
+impl HtmlFormElementValue {
+    pub fn new(handle: HandleId, html_form_element: web_sys::HtmlFormElement) -> Self {
+        HtmlFormElementValue {
+            parent: HtmlElementValue::new(handle, html_form_element.clone().into()),
             html_form_element,
         }
     }
@@ -33,13 +34,13 @@ impl Value {
     }
 }
 
-impl dyn Trait {
+impl dyn HtmlFormElement {
     pub fn invoke_with(
         self: Arc<Self>,
         runtime: Arc<Runtime>,
         method: &HtmlFormElementMethod,
         _handle_id: HandleId,
-    ) -> Option<Arc<dyn peer::Trait>> {
+    ) -> Option<ArcPeer> {
         match method {
             HtmlFormElementMethod::SetListener => {
                 let this = self.clone();
@@ -50,7 +51,7 @@ impl dyn Trait {
                         let mut commands: Vec<UpMessage> = vec![];
                         let children = form.children();
                         for child in children {
-                            let input: Option<Arc<dyn html_input_element::Trait>> =
+                            let input: Option<Arc<dyn HtmlInputElement>> =
                                 child.downcast_trait();
                             if let Some(input) = input {
                                 input.native().set_attribute("disabled", "true").unwrap();
@@ -92,5 +93,5 @@ impl dyn Trait {
 }
 
 impl HasLocalType for HtmlFormElementTag {
-    type Local = dyn Trait;
+    type Local = dyn HtmlFormElement;
 }

@@ -47,12 +47,6 @@ impl<T: 'static + Deref> CastObject for T
     }
 }
 
-// impl<'a> StackBox<'a, dyn CastObject> {
-//     pub fn into_parent_object(self) -> Option<Self> {
-//         ((*self).into_parent_object_impl())(self)
-//     }
-// }
-
 pub trait Cast<O: 'static> {
     fn downcast_trait(self) -> Option<O>;
 }

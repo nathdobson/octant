@@ -3,30 +3,33 @@ use octant_object::define_class;
 
 use crate::{
     handle, object,
+    object::Object,
     runtime::{HasLocalType, HasTypedHandle},
 };
+use crate::handle::HandleValue;
+use crate::object::ObjectValue;
 
 define_class! {
     #[derive(Debug)]
-    pub class extends object {
+    pub class Request extends Object {
     }
 }
 
-impl HasTypedHandle for Value {
+impl HasTypedHandle for RequestValue {
     type TypeTag = RequestTag;
 }
 
 impl HasLocalType for RequestTag {
-    type Local = dyn Trait;
+    type Local = dyn Request;
 }
 
-impl Value {
-    pub fn new(handle: handle::Value) -> Self {
-        Value {
-            parent: object::Value::new(handle),
+impl RequestValue {
+    pub fn new(handle: HandleValue) -> Self {
+        RequestValue {
+            parent: ObjectValue::new(handle),
         }
     }
-    fn invoke(&self, method: RequestMethod) -> handle::Value {
+    fn invoke(&self, method: RequestMethod) -> HandleValue {
         (**self).invoke(Method::Request(self.typed_handle(), method))
     }
 }

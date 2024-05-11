@@ -1,33 +1,31 @@
 use parking_lot::Mutex;
 use tokio::sync::oneshot;
 
+use crate::object::{Object, ObjectValue};
 use octant_gui_core::{Error, Method, PromiseMethod, PromiseTag, PromiseUpMessage};
 use octant_object::define_class;
-
-use crate::{
-    any_value, AnyValue, handle,
-    object,
-    runtime::{HasLocalType, HasTypedHandle},
-};
+use crate::any_value::{AnyValueValue, ArcAnyValue};
+use crate::handle::HandleValue;
+use crate::runtime::{HasLocalType, HasTypedHandle};
 
 define_class! {
     #[derive(Debug)]
-    pub class extends object{
+    pub class Promise extends Object{
         completable: Completable<Result<(), Error>>,
     }
 }
 
-impl Value {
-    pub fn new(handle: handle::Value) -> Self {
-        Value {
-            parent: object::Value::new(handle),
+impl PromiseValue {
+    pub fn new(handle: HandleValue) -> Self {
+        PromiseValue {
+            parent: ObjectValue::new(handle),
             completable: Completable::new(),
         }
     }
 }
 
-impl dyn Trait {
-    fn invoke(&self, method: PromiseMethod) -> handle::Value {
+impl dyn Promise {
+    fn invoke(&self, method: PromiseMethod) -> HandleValue {
         (**self).invoke(Method::Promise(self.typed_handle(), method))
     }
     pub fn handle_event(&self, message: PromiseUpMessage) {
@@ -39,21 +37,21 @@ impl dyn Trait {
     pub fn wait(&self) {
         self.invoke(PromiseMethod::Wait);
     }
-    pub async fn get(&self) -> Result<AnyValue, Error> {
+    pub async fn get(&self) -> Result<ArcAnyValue, Error> {
         self.completable.recv().await?;
         log::info!("starting get");
         Ok(self
             .runtime()
-            .add(any_value::Value::new(self.invoke(PromiseMethod::Get))))
+            .add(AnyValueValue::new(self.invoke(PromiseMethod::Get))))
     }
 }
 
-impl HasTypedHandle for Value {
+impl HasTypedHandle for PromiseValue {
     type TypeTag = PromiseTag;
 }
 
 impl HasLocalType for PromiseTag {
-    type Local = dyn Trait;
+    type Local = dyn Promise;
 }
 
 #[derive(Debug)]

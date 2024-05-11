@@ -1,20 +1,19 @@
-use web_sys::HtmlElement;
-
 use octant_gui_core::HandleId;
 use octant_object::define_class;
 
-use crate::element;
+use crate::{element, element::Element};
+use crate::element::ElementValue;
 
 define_class! {
-    pub class extends element {
-        element: HtmlElement,
+    pub class HtmlElement extends Element {
+        element: web_sys::HtmlElement,
     }
 }
 
-impl Value {
-    pub fn new(handle: HandleId, element: HtmlElement) -> Self {
-        Value {
-            parent: element::Value::new(handle, element.clone().into()),
+impl HtmlElementValue {
+    pub fn new(handle: HandleId, element: web_sys::HtmlElement) -> Self {
+        HtmlElementValue {
+            parent: ElementValue::new(handle, element.clone().into()),
             element,
         }
     }

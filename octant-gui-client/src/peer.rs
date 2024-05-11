@@ -1,15 +1,16 @@
 use octant_gui_core::HandleId;
 use octant_object::{base, define_class};
+use octant_object::base::Base;
 
 define_class! {
-    pub class extends base {
+    pub class Peer extends Base {
         handle: HandleId,
     }
 }
 
-impl Value {
+impl PeerValue {
     pub fn new(handle: HandleId) -> Self {
-        Value {
+        PeerValue {
             parent: base::Value::new(),
             handle,
         }

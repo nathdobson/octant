@@ -1,28 +1,32 @@
 use std::sync::Arc;
 
-use web_sys::Navigator;
-
-use octant_gui_core::{HandleId, NavigatorMethod};
-use octant_gui_core::NavigatorTag;
+use octant_gui_core::{HandleId, NavigatorMethod, NavigatorTag};
 use octant_object::define_class;
 
-use crate::{credentials_container, HasLocalType, object, peer};
+use crate::{
+    credentials_container,
+    credentials_container::{ArcCredentialsContainer, CredentialsContainerValue},
+    object,
+    object::{Object, ObjectValue},
+    peer, HasLocalType,
+};
+use crate::peer::ArcPeer;
 
 define_class! {
-    pub class extends object {
-        navigator: Navigator,
+    pub class Navigator extends Object {
+        navigator: web_sys::Navigator,
     }
 }
 
-impl Value {
-    pub fn new(handle: HandleId, navigator: Navigator) -> Self {
-        Value {
-            parent: object::Value::new(handle, navigator.clone().into()),
+impl NavigatorValue {
+    pub fn new(handle: HandleId, navigator: web_sys::Navigator) -> Self {
+        NavigatorValue {
+            parent: ObjectValue::new(handle, navigator.clone().into()),
             navigator,
         }
     }
-    pub fn credentials(&self, handle: HandleId) -> Arc<dyn credentials_container::Trait> {
-        Arc::new(credentials_container::Value::new(
+    pub fn credentials(&self, handle: HandleId) -> ArcCredentialsContainer {
+        Arc::new(CredentialsContainerValue::new(
             handle,
             self.navigator.credentials(),
         ))
@@ -31,7 +35,7 @@ impl Value {
         &self,
         method: &NavigatorMethod,
         handle: HandleId,
-    ) -> Option<Arc<dyn peer::Trait>> {
+    ) -> Option<ArcPeer> {
         match method {
             NavigatorMethod::Credentials => Some(self.credentials(handle)),
         }
@@ -39,5 +43,5 @@ impl Value {
 }
 
 impl HasLocalType for NavigatorTag {
-    type Local = dyn Trait;
+    type Local = dyn Navigator;
 }

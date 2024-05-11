@@ -1,32 +1,36 @@
 use std::sync::Arc;
 
 use atomic_refcell::AtomicRefCell;
-use web_sys::Element;
 
-use octant_gui_core::{ElementMethod, ElementTag};
-use octant_gui_core::HandleId;
+use octant_gui_core::{ElementMethod, ElementTag, HandleId};
 use octant_object::define_class;
 
-use crate::{HasLocalType, node, peer, Runtime};
+use crate::{
+    node,
+    node::{Node, NodeValue},
+    peer,
+    peer::ArcPeer,
+    HasLocalType, Runtime,
+};
 
 struct State {}
 
 define_class! {
-    pub class extends node {
-        element: Element,
+    pub class Element extends Node {
+        element: web_sys::Element,
         state: AtomicRefCell<State>,
     }
 }
 
-impl Value {
-    pub fn new(handle: HandleId, element: Element) -> Self {
-        Value {
-            parent: node::Value::new(handle, element.clone().into()),
+impl ElementValue {
+    pub fn new(handle: HandleId, element: web_sys::Element) -> Self {
+        ElementValue {
+            parent: NodeValue::new(handle, element.clone().into()),
             element,
             state: AtomicRefCell::new(State {}),
         }
     }
-    pub fn native(&self) -> &Element {
+    pub fn native(&self) -> &web_sys::Element {
         &self.element
     }
     pub fn invoke_with(
@@ -34,7 +38,7 @@ impl Value {
         _runtime: &Arc<Runtime>,
         method: &ElementMethod,
         _handle: HandleId,
-    ) -> Option<Arc<dyn peer::Trait>> {
+    ) -> Option<ArcPeer> {
         match method {
             ElementMethod::SetAttribute(name, value) => {
                 self.native().set_attribute(&name, &value).unwrap();
@@ -45,5 +49,5 @@ impl Value {
 }
 
 impl HasLocalType for ElementTag {
-    type Local = dyn Trait;
+    type Local = dyn Element;
 }

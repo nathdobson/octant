@@ -9,6 +9,8 @@ use octant_gui_core::Method;
 use octant_object::define_class;
 
 use crate::{handle, html_element};
+use crate::handle::HandleValue;
+use crate::html_element::{HtmlElement, HtmlElementValue};
 use crate::runtime::{HasLocalType, HasTypedHandle};
 
 #[derive(Debug)]
@@ -18,29 +20,29 @@ struct State {
 
 define_class! {
     #[derive(Debug)]
-    pub class extends html_element{
-        state:AtomicRefCell<State>,
+    pub class HtmlInputElement extends HtmlElement{
+        state: AtomicRefCell<State>,
     }
 }
 
-impl HasTypedHandle for Value {
+impl HasTypedHandle for HtmlInputElementValue {
     type TypeTag = HtmlInputElementTag;
 }
 
 impl HasLocalType for HtmlInputElementTag {
-    type Local = dyn Trait;
+    type Local = dyn HtmlInputElement;
 }
 
-impl Value {
-    pub fn new(handle: handle::Value) -> Self {
-        Value {
-            parent: html_element::Value::new(handle),
+impl HtmlInputElementValue {
+    pub fn new(handle: HandleValue) -> Self {
+        HtmlInputElementValue {
+            parent: HtmlElementValue::new(handle),
             state: AtomicRefCell::new(State {
                 value: Arc::new("".to_string()),
             }),
         }
     }
-    fn invoke(&self, method: HtmlInputElementMethod) -> handle::Value {
+    fn invoke(&self, method: HtmlInputElementMethod) -> HandleValue {
         (**self).invoke(Method::HtmlInputElement(self.typed_handle(), method))
     }
     pub fn handle_event(&self, message: HtmlInputElementUpMessage) {

@@ -1,16 +1,18 @@
 use octant_object::define_class;
 
 use crate::{handle, node};
+use crate::handle::HandleValue;
+use crate::node::{Node, NodeValue};
 
 define_class! {
     #[derive(Debug)]
-    pub class extends node{}
+    pub class Text extends Node{}
 }
 
-impl Value {
-    pub fn new(handle: handle::Value) -> Self {
-        Value {
-            parent: node::Value::new(handle),
+impl TextValue {
+    pub fn new(handle: HandleValue) -> Self {
+        TextValue {
+            parent: NodeValue::new(handle),
         }
     }
 }

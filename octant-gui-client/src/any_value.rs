@@ -6,45 +6,51 @@ use web_sys::{Credential, Response};
 use octant_gui_core::{AnyValueMethod, AnyValueTag, HandleId, JsClass};
 use octant_object::define_class;
 
-use crate::{credential, HasLocalType, peer, response, Runtime};
+use crate::{
+    credential, peer,
+    peer::{ArcPeer, Peer, PeerValue},
+    response, HasLocalType, Runtime,
+};
+use crate::credential::CredentialValue;
+use crate::response::ResponseValue;
 
 define_class! {
-    pub class extends peer {
+    pub class AnyValue extends Peer {
         js_value: JsValue,
     }
 }
 
-impl Value {
+impl AnyValueValue {
     pub fn new(handle: HandleId, js_value: JsValue) -> Self {
-        Value {
-            parent: peer::Value::new(handle.into()),
+        AnyValueValue {
+            parent: PeerValue::new(handle.into()),
             js_value,
         }
     }
 }
 
-impl dyn Trait {
+impl dyn AnyValue {
     pub fn invoke_with(
         self: &Arc<Self>,
         _runtime: &Arc<Runtime>,
         method: &AnyValueMethod,
         handle: HandleId,
-    ) -> Option<Arc<dyn peer::Trait>> {
+    ) -> Option<ArcPeer> {
         match method {
             AnyValueMethod::Downcast(class) => match class {
-                JsClass::Credential => Some(Arc::new(credential::Value::new(
+                JsClass::Credential => Some(Arc::new(CredentialValue::new(
                     handle,
                     self.js_value.dyn_ref::<Credential>().unwrap().clone(),
                 ))),
-                JsClass::Response => Some(Arc::new(response::Value::new(
+                JsClass::Response => Some(Arc::new(ResponseValue::new(
                     handle,
                     Clone::clone(self.js_value.dyn_ref::<Response>().unwrap()),
-                )))
+                ))),
             },
         }
     }
 }
 
 impl HasLocalType for AnyValueTag {
-    type Local = dyn Trait;
+    type Local = dyn AnyValue;
 }

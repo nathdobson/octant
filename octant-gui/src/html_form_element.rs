@@ -10,6 +10,8 @@ use octant_gui_core::Method;
 use octant_object::define_class;
 
 use crate::{handle, html_element};
+use crate::handle::HandleValue;
+use crate::html_element::{HtmlElement, HtmlElementValue};
 use crate::runtime::{HasLocalType, HasTypedHandle};
 
 struct State {
@@ -18,7 +20,7 @@ struct State {
 
 define_class! {
     #[derive(Debug)]
-    pub class extends html_element{
+    pub class HtmlFormElement extends HtmlElement{
         state:AtomicRefCell<State>,
     }
 }
@@ -31,22 +33,22 @@ impl Debug for State {
     }
 }
 
-impl HasTypedHandle for Value {
+impl HasTypedHandle for HtmlFormElementValue {
     type TypeTag = HtmlFormElementTag;
 }
 
 impl HasLocalType for HtmlFormElementTag {
-    type Local = dyn Trait;
+    type Local = dyn HtmlFormElement;
 }
 
-impl Value {
-    pub fn new(handle: handle::Value) -> Self {
-        Value {
-            parent: html_element::Value::new(handle),
+impl HtmlFormElementValue {
+    pub fn new(handle: HandleValue) -> Self {
+        HtmlFormElementValue {
+            parent: HtmlElementValue::new(handle),
             state: AtomicRefCell::new(State { handler: None }),
         }
     }
-    fn invoke(&self, method: HtmlFormElementMethod) -> handle::Value {
+    fn invoke(&self, method: HtmlFormElementMethod) -> HandleValue {
         (**self).invoke(Method::HtmlFormElement(self.typed_handle(), method))
     }
     pub fn set_handler(&self, callback: impl 'static + Sync + Send + Fn()) {

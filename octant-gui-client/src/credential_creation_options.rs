@@ -1,29 +1,32 @@
 use std::sync::Arc;
 
-use web_sys::CredentialCreationOptions;
-
 use octant_gui_core::{
-    {CredentialCreationOptionsMethod, CredentialCreationOptionsTag}
-    ,
-    HandleId
-    ,
+    CredentialCreationOptionsMethod, CredentialCreationOptionsTag, HandleId,
     PublicKeyCredentialCreationOptions,
 };
 use octant_object::define_class;
 
-use crate::{HasLocalType, object, peer};
-use crate::export::Export;
+use crate::{
+    export::Export,
+    object,
+    object::{Object, ObjectValue},
+    peer, HasLocalType,
+};
+use crate::peer::ArcPeer;
 
 define_class! {
-    pub class extends object {
-        credential_creation_options: CredentialCreationOptions,
+    pub class CredentialCreationOptions extends Object {
+        credential_creation_options: web_sys::CredentialCreationOptions,
     }
 }
 
-impl Value {
-    pub fn new(handle: HandleId, credential_creation_options: CredentialCreationOptions) -> Self {
-        Value {
-            parent: object::Value::new(handle, credential_creation_options.clone().into()),
+impl CredentialCreationOptionsValue {
+    pub fn new(
+        handle: HandleId,
+        credential_creation_options: web_sys::CredentialCreationOptions,
+    ) -> Self {
+        CredentialCreationOptionsValue {
+            parent: ObjectValue::new(handle, credential_creation_options.clone().into()),
             credential_creation_options,
         }
     }
@@ -31,7 +34,7 @@ impl Value {
         &self,
         method: &CredentialCreationOptionsMethod,
         _handle: HandleId,
-    ) -> Option<Arc<dyn peer::Trait>> {
+    ) -> Option<ArcPeer> {
         match method {
             CredentialCreationOptionsMethod::PublicKey(options) => {
                 self.public_key(options);
@@ -40,13 +43,15 @@ impl Value {
         }
     }
     pub fn public_key(&self, options: &PublicKeyCredentialCreationOptions) {
-        self.credential_creation_options.clone().public_key(&options.export());
+        self.credential_creation_options
+            .clone()
+            .public_key(&options.export());
     }
-    pub fn native(&self) -> &CredentialCreationOptions {
+    pub fn native(&self) -> &web_sys::CredentialCreationOptions {
         &self.credential_creation_options
     }
 }
 
 impl HasLocalType for CredentialCreationOptionsTag {
-    type Local = dyn Trait;
+    type Local = dyn CredentialCreationOptions;
 }

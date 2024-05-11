@@ -1,14 +1,14 @@
 use octant_object::define_class;
 
 use crate::handle;
+use crate::handle::{Handle, HandleValue};
 
 define_class! {
     #[derive(Debug)]
-    pub class extends handle {
+    pub class JsValue extends Handle {
     }
 }
-impl Value {
-    pub fn new(handle: handle::Value) -> Self {
-        Value { parent: handle }
+impl JsValueValue {
+    pub fn new(handle: HandleValue) -> Self { JsValueValue { parent: handle }
     }
 }

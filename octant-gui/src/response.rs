@@ -1,38 +1,40 @@
-use octant_gui_core::{
-    Method
-    , ResponseMethod, ResponseTag,
+use crate::{
+    any_value::ArcAnyValue,
+    handle::HandleValue,
+    object::{Object, ObjectValue},
+    promise::{ArcPromise, PromiseValue},
+    runtime::{HasLocalType, HasTypedHandle},
 };
+use octant_gui_core::{Method, ResponseMethod, ResponseTag};
 use octant_object::define_class;
-
-use crate::{AnyValue, handle, object, promise, Promise, runtime::{HasLocalType, HasTypedHandle}};
 
 define_class! {
     #[derive(Debug)]
-    pub class extends object {
+    pub class Response extends Object {
     }
 }
 
-impl HasTypedHandle for Value {
+impl HasTypedHandle for ResponseValue {
     type TypeTag = ResponseTag;
 }
 
 impl HasLocalType for ResponseTag {
-    type Local = dyn Trait;
+    type Local = dyn Response;
 }
 
-impl Value {
-    pub fn new(handle: handle::Value) -> Self {
-        Value {
-            parent: object::Value::new(handle),
+impl ResponseValue {
+    pub fn new(handle: HandleValue) -> Self {
+        ResponseValue {
+            parent: ObjectValue::new(handle),
         }
     }
-    fn invoke(&self, method: ResponseMethod) -> handle::Value {
+    fn invoke(&self, method: ResponseMethod) -> HandleValue {
         (**self).invoke(Method::Response(self.typed_handle(), method))
     }
-    pub async fn text(&self) -> anyhow::Result<AnyValue> {
-        let promise: Promise = self
+    pub async fn text(&self) -> anyhow::Result<ArcAnyValue> {
+        let promise: ArcPromise = self
             .runtime()
-            .add(promise::Value::new(self.invoke(ResponseMethod::Text())));
+            .add(PromiseValue::new(self.invoke(ResponseMethod::Text())));
         promise.wait();
         let resp = promise.get().await?;
         Ok(resp)

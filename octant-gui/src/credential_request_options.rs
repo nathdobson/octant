@@ -6,22 +6,24 @@ use octant_gui_core::{
 use octant_object::define_class;
 
 use crate::{handle, object, runtime::HasTypedHandle};
+use crate::handle::HandleValue;
+use crate::object::{Object, ObjectValue};
 
 define_class! {
     #[derive(Debug)]
-    pub class extends object {
+    pub class CredentialRequestOptions extends Object {
 
     }
 }
 
-impl HasTypedHandle for Value {
+impl HasTypedHandle for CredentialRequestOptionsValue {
     type TypeTag = CredentialRequestOptionsTag;
 }
 
-impl Value {
-    pub fn new(handle: handle::Value) -> Self {
-        Value {
-            parent: object::Value::new(handle),
+impl CredentialRequestOptionsValue {
+    pub fn new(handle: HandleValue) -> Self {
+        CredentialRequestOptionsValue {
+            parent: ObjectValue::new(handle),
         }
     }
     pub fn public_key(&self, options: PublicKeyCredentialRequestOptions) {
@@ -29,8 +31,8 @@ impl Value {
     }
 }
 
-impl Value {
-    fn invoke(&self, method: CredentialRequestOptionsMethod) -> handle::Value {
+impl CredentialRequestOptionsValue {
+    fn invoke(&self, method: CredentialRequestOptionsMethod) -> HandleValue {
         (**self).invoke(Method::CredentialRequestOptions(
             self.typed_handle(),
             method,

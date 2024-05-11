@@ -14,10 +14,11 @@ use octant_gui_core::{DownMessage, HandleId, Method, TypedHandle, TypeTag};
 use octant_object::cast::Cast;
 
 use crate::handle;
+use crate::handle::{Handle, HandleValue};
 
 struct State {
     next_handle: usize,
-    handles: WeakValueHashMap<HandleId, Weak<dyn handle::Trait>>,
+    handles: WeakValueHashMap<HandleId, Weak<dyn Handle>>,
 }
 
 pub struct Runtime {
@@ -37,7 +38,7 @@ impl Runtime {
             sink,
         }
     }
-    pub fn invoke(self: &Arc<Self>, method: Method) -> handle::Value {
+    pub fn invoke(self: &Arc<Self>, method: Method) -> HandleValue {
         let ref mut this = *self.state.borrow_mut();
         let handle = HandleId(this.next_handle);
         this.next_handle += 1;
@@ -45,7 +46,7 @@ impl Runtime {
             assign: handle,
             method,
         }).ok();
-        handle::Value::new(self.clone(), handle)
+        HandleValue::new(self.clone(), handle)
     }
     pub fn delete(&self, handle: HandleId) {
         self.send(DownMessage::Delete(handle));
@@ -64,12 +65,12 @@ impl Runtime {
     //         .await?;
     //     Ok(())
     // }
-    pub fn add<T: handle::Trait>(&self, value: T) -> Arc<T> {
+    pub fn add<T: Handle>(&self, value: T) -> Arc<T> {
         let result = Arc::new(value);
         self.state
             .borrow_mut()
             .handles
-            .insert(handle::Trait::value(&*result).id(), result.clone());
+            .insert(Handle::value(&*result).id(), result.clone());
         result
     }
     pub fn handle<T: HasLocalType>(&self, key: TypedHandle<T>) -> Arc<T::Local> {
@@ -86,10 +87,10 @@ impl Runtime {
     }
 }
 
-pub trait HasTypedHandle: handle::Trait {
+pub trait HasTypedHandle: Handle {
     type TypeTag: TypeTag;
     fn typed_handle(&self) -> TypedHandle<Self::TypeTag> {
-        TypedHandle(handle::Trait::value(self).id(), PhantomData)
+        TypedHandle(Handle::value(self).id(), PhantomData)
     }
 }
 

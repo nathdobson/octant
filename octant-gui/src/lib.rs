@@ -40,35 +40,35 @@ mod request;
 mod request_init;
 mod response;
 pub mod sink;
-
+//
 pub type UpMessageStream =
-    Pin<Box<dyn Send + Sync + Stream<Item = anyhow::Result<Option<UpMessageList>>>>>;
-pub type Handle = Arc<dyn handle::Trait>;
-pub type JsValue = Arc<dyn js_value::Trait>;
-pub type Window = Arc<dyn window::Trait>;
-
-pub type Document = Arc<dyn document::Trait>;
-
-pub type Navigator = Arc<dyn navigator::Trait>;
-
-pub type CredentialsContainer = Arc<dyn credentials_container::Trait>;
-pub type CredentialCreationOptions = Arc<dyn credential_creation_options::Trait>;
-pub type CredentialRequestOptions = Arc<dyn credential_request_options::Trait>;
-pub type RequestInit = Arc<dyn request_init::Trait>;
-pub type Request = Arc<dyn request::Trait>;
-
-pub type HtmlElement = Arc<dyn html_element::Trait>;
-pub type HtmlFormElement = Arc<dyn html_form_element::Trait>;
-pub type HtmlInputElement = Arc<dyn html_input_element::Trait>;
-
-pub type Element = Arc<dyn element::Trait>;
-
-pub type Node = Arc<dyn node::Trait>;
-
-pub type Text = Arc<dyn text::Trait>;
-pub type AnyValue = Arc<dyn any_value::Trait>;
-
-pub type Promise = Arc<dyn promise::Trait>;
-
-pub type Credential = Arc<dyn credential::Trait>;
-pub type Response = Arc<dyn response::Trait>;
+     Pin<Box<dyn Send + Sync + Stream<Item = anyhow::Result<Option<UpMessageList>>>>>;
+// pub type Handle = Arc<dyn handle::Trait>;
+// pub type JsValue = Arc<dyn js_value::Trait>;
+// pub type Window = Arc<dyn window::Trait>;
+//
+// pub type Document = Arc<dyn document::Trait>;
+//
+// pub type Navigator = Arc<dyn navigator::Trait>;
+//
+// pub type CredentialsContainer = Arc<dyn credentials_container::Trait>;
+// pub type CredentialCreationOptions = Arc<dyn credential_creation_options::Trait>;
+// pub type CredentialRequestOptions = Arc<dyn credential_request_options::Trait>;
+// pub type RequestInit = Arc<dyn request_init::Trait>;
+// pub type Request = Arc<dyn request::Trait>;
+//
+// pub type HtmlElement = Arc<dyn html_element::Trait>;
+// pub type HtmlFormElement = Arc<dyn html_form_element::Trait>;
+// pub type HtmlInputElement = Arc<dyn html_input_element::Trait>;
+//
+// pub type Element = Arc<dyn element::Trait>;
+//
+// pub type Node = Arc<dyn node::Trait>;
+//
+// pub type Text = Arc<dyn text::Trait>;
+// pub type AnyValue = Arc<dyn any_value::Trait>;
+//
+// pub type Promise = Arc<dyn promise::Trait>;
+//
+// pub type Credential = Arc<dyn credential::Trait>;
+// pub type Response = Arc<dyn response::Trait>;

@@ -1,20 +1,25 @@
 use std::sync::Arc;
 
 use octant_gui_core::{DownMessage, GlobalMethod, Method};
+use crate::{Runtime, window};
+use crate::credential_creation_options::{ArcCredentialCreationOptions, CredentialCreationOptionsValue};
+use crate::credential_request_options::{ArcCredentialRequestOptions, CredentialRequestOptionsValue};
+use crate::request::{ArcRequest, RequestValue};
+use crate::request_init::{ArcRequestInit, RequestInitValue};
 
-use crate::{credential_creation_options, credential_request_options, CredentialCreationOptions, CredentialRequestOptions, Request, request, request_init, RequestInit, runtime::Runtime, window, Window};
 use crate::runtime::HasTypedHandle;
+use crate::window::{ArcWindow, Window, WindowValue};
 
 pub struct Global {
     runtime: Arc<Runtime>,
-    window: Window,
+    window: ArcWindow,
 }
 
 impl Global {
     pub fn new(root: Arc<Runtime>) -> Arc<Self> {
         Arc::new(Global {
             runtime: root.clone(),
-            window: root.add(window::Value::new(
+            window: root.add(WindowValue::new(
                 root.invoke(Method::Global(GlobalMethod::Window)),
             )),
         })
@@ -22,30 +27,30 @@ impl Global {
     pub fn runtime(&self) -> &Arc<Runtime> {
         &self.runtime
     }
-    pub fn window(&self) -> &Window {
+    pub fn window(&self) -> &ArcWindow {
         &self.window
     }
-    pub fn new_credential_creation_options(&self) -> CredentialCreationOptions {
-        self.runtime.add(credential_creation_options::Value::new(
+    pub fn new_credential_creation_options(&self) -> ArcCredentialCreationOptions {
+        self.runtime.add(CredentialCreationOptionsValue::new(
             self.runtime
                 .invoke(Method::Global(GlobalMethod::NewCredentialCreationOptions)),
         ))
     }
-    pub fn new_credential_request_options(&self) -> CredentialRequestOptions {
+    pub fn new_credential_request_options(&self) -> ArcCredentialRequestOptions {
         self.runtime
-            .add(credential_request_options::Value::new(self.runtime.invoke(
+            .add(CredentialRequestOptionsValue::new(self.runtime.invoke(
                 Method::Global(GlobalMethod::NewCredentialRequestOptions),
             )))
     }
-    pub fn new_request_init(&self) -> RequestInit {
-        self.runtime.add(request_init::Value::new(
+    pub fn new_request_init(&self) -> ArcRequestInit {
+        self.runtime.add(RequestInitValue::new(
             self.runtime
                 .invoke(Method::Global(GlobalMethod::NewRequestInit)),
         ))
     }
-    pub fn new_request(&self, url: String, init: &RequestInit) -> Request {
+    pub fn new_request(&self, url: String, init: &ArcRequestInit) -> ArcRequest {
         self.runtime
-            .add(request::Value::new(self.runtime.invoke(
+            .add(RequestValue::new(self.runtime.invoke(
                 Method::Global(GlobalMethod::NewRequest(url, init.typed_handle())),
             )))
     }

@@ -1,50 +1,57 @@
 use std::sync::OnceLock;
 
 use octant_gui_core::{Method, WindowMethod, WindowTag};
+use octant_gui_core::WindowMethod::Navigator;
 use octant_object::define_class;
-
-use crate::{document, Document, handle, navigator, Navigator, node, promise, Promise, Request, Response, runtime::HasTypedHandle};
+use crate::document::{ArcDocument, DocumentValue};
+use crate::handle::HandleValue;
+use crate::navigator::{ArcNavigator, NavigatorValue};
+use crate::node::{Node, NodeValue};
+use crate::promise::{ArcPromise, PromiseValue};
+use crate::request::ArcRequest;
+use crate::response::ArcResponse;
+use crate::runtime::HasTypedHandle;
 
 define_class! {
     #[derive(Debug)]
-    pub class extends node {
-        document: OnceLock<Document>,
-        navigator: OnceLock<Navigator>,
+    pub class Window extends Node {
+        document: OnceLock<ArcDocument>,
+        navigator: OnceLock<ArcNavigator>,
     }
 }
 
-impl HasTypedHandle for Value {
+impl HasTypedHandle for WindowValue {
     type TypeTag = WindowTag;
 }
 
-impl Value {
-    pub fn new(handle: handle::Value) -> Self {
-        Value {
-            parent: node::Value::new(handle),
+impl WindowValue {
+    pub fn new(handle: HandleValue) -> Self {
+        WindowValue {
+            parent: NodeValue::new(handle),
             document: OnceLock::new(),
             navigator: OnceLock::new(),
         }
     }
 }
 
-impl Value {
-    fn invoke(&self, method: WindowMethod) -> handle::Value {
+impl WindowValue {
+    fn invoke(&self, method: WindowMethod) -> HandleValue {
         (**self).invoke(Method::Window(self.typed_handle(), method))
     }
-    pub fn document(&self) -> &Document {
+    pub fn document(&self) -> &ArcDocument {
         self.document.get_or_init(|| {
             self.runtime()
-                .add(document::Value::new(self.invoke(WindowMethod::Document)))
+                .add(DocumentValue::new(self.invoke(WindowMethod::Document)))
         })
     }
-    pub fn navigator(&self) -> &Navigator {
+    pub fn navigator(&self) -> &ArcNavigator {
         self.navigator.get_or_init(|| {
             self.runtime()
-                .add(navigator::Value::new(self.invoke(WindowMethod::Navigator)))
+                .add(NavigatorValue::new(self.invoke(WindowMethod::Navigator)))
         })
     }
-    pub async fn fetch(&self, request: &Request) -> anyhow::Result<Response> {
-        let promise: Promise = self.runtime().add(promise::Value::new(
+    pub async fn fetch(&self, request: &ArcRequest) -> anyhow::Result<ArcResponse> {
+        let promise: ArcPromise = self.runtime().add(PromiseValue::new(
             self.invoke(WindowMethod::Fetch(request.typed_handle())),
         ));
         promise.wait();

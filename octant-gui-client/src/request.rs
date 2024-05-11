@@ -1,28 +1,28 @@
 use std::{marker::PhantomData, sync::Arc};
 
-use web_sys::Request;
-
 use octant_gui_core::{
     HandleId, RequestMethod, RequestTag, TypedHandle,
 };
 use octant_object::define_class;
 
 use crate::{HasLocalType, object, peer, Runtime};
+use crate::object::{Object, ObjectValue};
+use crate::peer::ArcPeer;
 
 define_class! {
-    pub class extends object {
-        request: Request,
+    pub class Request extends Object {
+        request: web_sys::Request,
     }
 }
 
-impl Value {
-    pub fn new(handle: HandleId, request: Request) -> Self {
-        Value {
-            parent: object::Value::new(handle, Clone::clone(&request).into()),
+impl RequestValue {
+    pub fn new(handle: HandleId, request: web_sys::Request) -> Self {
+        RequestValue {
+            parent: ObjectValue::new(handle, Clone::clone(&request).into()),
             request,
         }
     }
-    pub fn native(&self) -> &Request {
+    pub fn native(&self) -> &web_sys::Request {
         &self.request
     }
     pub fn handle(&self) -> TypedHandle<RequestTag> {
@@ -30,13 +30,13 @@ impl Value {
     }
 }
 
-impl dyn Trait {
+impl dyn Request {
     pub fn invoke_with(
         self: Arc<Self>,
         _runtime: &Arc<Runtime>,
         method: &RequestMethod,
         _handle_id: HandleId,
-    ) -> Option<Arc<dyn peer::Trait>> {
+    ) -> Option<ArcPeer> {
         match method {
             _ => todo!(),
         }
@@ -44,5 +44,5 @@ impl dyn Trait {
 }
 
 impl HasLocalType for RequestTag {
-    type Local = dyn Trait;
+    type Local = dyn Request;
 }

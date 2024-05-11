@@ -5,28 +5,30 @@ use crate::{
     handle, object,
     runtime::{HasLocalType, HasTypedHandle},
 };
+use crate::handle::HandleValue;
+use crate::object::{Object, ObjectValue};
 
 define_class! {
     #[derive(Debug)]
-    pub class extends object {
+    pub class RequestInit extends Object {
     }
 }
 
-impl HasTypedHandle for Value {
+impl HasTypedHandle for RequestInitValue {
     type TypeTag = RequestInitTag;
 }
 
 impl HasLocalType for RequestInitTag {
-    type Local = dyn Trait;
+    type Local = dyn RequestInit;
 }
 
-impl Value {
-    pub fn new(handle: handle::Value) -> Self {
-        Value {
-            parent: object::Value::new(handle),
+impl RequestInitValue {
+    pub fn new(handle: HandleValue) -> Self {
+        RequestInitValue {
+            parent: ObjectValue::new(handle),
         }
     }
-    fn invoke(&self, method: RequestInitMethod) -> handle::Value {
+    fn invoke(&self, method: RequestInitMethod) -> HandleValue {
         (**self).invoke(Method::RequestInit(self.typed_handle(), method))
     }
 }

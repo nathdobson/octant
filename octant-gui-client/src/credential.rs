@@ -1,7 +1,5 @@
 use std::{marker::PhantomData, sync::Arc};
 
-use web_sys::Credential;
-
 use octant_gui_core::{
     CredentialMethod, CredentialTag, CredentialUpMessage, HandleId,
     TypedHandle, UpMessage, UpMessageList,
@@ -10,21 +8,23 @@ use octant_object::define_class;
 
 use crate::{HasLocalType, object, peer, Runtime};
 use crate::import::Import;
+use crate::object::{Object, ObjectValue};
+use crate::peer::ArcPeer;
 
 define_class! {
-    pub class extends object {
-        credential: Credential,
+    pub class Credential extends Object {
+        credential: web_sys::Credential,
     }
 }
 
-impl Value {
-    pub fn new(handle: HandleId, credential: Credential) -> Self {
-        Value {
-            parent: object::Value::new(handle, credential.clone().into()),
+impl CredentialValue {
+    pub fn new(handle: HandleId, credential: web_sys::Credential) -> Self {
+        CredentialValue {
+            parent: ObjectValue::new(handle, credential.clone().into()),
             credential,
         }
     }
-    pub fn native(&self) -> &Credential {
+    pub fn native(&self) -> &web_sys::Credential {
         &self.credential
     }
     pub fn handle(&self) -> TypedHandle<CredentialTag> {
@@ -32,13 +32,13 @@ impl Value {
     }
 }
 
-impl dyn Trait {
+impl dyn Credential {
     pub fn invoke_with(
         self: &Arc<Self>,
         runtime: &Arc<Runtime>,
         method: &CredentialMethod,
         _handle: HandleId,
-    ) -> Option<Arc<dyn peer::Trait>> {
+    ) -> Option<ArcPeer> {
         match method {
             CredentialMethod::Materialize => {
                 runtime
@@ -56,5 +56,5 @@ impl dyn Trait {
 }
 
 impl HasLocalType for CredentialTag {
-    type Local = dyn Trait;
+    type Local = dyn Credential;
 }

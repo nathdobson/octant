@@ -1,30 +1,30 @@
-use std::marker::PhantomData;
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
-use web_sys::HtmlInputElement;
-
-use octant_gui_core::{HandleId, TypedHandle};
-use octant_gui_core::{
-    HtmlInputElementMethod, HtmlInputElementTag,
-};
+use octant_gui_core::{HandleId, HtmlInputElementMethod, HtmlInputElementTag, TypedHandle};
 use octant_object::define_class;
 
-use crate::{HasLocalType, html_element, peer, Runtime};
+use crate::{
+    html_element,
+    html_element::{HtmlElement, HtmlElementValue},
+    peer,
+    peer::ArcPeer,
+    HasLocalType, Runtime,
+};
 
 define_class! {
-    pub class extends html_element {
-        html_input_element: HtmlInputElement,
+    pub class HtmlInputElement extends HtmlElement {
+        html_input_element: web_sys::HtmlInputElement,
     }
 }
 
-impl Value {
-    pub fn new(handle: HandleId, html_input_element: HtmlInputElement) -> Self {
-        Value {
-            parent: html_element::Value::new(handle, html_input_element.clone().into()),
+impl HtmlInputElementValue {
+    pub fn new(handle: HandleId, html_input_element: web_sys::HtmlInputElement) -> Self {
+        HtmlInputElementValue {
+            parent: HtmlElementValue::new(handle, html_input_element.clone().into()),
             html_input_element,
         }
     }
-    pub fn native(&self) -> &HtmlInputElement {
+    pub fn native(&self) -> &web_sys::HtmlInputElement {
         &self.html_input_element
     }
     pub fn handle(&self) -> TypedHandle<HtmlInputElementTag> {
@@ -32,13 +32,13 @@ impl Value {
     }
 }
 
-impl dyn Trait {
+impl dyn HtmlInputElement {
     pub fn invoke_with(
         self: Arc<Self>,
         _runtime: Arc<Runtime>,
         method: &HtmlInputElementMethod,
         _handle_id: HandleId,
-    ) -> Option<Arc<dyn peer::Trait>> {
+    ) -> Option<ArcPeer> {
         match method {
             HtmlInputElementMethod::Clear => {
                 self.html_input_element.set_value("");
@@ -49,5 +49,5 @@ impl dyn Trait {
 }
 
 impl HasLocalType for HtmlInputElementTag {
-    type Local = dyn Trait;
+    type Local = dyn HtmlInputElement;
 }

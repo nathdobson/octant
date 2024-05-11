@@ -3,9 +3,7 @@
 #![feature(ptr_metadata)]
 #![feature(coerce_unsized)]
 #![feature(unsize)]
-#![feature(generic_nonzero)]
 #![feature(allocator_api)]
-
 
 pub mod base;
 pub mod cast;
@@ -13,43 +11,56 @@ pub mod deref_ranked;
 pub mod rank;
 pub mod stackbox;
 
+pub mod reexports {
+    pub use paste;
+}
+
+pub trait Class {
+    type Value;
+}
+
 #[macro_export]
 macro_rules! define_class {
     (
         $(#[$metas:meta])?
-        pub class extends $parent:tt $(implements $interface:path)? {
+        pub class $class:tt extends $parent:tt $(implements $interface:path)? {
             $($field:ident : $type:ty),* $(,)?
         }
     ) => {
+        $crate::reexports::paste::paste!{
             $(#[$metas])?
-            pub struct Value {
-                parent: $parent::Value,
+            pub struct [< $class Value >] {
+                parent: <dyn $parent as $crate::Class>::Value,
                 $($field : $type,)*
             }
-            pub trait Trait: $parent::Trait $(+ $interface)? {
-                fn value(&self) -> &Value;
+            pub trait $class: $parent $(+ $interface)? {
+                fn value(&self) -> &[< $class Value >];
             }
-            impl $crate::cast::CastValue for Value{
+            pub type [< Arc $class >] = ::std::sync::Arc<dyn $class>;
+            impl $crate::Class for dyn $class{
+                type Value = [< $class Value >];
+            }
+            impl $crate::cast::CastValue for [< $class Value >] {
                 fn into_leaf_rc<'a>(
                     self: ::std::rc::Rc<Self>,
                     result: &'a mut ::std::mem::MaybeUninit<$crate::stackbox::TraitObjectStorage>,
                 ) -> $crate::stackbox::StackBox<'a, dyn $crate::cast::CastObject>{
-                    $crate::stackbox::StackBox::new(self as ::std::rc::Rc<dyn Trait>, result)
+                    $crate::stackbox::StackBox::new(self as ::std::rc::Rc<dyn $class>, result)
                 }
                 fn into_leaf_arc<'a>(
                     self: ::std::sync::Arc<Self>,
                     result: &'a mut ::std::mem::MaybeUninit<$crate::stackbox::TraitObjectStorage>,
                 ) -> $crate::stackbox::StackBox<'a, dyn $crate::cast::CastObject>{
-                    $crate::stackbox::StackBox::new(self as ::std::sync::Arc<dyn Trait>, result)
+                    $crate::stackbox::StackBox::new(self as ::std::sync::Arc<dyn $class>, result)
                 }
                 fn into_leaf_box<'a>(
                     self: ::std::boxed::Box<Self>,
                     result: &'a mut ::std::mem::MaybeUninit<$crate::stackbox::TraitObjectStorage>,
                 ) -> $crate::stackbox::StackBox<'a, dyn $crate::cast::CastObject>{
-                    $crate::stackbox::StackBox::new(self as ::std::boxed::Box<dyn Trait>, result)
+                    $crate::stackbox::StackBox::new(self as ::std::boxed::Box<dyn $class>, result)
                 }
             }
-            impl $crate::cast::CastTrait for dyn Trait {
+            impl $crate::cast::CastTrait for dyn $class {
                 fn into_parent_object(
                     &self,
                 ) -> for<'a> fn(
@@ -58,39 +69,38 @@ macro_rules! define_class {
                     fn into_parent_object<'a>(
                         this: $crate::stackbox::StackBox<'a, dyn $crate::cast::CastObject>,
                     ) -> ::std::option::Option<$crate::stackbox::StackBox<'a, dyn $crate::cast::CastObject>> {
-                        Some($crate::cast::coerce_unsized::<dyn Trait,dyn $parent::Trait>(this))
+                        Some($crate::cast::coerce_unsized::<dyn $class,dyn $parent>(this))
                     }
                     into_parent_object
                 }
             }
-            impl $crate::rank::Ranked for Value{
-                type Rank = $crate::rank::Succ<<$parent::Value as $crate::rank::Ranked>::Rank>;
+            impl $crate::rank::Ranked for [< $class Value >]{
+                type Rank = $crate::rank::Succ<<<dyn $parent as $crate::Class>::Value as $crate::rank::Ranked>::Rank>;
             }
-            impl<T> Trait for T where
-                T: $parent::Trait,
+            impl<T> $class for T where
+                T: $parent,
                 $(T: $interface,)?
                 T: $crate::rank::Ranked,
-                T: $crate::deref_ranked::DerefRanked<T::Rank, <Value as $crate::rank::Ranked>::Rank, TargetRanked = Value>,
+                T: $crate::deref_ranked::DerefRanked<T::Rank, <[< $class Value >] as $crate::rank::Ranked>::Rank, TargetRanked = [< $class Value >]>,
             {
-                fn value(&self) -> &Value{
+                fn value(&self) -> &[< $class Value >]{
                     self.deref_ranked()
                 }
             }
 
-            impl ::std::ops::Deref for dyn Trait {
-                type Target = Value;
+            impl ::std::ops::Deref for dyn $class {
+                type Target = [< $class Value >];
                 fn deref(&self) -> &Self::Target {
-                    Trait::value(self)
+                    $class::value(self)
                 }
             }
 
-            impl ::std::ops::Deref for Value {
-                type Target = $parent::Value;
+            impl ::std::ops::Deref for [< $class Value >] {
+                type Target = <dyn $parent as $crate::Class>::Value;
                 fn deref(&self) -> &Self::Target {
                     &self.parent
                 }
             }
-
-
+        }
     };
 }

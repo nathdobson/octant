@@ -4,8 +4,9 @@ use futures::StreamExt;
 
 use octant_gui_core::UpMessage;
 use octant_panic::catch_error;
+use crate::{Global, UpMessageStream};
+use crate::node::{ArcNode, Node};
 
-use crate::{Global, Node, UpMessageStream};
 
 pub struct EventLoop {
     global: Arc<Global>,
@@ -20,11 +21,11 @@ pub trait Application: 'static + Sync + Send {
 
 pub struct Page {
     global: Arc<Global>,
-    node: Node,
+    node: ArcNode,
 }
 
 impl Page {
-    pub fn new(global: Arc<Global>, node: Node) -> Page {
+    pub fn new(global: Arc<Global>, node: ArcNode) -> Page {
         global.window().document().body().append_child(node.clone());
         Page { global, node }
     }

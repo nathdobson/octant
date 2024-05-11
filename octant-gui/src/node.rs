@@ -7,43 +7,45 @@ use octant_gui_core::{NodeMethod, NodeTag};
 use octant_gui_core::Method;
 use octant_object::define_class;
 
-use crate::{handle, Node, object};
+use crate::{handle, object};
+use crate::handle::HandleValue;
+use crate::object::{Object, ObjectValue};
 use crate::runtime::HasTypedHandle;
 
 #[derive(Debug)]
 struct State {
-    children: HashSet<ByAddress<Node>>,
+    children: HashSet<ByAddress<ArcNode>>,
 }
 
 define_class! {
     #[derive(Debug)]
-    pub class extends object {
+    pub class Node extends Object {
         state: AtomicRefCell<State>
     }
 }
 
-impl HasTypedHandle for Value {
+impl HasTypedHandle for NodeValue {
     type TypeTag = NodeTag;
 }
 
-impl Value {
-    fn invoke(&self, method: NodeMethod) -> handle::Value {
+impl NodeValue {
+    fn invoke(&self, method: NodeMethod) -> HandleValue {
         (**self).invoke(Method::Node(self.typed_handle(), method))
     }
 
-    pub fn new(handle: handle::Value) -> Self {
-        Value {
-            parent: object::Value::new(handle),
+    pub fn new(handle: HandleValue) -> Self {
+        NodeValue {
+            parent: ObjectValue::new(handle),
             state: AtomicRefCell::new(State {
                 children: HashSet::new(),
             }),
         }
     }
-    pub fn append_child(&self, child: Node) {
+    pub fn append_child(&self, child: ArcNode) {
         self.invoke(NodeMethod::AppendChild(child.typed_handle()));
         self.state.borrow_mut().children.insert(ByAddress(child));
     }
-    pub fn remove_child(&self, child: Node) {
+    pub fn remove_child(&self, child: ArcNode) {
         self.invoke(NodeMethod::RemoveChild(child.typed_handle()));
         self.state.borrow_mut().children.remove(&ByAddress(child));
     }

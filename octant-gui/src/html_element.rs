@@ -1,16 +1,21 @@
 use octant_object::define_class;
 
-use crate::{element, handle};
+use crate::{
+    element,
+    element::{Element, ElementValue},
+    handle,
+    handle::HandleValue,
+};
 
 define_class! {
     #[derive(Debug)]
-    pub class extends element{}
+    pub class HtmlElement extends Element {}
 }
 
-impl Value {
-    pub fn new(handle: handle::Value) -> Self {
-        Value {
-            parent: element::Value::new(handle),
+impl HtmlElementValue {
+    pub fn new(handle: HandleValue) -> Self {
+        HtmlElementValue {
+            parent: ElementValue::new(handle),
         }
     }
 }

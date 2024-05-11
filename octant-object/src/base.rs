@@ -1,14 +1,18 @@
-use std::any::Any;
-use std::mem::MaybeUninit;
-use std::rc::Rc;
-use std::sync::Arc;
+use std::{any::Any, mem::MaybeUninit, rc::Rc, sync::Arc};
 
-use crate::cast::{CastObject, CastTrait, CastValue};
-use crate::rank::{Ranked, Zero};
-use crate::stackbox::{StackBox, TraitObjectStorage};
+use crate::{
+    cast::{CastObject, CastTrait, CastValue},
+    rank::{Ranked, Zero},
+    stackbox::{StackBox, TraitObjectStorage},
+    Class,
+};
 
-pub trait Trait: 'static + Any + CastValue {
+pub trait Base: 'static + Any + CastValue {
     fn value(&self) -> &Value;
+}
+
+impl Class for dyn Base {
+    type Value = Value;
 }
 
 #[derive(Debug)]
@@ -29,25 +33,25 @@ impl CastValue for Value {
         self: Rc<Self>,
         result: &'a mut MaybeUninit<TraitObjectStorage>,
     ) -> StackBox<'a, dyn CastObject> {
-        StackBox::<Rc<dyn Trait>>::new(self as Rc<dyn Trait>, result)
+        StackBox::<Rc<dyn Base>>::new(self as Rc<dyn Base>, result)
     }
 
     fn into_leaf_arc<'a>(
         self: Arc<Self>,
         result: &'a mut MaybeUninit<TraitObjectStorage>,
     ) -> StackBox<'a, dyn CastObject> {
-        StackBox::<Arc<dyn Trait>>::new(self as Arc<dyn Trait>, result)
+        StackBox::<Arc<dyn Base>>::new(self as Arc<dyn Base>, result)
     }
 
     fn into_leaf_box<'a>(
         self: Box<Self>,
         result: &'a mut MaybeUninit<TraitObjectStorage>,
     ) -> StackBox<'a, dyn CastObject> {
-        StackBox::<Box<dyn Trait>>::new(self as Box<dyn Trait>, result)
+        StackBox::<Box<dyn Base>>::new(self as Box<dyn Base>, result)
     }
 }
 
-impl CastTrait for dyn Trait {
+impl CastTrait for dyn Base {
     fn into_parent_object(
         &self,
     ) -> for<'a> fn(this: StackBox<'a, dyn CastObject>) -> Option<StackBox<'a, dyn CastObject>>
@@ -61,23 +65,23 @@ impl CastTrait for dyn Trait {
     }
 }
 
-impl Trait for Value {
+impl Base for Value {
     fn value(&self) -> &Value {
         self
     }
 }
 
-impl<T: ::std::ops::Deref + 'static> Trait for T
-    where
-        <T as ::std::ops::Deref>::Target: Trait,
-        T: CastValue,
+impl<T: ::std::ops::Deref + 'static> Base for T
+where
+    <T as ::std::ops::Deref>::Target: Base,
+    T: CastValue,
 {
     fn value(&self) -> &Value {
         T::deref(self).value()
     }
 }
 
-impl ::std::ops::Deref for dyn Trait {
+impl ::std::ops::Deref for dyn Base {
     type Target = Value;
     fn deref(&self) -> &Self::Target {
         self.value()

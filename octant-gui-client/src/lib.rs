@@ -21,6 +21,7 @@ use octant_gui_core::{
 };
 use octant_object::cast::Cast;
 use wasm_error::WasmError;
+use crate::peer::ArcPeer;
 
 mod any_value;
 mod credential;
@@ -52,7 +53,7 @@ pub type UpMessageSink = Box<dyn Fn(UpMessageList) -> anyhow::Result<()>>;
 
 struct State {
     source: Option<DownMessageStream>,
-    handles: HashMap<HandleId, Arc<dyn peer::Trait>>,
+    handles: HashMap<HandleId, ArcPeer>,
 }
 
 pub struct Runtime {
@@ -63,8 +64,6 @@ pub struct Runtime {
 pub trait HasLocalType: TypeTag {
     type Local: ?Sized + Pointee<Metadata = DynMetadata<Self::Local>>;
 }
-
-pub type WindowPeer = Arc<dyn window::Trait>;
 
 impl Runtime {
     pub fn new(source: DownMessageStream, sink: UpMessageSink) -> anyhow::Result<Arc<Runtime>> {
@@ -150,7 +149,7 @@ impl Runtime {
         self: &Arc<Self>,
         method: &Method,
         handle: HandleId,
-    ) -> anyhow::Result<Option<Arc<dyn peer::Trait>>> {
+    ) -> anyhow::Result<Option<ArcPeer>> {
         Ok(match method {
             Method::Global(method) => global::invoke_with(self, method, handle),
             Method::Window(window, method) => {

@@ -1,41 +1,50 @@
 use std::sync::Arc;
 
-use web_sys::Window;
-
 use octant_gui_core::{HandleId, WindowMethod, WindowTag};
 use octant_object::define_class;
 
-use crate::{document, HasLocalType, navigator, object, peer, promise, request, Runtime};
+use crate::{
+    document,
+    document::{ArcDocument, DocumentValue},
+    navigator,
+    navigator::{ArcNavigator, NavigatorValue},
+    object,
+    object::{Object, ObjectValue},
+    peer,
+    peer::ArcPeer,
+    promise,
+    promise::{ArcPromise, PromiseValue},
+    request,
+    request::ArcRequest,
+    HasLocalType, Runtime,
+};
 
 define_class! {
-    pub class extends object {
-        window: Window,
+    pub class Window extends Object {
+        window: web_sys::Window,
     }
 }
 
-impl Value {
-    pub fn new(handle: HandleId, window: Window) -> Self {
-        Value {
-            parent: object::Value::new(handle, window.clone().into()),
+impl WindowValue {
+    pub fn new(handle: HandleId, window: web_sys::Window) -> Self {
+        WindowValue {
+            parent: ObjectValue::new(handle, window.clone().into()),
             window,
         }
     }
-    pub fn document(&self, handle: HandleId) -> Arc<dyn document::Trait> {
-        Arc::new(document::Value::new(
-            handle,
-            self.window.document().unwrap(),
-        ))
+    pub fn document(&self, handle: HandleId) -> ArcDocument {
+        Arc::new(DocumentValue::new(handle, self.window.document().unwrap()))
     }
-    pub fn navigator(&self, handle: HandleId) -> Arc<dyn navigator::Trait> {
-        Arc::new(navigator::Value::new(handle, self.window.navigator()))
+    pub fn navigator(&self, handle: HandleId) -> ArcNavigator {
+        Arc::new(NavigatorValue::new(handle, self.window.navigator()))
     }
     pub fn fetch(
         &self,
         _runtime: &Arc<Runtime>,
         handle: HandleId,
-        request: &Arc<dyn request::Trait>,
-    ) -> Arc<dyn promise::Trait> {
-        Arc::new(promise::Value::new(
+        request: &ArcRequest,
+    ) -> ArcPromise {
+        Arc::new(PromiseValue::new(
             handle,
             self.window.fetch_with_request(request.native()),
         ))
@@ -46,7 +55,7 @@ impl Value {
         runtime: &Arc<Runtime>,
         method: &WindowMethod,
         handle: HandleId,
-    ) -> Option<Arc<dyn peer::Trait>> {
+    ) -> Option<ArcPeer> {
         match method {
             WindowMethod::Document => Some(self.document(handle)),
             WindowMethod::Navigator => Some(self.navigator(handle)),
@@ -58,5 +67,5 @@ impl Value {
 }
 
 impl HasLocalType for WindowTag {
-    type Local = dyn Trait;
+    type Local = dyn Window;
 }

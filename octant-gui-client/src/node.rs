@@ -3,36 +3,37 @@ use std::sync::Arc;
 
 use atomic_refcell::AtomicRefCell;
 use by_address::ByAddress;
-use web_sys::Node;
 
 use octant_gui_core::{NodeMethod, NodeTag};
 use octant_gui_core::HandleId;
 use octant_object::define_class;
 
 use crate::{HasLocalType, node, object, peer, Runtime};
+use crate::object::{Object, ObjectValue};
+use crate::peer::ArcPeer;
 
 struct State {
-    children: HashSet<ByAddress<Arc<dyn Trait>>>,
+    children: HashSet<ByAddress<ArcNode>>,
 }
 
 define_class! {
-    pub class extends object {
-        node: Node,
+    pub class Node extends Object {
+        node: web_sys::Node,
         state: AtomicRefCell<State>,
     }
 }
 
-impl Value {
-    pub fn new(handle: HandleId, node: Node) -> Self {
-        Value {
-            parent: object::Value::new(handle, node.clone().into()),
+impl NodeValue {
+    pub fn new(handle: HandleId, node: web_sys::Node) -> Self {
+        NodeValue {
+            parent: ObjectValue::new(handle, node.clone().into()),
             node,
             state: AtomicRefCell::new(State {
                 children: HashSet::new(),
             }),
         }
     }
-    pub fn children(&self) -> Vec<Arc<dyn node::Trait>> {
+    pub fn children(&self) -> Vec<ArcNode> {
         self.state
             .borrow_mut()
             .children
@@ -40,18 +41,18 @@ impl Value {
             .map(|x| x.0.clone())
             .collect()
     }
-    pub fn native(&self) -> &Node {
+    pub fn native(&self) -> &web_sys::Node {
         &self.node
     }
 }
 
-impl dyn Trait {
+impl dyn Node {
     pub fn invoke_with(
         &self,
         runtime: &Arc<Runtime>,
         method: &NodeMethod,
         _handle: HandleId,
-    ) -> Option<Arc<dyn peer::Trait>> {
+    ) -> Option<ArcPeer> {
         match method {
             NodeMethod::AppendChild(node) => {
                 let node = runtime.handle(*node);
@@ -80,5 +81,5 @@ impl dyn Trait {
 }
 
 impl HasLocalType for NodeTag {
-    type Local = dyn Trait;
+    type Local = dyn Node;
 }

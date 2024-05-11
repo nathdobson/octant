@@ -11,29 +11,31 @@ use crate::{
     runtime::{HasLocalType, HasTypedHandle}
     ,
 };
+use crate::handle::HandleValue;
+use crate::object::{Object, ObjectValue};
 
 define_class! {
     #[derive(Debug)]
-    pub class extends object {
+    pub class Credential extends Object {
         data: Completable<CredentialData>,
     }
 }
 
-impl HasTypedHandle for Value {
+impl HasTypedHandle for CredentialValue {
     type TypeTag = CredentialTag;
 }
 impl HasLocalType for CredentialTag {
-    type Local = dyn Trait;
+    type Local = dyn Credential;
 }
 
-impl Value {
-    pub fn new(handle: handle::Value) -> Self {
-        Value {
-            parent: object::Value::new(handle),
+impl CredentialValue {
+    pub fn new(handle: HandleValue) -> Self {
+        CredentialValue {
+            parent: ObjectValue::new(handle),
             data: Completable::new(),
         }
     }
-    fn invoke(&self, method: CredentialMethod) -> handle::Value {
+    fn invoke(&self, method: CredentialMethod) -> HandleValue {
         (**self).invoke(Method::Credential(self.typed_handle(), method))
     }
     pub async fn materialize(&self) -> CredentialData {
@@ -43,7 +45,7 @@ impl Value {
     }
 }
 
-impl dyn Trait {
+impl dyn Credential {
     pub fn handle_event(&self, message: CredentialUpMessage) {
         match message {
             CredentialUpMessage::Materialize(x) => {

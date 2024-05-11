@@ -9,8 +9,8 @@ use url::Url;
 use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
     event_loop::Page,
-    Element, Node,
 };
+use octant_gui::element::ArcElement;
 use octant_server::{
     cookies::{CookieData, CookieRouter},
     session::{Session, SessionData},
@@ -42,7 +42,7 @@ impl ScoreHandler {
     }
     pub async fn handle_impl(
         self: &Arc<Self>,
-        page: Element,
+        page: ArcElement,
         session: Arc<Session>,
     ) -> anyhow::Result<()> {
         let d = session.global().window().document();

@@ -1,29 +1,33 @@
 use std::{marker::PhantomData, sync::Arc};
 
-use web_sys::Response;
-
-use octant_gui_core::{
-    HandleId,
-    ResponseMethod, ResponseTag, TypedHandle,
-};
+use octant_gui_core::{HandleId, ResponseMethod, ResponseTag, TypedHandle};
 use octant_object::define_class;
 
-use crate::{HasLocalType, object, peer, promise, Runtime};
+use crate::{
+    object,
+    object::Object,
+    peer,
+    peer::ArcPeer,
+    promise,
+    promise::{ArcPromise, PromiseValue},
+    HasLocalType, Runtime,
+};
+use crate::object::ObjectValue;
 
 define_class! {
-    pub class extends object {
-        response: Response,
+    pub class Response extends Object {
+        response: web_sys::Response,
     }
 }
 
-impl Value {
-    pub fn new(handle: HandleId, response: Response) -> Self {
-        Value {
-            parent: object::Value::new(handle, Clone::clone(&response).into()),
+impl ResponseValue {
+    pub fn new(handle: HandleId, response: web_sys::Response) -> Self {
+        ResponseValue {
+            parent: ObjectValue::new(handle, Clone::clone(&response).into()),
             response,
         }
     }
-    pub fn native(&self) -> &Response {
+    pub fn native(&self) -> &web_sys::Response {
         &self.response
     }
     pub fn handle(&self) -> TypedHandle<ResponseTag> {
@@ -31,19 +35,16 @@ impl Value {
     }
 }
 
-impl dyn Trait {
-    pub fn text(&self, handle: HandleId) -> Arc<dyn promise::Trait> {
-        Arc::new(promise::Value::new(
-            handle,
-            self.response.text().unwrap(),
-        ))
+impl dyn Response {
+    pub fn text(&self, handle: HandleId) -> ArcPromise {
+        Arc::new(PromiseValue::new(handle, self.response.text().unwrap()))
     }
     pub fn invoke_with(
         self: Arc<Self>,
         _runtime: &Arc<Runtime>,
         method: &ResponseMethod,
         handle_id: HandleId,
-    ) -> Option<Arc<dyn peer::Trait>> {
+    ) -> Option<ArcPeer> {
         match method {
             ResponseMethod::Text() => Some(self.text(handle_id)),
         }
@@ -51,5 +52,5 @@ impl dyn Trait {
 }
 
 impl HasLocalType for ResponseTag {
-    type Local = dyn Trait;
+    type Local = dyn Response;
 }

@@ -1,46 +1,45 @@
 use std::sync::OnceLock;
 
-use octant_gui_core::{
-    {NavigatorMethod, NavigatorTag}
-    ,
-    Method,
-};
-use octant_object::define_class;
-
 use crate::{
-    credentials_container, CredentialsContainer, handle, object,
-    runtime::HasTypedHandle,
+    credentials_container::{ArcCredentialsContainer, CredentialsContainer},
+    object::Object,
 };
+use octant_gui_core::{Method, NavigatorMethod, NavigatorTag};
+use octant_object::define_class;
+use crate::credentials_container::CredentialsContainerValue;
+use crate::handle::HandleValue;
+use crate::object::ObjectValue;
+use crate::runtime::HasTypedHandle;
 
 define_class! {
     #[derive(Debug)]
-    pub class extends object {
-        credentials:OnceLock<CredentialsContainer>,
+    pub class Navigator extends Object {
+        credentials:OnceLock<ArcCredentialsContainer>,
     }
 }
 
-impl HasTypedHandle for Value {
+impl HasTypedHandle for NavigatorValue {
     type TypeTag = NavigatorTag;
 }
 
-impl Value {
-    pub fn new(handle: handle::Value) -> Self {
-        Value {
-            parent: object::Value::new(handle),
+impl NavigatorValue {
+    pub fn new(handle: HandleValue) -> Self {
+        NavigatorValue {
+            parent: ObjectValue::new(handle),
             credentials: OnceLock::new(),
         }
     }
-    pub fn credentials(&self) -> &CredentialsContainer {
+    pub fn credentials(&self) -> &ArcCredentialsContainer {
         self.credentials.get_or_init(|| {
-            self.runtime().add(credentials_container::Value::new(
+            self.runtime().add(CredentialsContainerValue::new(
                 self.invoke(NavigatorMethod::Credentials),
             ))
         })
     }
 }
 
-impl Value {
-    fn invoke(&self, method: NavigatorMethod) -> handle::Value {
+impl NavigatorValue {
+    fn invoke(&self, method: NavigatorMethod) -> HandleValue {
         (**self).invoke(Method::Navigator(self.typed_handle(), method))
     }
 }
