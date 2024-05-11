@@ -1,12 +1,15 @@
+use anyhow::anyhow;
 use std::sync::Arc;
 
 use atomic_refcell::AtomicRefCell;
 use octant_account::SessionTable;
+use parking_lot::Mutex;
 use url::Url;
 
 use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
     event_loop::Page,
+    Element, Node,
 };
 use octant_server::{
     cookies::{CookieData, CookieRouter},
@@ -17,19 +20,58 @@ use octant_server::{
 pub struct ScoreHandler {
     pub cookie_router: Arc<CookieRouter>,
     pub session_table: Arc<SessionTable>,
+    pub guesses: Mutex<Vec<Guess>>,
 }
 
-#[derive(Default)]
-struct ScoreState {
-    count: usize,
+pub struct Guess {
+    email: String,
+    guess: String,
 }
 
-#[derive(Default)]
-struct ScoreSession {
-    state: AtomicRefCell<ScoreState>,
+impl ScoreHandler {
+    pub fn handle_form(&self, session: &Arc<Session>, guess: &str) -> anyhow::Result<()> {
+        let login = self
+            .session_table
+            .get(session)
+            .ok_or_else(|| anyhow!("not logged in"))?;
+        self.guesses.lock().push(Guess {
+            email: login.email.clone(),
+            guess: guess.to_string(),
+        });
+        Ok(())
+    }
+    pub async fn handle_impl(
+        self: &Arc<Self>,
+        page: Element,
+        session: Arc<Session>,
+    ) -> anyhow::Result<()> {
+        let d = session.global().window().document();
+        let input = d.create_input_element().attr("type", "text");
+        let form = d
+            .create_form_element()
+            .child(input.clone())
+            .child(d.create_element("br"))
+            .child(d.create_input_element().attr("type", "submit"))
+            .handler({
+                let this = self.clone();
+                let session = session.clone();
+                move || {
+                    this.handle_form(&session, &*input.input_value()).unwrap();
+                }
+            });
+        for guess in &*self.guesses.lock() {
+            page.append_child(
+                d.create_element("p")
+                    .child(d.create_text_node(&format!("{}: {}", guess.email, guess.guess))),
+            );
+        }
+        page.child(form);
+        self.cookie_router.update(&session).await?;
+        let user = self.session_table.get(&session);
+        log::info!("verified user = {:?}", user);
+        Ok(())
+    }
 }
-
-impl SessionData for ScoreSession {}
 
 impl Handler for ScoreHandler {
     fn prefix(&self) -> String {
@@ -38,33 +80,13 @@ impl Handler for ScoreHandler {
 
     fn handle(self: Arc<Self>, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
         let d = session.global().window().document();
-        let text = d.create_text_node(&format!("{:?}", url));
-        let input = d.create_input_element().attr("type", "text");
-        let form = d
-            .create_form_element()
-            .child(input.clone())
-            .child(d.create_element("br"))
-            .child(d.create_input_element().attr("type", "submit"))
-            .handler({
-                let session = session.clone();
-                let text = text.clone();
-                move || {
-                    let count = {
-                        let data = session.data::<ScoreSession>();
-                        let ref mut state = *data.state.borrow_mut();
-                        state.count += 1;
-                        state.count
-                    };
-                    text.set_node_value(Some(format!("count = {}", count)));
-                }
-            });
-        let page = d.create_element("div").child(text).child(form);
+        let page = d.create_element("div");
+
         session.global().runtime().spawner().spawn({
             let session = session.clone();
+            let page = page.clone();
             async move {
-                self.cookie_router.update(&session).await?;
-                let user = self.session_table.get(&session);
-                log::info!("verified user = {:?}", user);
+                self.handle_impl(page, session.clone()).await?;
                 Ok(())
             }
         });

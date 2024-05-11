@@ -19,3 +19,4 @@ js-sys = "0.3.69"
 log = "0.4.21"
 octant-account = {path="../octant-account"}
 octant-database = {path="../octant-database"}
+parking_lot = "0.12.2"

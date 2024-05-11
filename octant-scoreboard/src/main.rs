@@ -4,9 +4,14 @@
 #![allow(dead_code)]
 #![feature(arbitrary_self_types)]
 
-use std::{path::Path, sync::Arc, time::Duration};
+use std::{
+    path::Path,
+    sync::{Arc},
+    time::Duration,
+};
 
 use anyhow::Context;
+use parking_lot::Mutex;
 
 use octant_account::{
     login::LoginHandler, register::RegisterHandler, AccountDatabase, SessionTable,
@@ -47,6 +52,7 @@ async fn main() -> anyhow::Result<()> {
         server.add_handler(ScoreHandler {
             cookie_router: server.cookie_router().clone(),
             session_table: session_table.clone(),
+            guesses: Mutex::new(vec![]),
         });
         server.add_handler(RegisterHandler {
             forest: forest.clone(),
