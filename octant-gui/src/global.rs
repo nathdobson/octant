@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use octant_gui_core::{DownMessage, GlobalMethod, Method};
-use crate::{Runtime, window};
+
 use crate::credential_creation_options::{ArcCredentialCreationOptions, CredentialCreationOptionsValue};
 use crate::credential_request_options::{ArcCredentialRequestOptions, CredentialRequestOptionsValue};
 use crate::request::{ArcRequest, RequestValue};
 use crate::request_init::{ArcRequestInit, RequestInitValue};
-
+use crate::Runtime;
 use crate::runtime::HasTypedHandle;
-use crate::window::{ArcWindow, Window, WindowValue};
+use crate::window::{ArcWindow, WindowValue};
 
 pub struct Global {
     runtime: Arc<Runtime>,

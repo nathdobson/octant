@@ -1,7 +1,7 @@
 use octant_gui_core::HandleId;
 use octant_object::define_class;
 
-use crate::{element, element::Element};
+use crate::element::Element;
 use crate::element::ElementValue;
 
 define_class! {

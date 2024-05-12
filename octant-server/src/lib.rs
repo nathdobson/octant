@@ -11,8 +11,8 @@ use anyhow::anyhow;
 use clap::Parser;
 use cookie::Cookie;
 use futures::{
-    stream::{SplitSink, SplitStream, StreamExt},
     SinkExt,
+    stream::{SplitSink, SplitStream, StreamExt},
 };
 use itertools::Itertools;
 use parking_lot::Mutex;
@@ -20,20 +20,20 @@ use tokio::{sync::mpsc, try_join};
 use url::Url;
 use uuid::Uuid;
 use warp::{
-    ws::{Message, WebSocket},
-    Filter, Reply,
+    Filter,
+    Reply, ws::{Message, WebSocket},
 };
 use weak_table::WeakValueHashMap;
 
-use crate::cookies::CookieRouter;
 use octant_executor::Pool;
 use octant_gui::{
     event_loop::{Application, EventLoop, Page},
-    sink::BufferedDownMessageSink,
-    Global, Runtime,
+    Global,
+    Runtime, sink::BufferedDownMessageSink,
 };
 use octant_gui_core::{DownMessageList, UpMessageList};
 
+use crate::cookies::CookieRouter;
 use crate::session::Session;
 
 pub mod cookies;

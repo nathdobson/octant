@@ -1,3 +1,6 @@
+use octant_gui_core::{Method, ResponseMethod, ResponseTag};
+use octant_object::define_class;
+
 use crate::{
     any_value::ArcAnyValue,
     handle::HandleValue,
@@ -5,8 +8,6 @@ use crate::{
     promise::{ArcPromise, PromiseValue},
     runtime::{HasLocalType, HasTypedHandle},
 };
-use octant_gui_core::{Method, ResponseMethod, ResponseTag};
-use octant_object::define_class;
 
 define_class! {
     #[derive(Debug)]

@@ -1,11 +1,11 @@
-use anyhow::anyhow;
 use std::sync::Arc;
 
+use anyhow::anyhow;
 use atomic_refcell::AtomicRefCell;
-use octant_account::SessionTable;
 use parking_lot::Mutex;
 use url::Url;
 
+use octant_account::SessionTable;
 use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
     event_loop::Page,
@@ -13,8 +13,8 @@ use octant_gui::{
 use octant_gui::element::ArcElement;
 use octant_server::{
     cookies::{CookieData, CookieRouter},
-    session::{Session, SessionData},
     Handler,
+    session::{Session, SessionData},
 };
 
 pub struct ScoreHandler {

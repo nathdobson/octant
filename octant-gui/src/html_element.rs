@@ -1,9 +1,8 @@
 use octant_object::define_class;
 
 use crate::{
-    element,
-    element::{Element, ElementValue},
-    handle,
+    element::{Element, ElementValue}
+    ,
     handle::HandleValue,
 };
 

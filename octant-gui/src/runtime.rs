@@ -13,7 +13,6 @@ use octant_executor::Spawn;
 use octant_gui_core::{DownMessage, HandleId, Method, TypedHandle, TypeTag};
 use octant_object::cast::Cast;
 
-use crate::handle;
 use crate::handle::{Handle, HandleValue};
 
 struct State {

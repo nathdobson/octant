@@ -4,11 +4,11 @@
 
 use std::{any::Any, rc::Rc};
 
+use octant_object::{base, base::Base, define_class};
 use octant_object::cast::Cast;
 
 trait Parent = Send + Sync + Any;
 
-use octant_object::{base, base::Base, define_class};
 trait SendSync = Send + Sync;
 
 define_class! {

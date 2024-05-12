@@ -1,11 +1,12 @@
 use std::sync::OnceLock;
 
-use crate::{
-    credentials_container::{ArcCredentialsContainer, CredentialsContainer},
-    object::Object,
-};
 use octant_gui_core::{Method, NavigatorMethod, NavigatorTag};
 use octant_object::define_class;
+
+use crate::{
+    credentials_container::ArcCredentialsContainer,
+    object::Object,
+};
 use crate::credentials_container::CredentialsContainerValue;
 use crate::handle::HandleValue;
 use crate::object::ObjectValue;

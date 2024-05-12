@@ -1,8 +1,8 @@
 use std::sync::OnceLock;
 
 use octant_gui_core::{Method, WindowMethod, WindowTag};
-use octant_gui_core::WindowMethod::Navigator;
 use octant_object::define_class;
+
 use crate::document::{ArcDocument, DocumentValue};
 use crate::handle::HandleValue;
 use crate::navigator::{ArcNavigator, NavigatorValue};

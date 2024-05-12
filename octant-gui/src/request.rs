@@ -2,7 +2,6 @@ use octant_gui_core::{Method, RequestMethod, RequestTag};
 use octant_object::define_class;
 
 use crate::{
-    handle, object,
     object::Object,
     runtime::{HasLocalType, HasTypedHandle},
 };

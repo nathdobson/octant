@@ -2,7 +2,6 @@ use std::any::{Any, TypeId};
 use std::sync::Arc;
 
 use memo_map::MemoMap;
-use uuid::Uuid;
 
 use octant_gui::Global;
 

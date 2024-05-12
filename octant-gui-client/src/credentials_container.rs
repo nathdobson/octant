@@ -5,7 +5,7 @@ use web_sys::console::log_1;
 use octant_gui_core::{CredentialsContainerMethod, CredentialsContainerTag, HandleId};
 use octant_object::define_class;
 
-use crate::{HasLocalType, object, peer, promise, Runtime};
+use crate::{HasLocalType, Runtime};
 use crate::object::{Object, ObjectValue};
 use crate::peer::ArcPeer;
 use crate::promise::PromiseValue;

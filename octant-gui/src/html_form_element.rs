@@ -9,7 +9,6 @@ use octant_gui_core::{
 use octant_gui_core::Method;
 use octant_object::define_class;
 
-use crate::{handle, html_element};
 use crate::handle::HandleValue;
 use crate::html_element::{HtmlElement, HtmlElementValue};
 use crate::runtime::{HasLocalType, HasTypedHandle};

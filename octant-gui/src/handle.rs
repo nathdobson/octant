@@ -6,7 +6,6 @@ use octant_gui_core::{HandleId, Method};
 use octant_object::{base, define_class};
 use octant_object::base::Base;
 
-use crate::handle;
 use crate::runtime::Runtime;
 
 pub trait ParentTrait = Send + Sync + Any + Debug;

@@ -6,7 +6,6 @@ use octant_gui_core::{
 use octant_object::define_class;
 
 use crate::{
-    handle, object,
     promise::Completable,
     runtime::{HasLocalType, HasTypedHandle}
     ,

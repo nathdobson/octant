@@ -5,9 +5,9 @@ use octant_gui_core::{
 };
 use octant_object::define_class;
 
-use crate::{handle, object, runtime::HasTypedHandle};
 use crate::handle::HandleValue;
 use crate::object::{Object, ObjectValue};
+use crate::runtime::HasTypedHandle;
 
 define_class! {
     #[derive(Debug)]

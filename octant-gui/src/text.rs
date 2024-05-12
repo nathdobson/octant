@@ -1,6 +1,5 @@
 use octant_object::define_class;
 
-use crate::{handle, node};
 use crate::handle::HandleValue;
 use crate::node::{Node, NodeValue};
 

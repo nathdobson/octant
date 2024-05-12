@@ -4,9 +4,9 @@ use futures::StreamExt;
 
 use octant_gui_core::UpMessage;
 use octant_panic::catch_error;
-use crate::{Global, UpMessageStream};
-use crate::node::{ArcNode, Node};
 
+use crate::{Global, UpMessageStream};
+use crate::node::ArcNode;
 
 pub struct EventLoop {
     global: Arc<Global>,

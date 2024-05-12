@@ -10,7 +10,7 @@ use octant_gui_core::{
 use octant_object::{cast::Cast, define_class};
 
 use crate::{
-    html_element, html_element::HtmlElement, html_input_element, peer, HasLocalType, Runtime,
+    HasLocalType, html_element, html_element::HtmlElement, html_input_element, peer, Runtime,
 };
 use crate::html_element::HtmlElementValue;
 use crate::html_input_element::HtmlInputElement;

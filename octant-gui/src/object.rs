@@ -1,6 +1,5 @@
 use octant_object::define_class;
 
-use crate::{handle, js_value};
 use crate::handle::HandleValue;
 use crate::js_value::{JsValue, JsValueValue};
 

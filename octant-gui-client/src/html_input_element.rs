@@ -4,11 +4,10 @@ use octant_gui_core::{HandleId, HtmlInputElementMethod, HtmlInputElementTag, Typ
 use octant_object::define_class;
 
 use crate::{
-    html_element,
+    HasLocalType
+    ,
     html_element::{HtmlElement, HtmlElementValue},
-    peer,
-    peer::ArcPeer,
-    HasLocalType, Runtime,
+    peer::ArcPeer, Runtime,
 };
 
 define_class! {

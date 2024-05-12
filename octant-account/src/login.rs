@@ -11,9 +11,9 @@ use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
     event_loop::Page,
 };
-use octant_server::{cookies::CookieRouter, session::Session, Handler};
+use octant_server::{cookies::CookieRouter, Handler, session::Session};
 
-use crate::{build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, AccountDatabase, SessionTable, VerifiedLogin, SESSION_COOKIE};
+use crate::{AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, SESSION_COOKIE, SessionTable, VerifiedLogin};
 
 pub struct LoginHandler {
     pub forest: Arc<RwLock<Forest>>,

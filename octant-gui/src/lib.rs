@@ -5,9 +5,9 @@
 #![feature(trait_upcasting)]
 #![feature(ptr_metadata)]
 
-use std::{pin::Pin, sync::Arc};
+use std::pin::Pin;
 
-use futures::{Stream};
+use futures::Stream;
 
 pub use global::Global;
 use octant_gui_core::UpMessageList;

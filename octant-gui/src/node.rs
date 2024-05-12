@@ -7,7 +7,6 @@ use octant_gui_core::{NodeMethod, NodeTag};
 use octant_gui_core::Method;
 use octant_object::define_class;
 
-use crate::{handle, object};
 use crate::handle::HandleValue;
 use crate::object::{Object, ObjectValue};
 use crate::runtime::HasTypedHandle;

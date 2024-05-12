@@ -1,11 +1,12 @@
 use parking_lot::Mutex;
 use tokio::sync::oneshot;
 
-use crate::object::{Object, ObjectValue};
 use octant_gui_core::{Error, Method, PromiseMethod, PromiseTag, PromiseUpMessage};
 use octant_object::define_class;
+
 use crate::any_value::{AnyValueValue, ArcAnyValue};
 use crate::handle::HandleValue;
+use crate::object::{Object, ObjectValue};
 use crate::runtime::{HasLocalType, HasTypedHandle};
 
 define_class! {

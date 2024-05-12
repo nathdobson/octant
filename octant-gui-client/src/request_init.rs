@@ -4,9 +4,8 @@ use octant_gui_core::{HandleId, RequestInitMethod, RequestInitTag, TypedHandle};
 use octant_object::define_class;
 
 use crate::{
-    object,
-    object::{Object, ObjectValue},
-    peer, HasLocalType, Runtime,
+    HasLocalType
+    , object::{Object, ObjectValue}, Runtime,
 };
 use crate::peer::ArcPeer;
 

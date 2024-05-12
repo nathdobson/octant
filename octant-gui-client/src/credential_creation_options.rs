@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use octant_gui_core::{
     CredentialCreationOptionsMethod, CredentialCreationOptionsTag, HandleId,
     PublicKeyCredentialCreationOptions,
@@ -7,10 +5,10 @@ use octant_gui_core::{
 use octant_object::define_class;
 
 use crate::{
-    export::Export,
-    object,
-    object::{Object, ObjectValue},
-    peer, HasLocalType,
+    export::Export
+    ,
+    HasLocalType
+    , object::{Object, ObjectValue},
 };
 use crate::peer::ArcPeer;
 

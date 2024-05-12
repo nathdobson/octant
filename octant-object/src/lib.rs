@@ -4,19 +4,39 @@
 #![feature(coerce_unsized)]
 #![feature(unsize)]
 #![feature(allocator_api)]
+#![feature(const_type_id)]
+
+use std::{
+    any::Any
+    ,
+    marker::Unsize,
+    ptr::{DynMetadata, Pointee},
+};
 
 pub mod base;
 pub mod cast;
 pub mod deref_ranked;
 pub mod rank;
-pub mod stackbox;
+// pub mod stackbox;
+pub mod inlinebox;
+// mod raw_trait_object;
+pub mod smart_pointer;
+mod repr;
 
 pub mod reexports {
     pub use paste;
 }
 
-pub trait Class {
-    type Value;
+pub trait Class: Any + Unsize<dyn Any> + Pointee<Metadata = DynMetadata<Self>> {
+    type Value: ClassValue<Dyn = Self>;
+}
+
+pub trait Subclass: Class + Unsize<Self::Parent> {
+    type Parent: ?Sized + Class;
+}
+
+pub trait ClassValue: Sized + Any + Unsize<Self::Dyn> {
+    type Dyn: ?Sized + Class<Value = Self>;
 }
 
 #[macro_export]
@@ -40,39 +60,11 @@ macro_rules! define_class {
             impl $crate::Class for dyn $class{
                 type Value = [< $class Value >];
             }
-            impl $crate::cast::CastValue for [< $class Value >] {
-                fn into_leaf_rc<'a>(
-                    self: ::std::rc::Rc<Self>,
-                    result: &'a mut ::std::mem::MaybeUninit<$crate::stackbox::TraitObjectStorage>,
-                ) -> $crate::stackbox::StackBox<'a, dyn $crate::cast::CastObject>{
-                    $crate::stackbox::StackBox::new(self as ::std::rc::Rc<dyn $class>, result)
-                }
-                fn into_leaf_arc<'a>(
-                    self: ::std::sync::Arc<Self>,
-                    result: &'a mut ::std::mem::MaybeUninit<$crate::stackbox::TraitObjectStorage>,
-                ) -> $crate::stackbox::StackBox<'a, dyn $crate::cast::CastObject>{
-                    $crate::stackbox::StackBox::new(self as ::std::sync::Arc<dyn $class>, result)
-                }
-                fn into_leaf_box<'a>(
-                    self: ::std::boxed::Box<Self>,
-                    result: &'a mut ::std::mem::MaybeUninit<$crate::stackbox::TraitObjectStorage>,
-                ) -> $crate::stackbox::StackBox<'a, dyn $crate::cast::CastObject>{
-                    $crate::stackbox::StackBox::new(self as ::std::boxed::Box<dyn $class>, result)
-                }
+            impl $crate::ClassValue for [< $class Value >]{
+                type Dyn = dyn $class;
             }
-            impl $crate::cast::CastTrait for dyn $class {
-                fn into_parent_object(
-                    &self,
-                ) -> for<'a> fn(
-                    this: $crate::stackbox::StackBox<'a, dyn $crate::cast::CastObject>,
-                ) -> ::std::option::Option<$crate::stackbox::StackBox<'a, dyn $crate::cast::CastObject>> {
-                    fn into_parent_object<'a>(
-                        this: $crate::stackbox::StackBox<'a, dyn $crate::cast::CastObject>,
-                    ) -> ::std::option::Option<$crate::stackbox::StackBox<'a, dyn $crate::cast::CastObject>> {
-                        Some($crate::cast::coerce_unsized::<dyn $class,dyn $parent>(this))
-                    }
-                    into_parent_object
-                }
+            impl $crate::Subclass for dyn $class {
+                type Parent = dyn $parent;
             }
             impl $crate::rank::Ranked for [< $class Value >]{
                 type Rank = $crate::rank::Succ<<<dyn $parent as $crate::Class>::Value as $crate::rank::Ranked>::Rank>;

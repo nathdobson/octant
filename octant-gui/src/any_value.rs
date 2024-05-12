@@ -2,11 +2,11 @@ use octant_gui_core::{
     AnyValueMethod, AnyValueTag, JsClass, Method,
 };
 use octant_object::define_class;
+
 use crate::credential::{ArcCredential, CredentialValue};
 use crate::handle::{Handle, HandleValue};
 use crate::response::{ArcResponse, ResponseValue};
 use crate::runtime::HasTypedHandle;
-
 
 define_class! {
     #[derive(Debug)]

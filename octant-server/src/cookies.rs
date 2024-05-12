@@ -1,11 +1,13 @@
-use crate::session::{Session, SessionData};
-use parking_lot::Mutex;
 use std::{
     collections::HashMap,
     sync::{Arc, Weak},
 };
+
+use parking_lot::Mutex;
 use uuid::Uuid;
 use weak_table::WeakValueHashMap;
+
+use crate::session::{Session, SessionData};
 
 pub struct CookieRouter {
     create_cookies: Mutex<HashMap<Uuid, String>>,

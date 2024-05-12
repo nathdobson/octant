@@ -2,17 +2,17 @@
 #![feature(never_type)]
 
 use std::{
-    future::{poll_fn, Future},
+    future::{Future, poll_fn},
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
-    task::{ready, Context, Poll, Wake, Waker},
+    task::{Context, Poll, ready, Wake, Waker},
 };
 
 use futures::future::BoxFuture;
 use parking_lot::Mutex;
-use tokio::{sync::mpsc};
+use tokio::sync::mpsc;
 
 struct Task {
     woken: AtomicBool,
@@ -144,8 +144,10 @@ impl Spawn {
 mod test {
     use std::mem;
     use std::task::Poll;
+
     use parking_lot::Mutex;
     use tokio::task::yield_now;
+
     use crate::Pool;
 
     #[tokio::test]

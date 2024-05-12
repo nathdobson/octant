@@ -4,14 +4,13 @@ use std::sync::OnceLock;
 use octant_gui_core::{DocumentMethod, DocumentTag};
 use octant_gui_core::Method;
 use octant_object::define_class;
+
 use crate::element::{ArcElement, ElementValue};
-use crate::handle;
 use crate::handle::HandleValue;
-use crate::html_element::{ArcHtmlElement, HtmlElement, HtmlElementValue};
+use crate::html_element::{ArcHtmlElement, HtmlElementValue};
 use crate::html_form_element::{ArcHtmlFormElement, HtmlFormElementValue};
 use crate::html_input_element::{ArcHtmlInputElement, HtmlInputElementValue};
 use crate::node::{Node, NodeValue};
-
 use crate::runtime::HasTypedHandle;
 use crate::text::{ArcText, TextValue};
 
