@@ -11,7 +11,7 @@ define_class! {
 impl PeerValue {
     pub fn new(handle: HandleId) -> Self {
         PeerValue {
-            parent: base::Value::new(),
+            parent: base::BaseValue::new(),
             handle,
         }
     }

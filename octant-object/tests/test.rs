@@ -4,8 +4,12 @@
 
 use std::{any::Any, rc::Rc};
 
-use octant_object::{base, base::Base, define_class};
-use octant_object::cast::Cast;
+use octant_object::{
+    base,
+    base::Base,
+    define_class,
+};
+use octant_object::cast::downcast_object;
 
 trait Parent = Send + Sync + Any;
 
@@ -20,7 +24,7 @@ define_class! {
 impl AValue {
     pub fn new(x: u32) -> AValue {
         AValue {
-            parent: base::Value::new(),
+            parent: base::BaseValue::new(),
             x,
         }
     }
@@ -124,18 +128,19 @@ fn test() {
 fn test_downcast() {
     {
         let x: Rc<dyn A> = Rc::new(DValue::new(1, 2, 3, 4));
-        let x: Rc<dyn A> = x.downcast_trait().unwrap();
+        let x: Rc<dyn A> = downcast_object(x).unwrap();
     }
     {
         let x: Rc<dyn A> = Rc::new(DValue::new(1, 2, 3, 4));
-        let x: Rc<dyn B> = x.downcast_trait().unwrap();
+        let x: Rc<dyn B> = downcast_object(x).unwrap();
     }
     {
         let x: Rc<dyn A> = Rc::new(DValue::new(1, 2, 3, 4));
-        let x: Rc<dyn C> = x.downcast_trait().unwrap();
+        let x: Rc<dyn C> = downcast_object(x).unwrap();
     }
     {
         let x: Rc<dyn A> = Rc::new(DValue::new(1, 2, 3, 4));
-        let x: Rc<dyn D> = x.downcast_trait().unwrap();
+        let x: Rc<dyn D> = downcast_object(x).unwrap();
     }
 }
+

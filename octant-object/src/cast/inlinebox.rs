@@ -1,4 +1,4 @@
-use crate::repr::HasRepr;
+use crate::cast::repr::HasRepr;
 use std::{
     any::Any,
     fmt::{Debug, Formatter},
@@ -10,21 +10,31 @@ use std::{
     ptr::{null, Pointee},
 };
 
-pub struct InlineBox<T: ?Sized, S> {
-    value: MaybeUninit<S>,
+/// A `Box<T>` that allocates memory from a field within itself. This requires the caller to specify
+/// a representation type `R` with the same layout as the stored value.
+pub struct InlineBox<T: ?Sized, R> {
+    value: MaybeUninit<R>,
     metadata: <T as Pointee>::Metadata,
     phantom: PhantomData<T>,
 }
 
-impl<T: ?Sized, S> InlineBox<T, S> {
+impl<T: ?Sized, R> InlineBox<T, R> {
+    /// Construct a new `InlineBox` containing the specified value. This statically verifies that
+    /// the value has the same layout as the representation.
+    ///
+    /// ```
+    /// use octant_object::cast::inlinebox::InlineBox;
+    /// let foo: InlineBox<i32, u32> = InlineBox::new(42);
+    /// assert_eq!(*foo, 42);
+    /// ```
     pub fn new(value: T) -> Self
     where
-        T: Sized + HasRepr<Repr = S>,
+        T: Sized + HasRepr<Repr = R>,
     {
         let _: () = T::VALID_SIZE;
         let _: () = T::VALID_ALIGN;
         unsafe {
-            let value2 = mem::transmute_copy::<T, MaybeUninit<S>>(&value);
+            let value2 = mem::transmute_copy::<T, MaybeUninit<R>>(&value);
             mem::forget(value);
             InlineBox {
                 value: value2,
@@ -33,12 +43,27 @@ impl<T: ?Sized, S> InlineBox<T, S> {
             }
         }
     }
-    pub fn unsize<U: ?Sized>(self) -> InlineBox<U, S>
+    /// Perform an [`unsized coercion`](https://doc.rust-lang.org/reference/type-coercions.html#unsized-coercions):
+    /// * Convert an array `InlineBox<[Elem; N]>` to a slice `InlineBox<[Elem]>`.
+    /// * Convert a concrete type `InlineBox<Concrete>` to a trait object `InlineBox<dyn Trait>`.
+    /// * Upcast a trait object `InlineBox<dyn ChildTrait>` to a trait object `InlineBox<dyn ParentTrait>`.
+    /// ```
+    /// # use std::fmt::Debug;
+    /// use octant_object::cast::inlinebox::InlineBox;
+    /// let foo: InlineBox<i32, u32> = InlineBox::new(42);
+    /// let foo: InlineBox<dyn Debug, u32> = foo.unsize();
+    /// assert_eq!(format!("{:?}", foo), "42");
+    /// ```
+    ///
+    /// When using other pointer types, unsized coercions are implicit: Due to limitation in the
+    /// behavior of the [::std::ops::CoerceUnsized] trait, unsized coercions of `InlineBox` must be
+    /// explicit.   
+    pub fn unsize<U: ?Sized>(self) -> InlineBox<U, R>
     where
         T: Unsize<U>,
     {
         unsafe {
-            let r: *const MaybeUninit<S> = &self.value;
+            let r: *const MaybeUninit<R> = &self.value;
             let metadata = self.metadata;
             let value = ptr::read(r);
             mem::forget(self);
@@ -52,6 +77,7 @@ impl<T: ?Sized, S> InlineBox<T, S> {
             }
         }
     }
+    /// Return the wrapped value
     pub fn into_inner(mut self) -> T
     where
         T: Sized,
@@ -64,8 +90,9 @@ impl<T: ?Sized, S> InlineBox<T, S> {
     }
 }
 
-impl<S> InlineBox<dyn Any, S> {
-    pub fn downcast<T: Any>(this: Self) -> Result<InlineBox<T, S>, Self> {
+impl<R> InlineBox<dyn Any, R> {
+    /// Attempt to downcast to a concrete type.
+    pub fn downcast<T: Any>(this: Self) -> Result<InlineBox<T, R>, Self> {
         unsafe {
             let r = &*this;
             if r.is::<T>() {
@@ -83,14 +110,14 @@ impl<S> InlineBox<dyn Any, S> {
     }
 }
 
-impl<T: ?Sized, S> Deref for InlineBox<T, S> {
+impl<T: ?Sized, R> Deref for InlineBox<T, R> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         unsafe { &*std::ptr::from_raw_parts::<T>(self.value.as_ptr() as *const (), self.metadata) }
     }
 }
 
-impl<T: ?Sized, S> DerefMut for InlineBox<T, S> {
+impl<T: ?Sized, R> DerefMut for InlineBox<T, R> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe {
             &mut *std::ptr::from_raw_parts_mut::<T>(
@@ -101,7 +128,7 @@ impl<T: ?Sized, S> DerefMut for InlineBox<T, S> {
     }
 }
 
-impl<T: ?Sized, S> Drop for InlineBox<T, S> {
+impl<T: ?Sized, R> Drop for InlineBox<T, R> {
     fn drop(&mut self) {
         unsafe {
             let ptr: *mut T = self.deref_mut();
@@ -110,7 +137,7 @@ impl<T: ?Sized, S> Drop for InlineBox<T, S> {
     }
 }
 
-impl<T: ?Sized + Debug, S> Debug for InlineBox<T, S> {
+impl<T: ?Sized + Debug, R> Debug for InlineBox<T, R> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(&**self, f)
     }

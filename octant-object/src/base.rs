@@ -1,33 +1,35 @@
+//! The base class that all other classes extend.
+
 use std::any::Any;
 
 use crate::{
     cast::{BoxCastObject, CastTrait, CastValue},
-    rank::{Ranked, Zero},
-    Class, ClassValue,
+    class::{Class, ClassValue},
 };
+use crate::class::{Ranked, Zero};
 
 pub trait Base: 'static + Any + CastValue {
-    fn value(&self) -> &Value;
+    fn value(&self) -> &BaseValue;
 }
 
 impl Class for dyn Base {
-    type Value = Value;
+    type Value = BaseValue;
 }
 
-impl ClassValue for Value {
+impl ClassValue for BaseValue {
     type Dyn = dyn Base;
 }
 
 #[derive(Debug)]
-pub struct Value {}
+pub struct BaseValue {}
 
-impl Value {
+impl BaseValue {
     pub fn new() -> Self {
-        Value {}
+        BaseValue {}
     }
 }
 
-impl Ranked for Value {
+impl Ranked for BaseValue {
     type Rank = Zero;
 }
 
@@ -46,8 +48,8 @@ impl Ranked for Value {
 //     // }
 // }
 
-impl Base for Value {
-    fn value(&self) -> &Value {
+impl Base for BaseValue {
+    fn value(&self) -> &BaseValue {
         self
     }
 }
@@ -62,14 +64,20 @@ where
     <T as ::std::ops::Deref>::Target: Base,
     T: CastValue,
 {
-    fn value(&self) -> &Value {
+    fn value(&self) -> &BaseValue {
         T::deref(self).value()
     }
 }
 
 impl ::std::ops::Deref for dyn Base {
-    type Target = Value;
+    type Target = BaseValue;
     fn deref(&self) -> &Self::Target {
         self.value()
+    }
+}
+
+impl Default for BaseValue {
+    fn default() -> Self {
+        BaseValue {}
     }
 }

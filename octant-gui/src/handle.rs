@@ -32,7 +32,7 @@ impl Drop for HandleValue {
 impl HandleValue {
     pub fn new(root: Arc<Runtime>, handle: HandleId) -> Self {
         HandleValue {
-            parent: base::Value::new(),
+            parent: base::BaseValue::new(),
             root,
             id: handle,
         }
