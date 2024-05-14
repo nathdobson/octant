@@ -156,7 +156,8 @@ macro_rules! define_class {
                 $($field : $type,)*
             }
             pub trait $class: $parent $(+ $interface)? {
-                fn value(&self) -> &[< $class Value >];
+                fn [< $class:snake >](&self) -> &[< $class Value >];
+                fn [< $class:snake _mut >](&mut self) -> &mut [< $class Value >];
             }
             pub type [< Arc $class >] = ::std::sync::Arc<dyn $class>;
             impl $crate::class::Class for dyn $class{
@@ -177,15 +178,24 @@ macro_rules! define_class {
                 T: $crate::class::Ranked,
                 T: $crate::class::DerefRanked<T::Rank, <[< $class Value >] as $crate::class::Ranked>::Rank, TargetRanked = [< $class Value >]>,
             {
-                fn value(&self) -> &[< $class Value >]{
+                fn [< $class:snake >](&self) -> &[< $class Value >]{
                     self.deref_ranked()
+                }
+                fn [< $class:snake _mut >](&mut self) -> &mut [< $class Value >]{
+                    self.deref_mut_ranked()
                 }
             }
 
             impl ::std::ops::Deref for dyn $class {
                 type Target = [< $class Value >];
                 fn deref(&self) -> &Self::Target {
-                    $class::value(self)
+                    $class::[< $class:snake >](self)
+                }
+            }
+
+            impl ::std::ops::DerefMut for dyn $class {
+                fn deref_mut(&mut self) -> &mut Self::Target {
+                    $class::[< $class:snake _mut >](self)
                 }
             }
 
@@ -193,6 +203,11 @@ macro_rules! define_class {
                 type Target = <dyn $parent as $crate::class::Class>::Value;
                 fn deref(&self) -> &Self::Target {
                     &self.parent
+                }
+            }
+            impl ::std::ops::DerefMut for [< $class Value >] {
+                fn deref_mut(&mut self) -> &mut Self::Target {
+                    &mut self.parent
                 }
             }
         }

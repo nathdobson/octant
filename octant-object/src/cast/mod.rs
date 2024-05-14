@@ -9,15 +9,15 @@
 //! # use octant_object::base::Base;
 //! define_class! {
 //!     #[derive(Default)]
-//!     pub class Abstract extends Base {}
+//!     pub class AbstractBase extends Base {}
 //! }
 //! define_class! {
 //!     #[derive(Default)]
-//!     pub class Concrete extends Abstract {}
+//!     pub class Concrete extends AbstractBase {}
 //! }
 //! define_class! {
 //!     #[derive(Default)]
-//!     pub class Other extends Abstract {}
+//!     pub class Other extends AbstractBase {}
 //! }
 //!
 //! use octant_object::cast::{downcast_object};
@@ -29,7 +29,7 @@
 //! {
 //!     // Cast to a parent class
 //!     let base: Arc<dyn Base> = Arc::new(ConcreteValue::default());
-//!     let abs: Arc<dyn Abstract> = downcast_object(base).ok().unwrap();
+//!     let abs: Arc<dyn AbstractBase> = downcast_object(base).ok().unwrap();
 //! }
 //! {
 //!     // Fail to make an illegal cast, but recover the original pointer.

@@ -11,11 +11,11 @@ pub trait ElementExt {
 
 impl<T: ?Sized + Element> ElementExt for Arc<T> {
     fn child(self, child: ArcNode) -> Self {
-        Element::value(&*self).append_child(child);
+        self.element().append_child(child);
         self
     }
     fn attr(self, name: &str, value: &str) -> Self {
-        Element::value(&*self).set_attribute(name, value);
+        self.element().set_attribute(name, value);
         self
     }
 }
@@ -26,7 +26,7 @@ pub trait HtmlFormElementExt {
 
 impl<T: ?Sized + HtmlFormElement> HtmlFormElementExt for Arc<T> {
     fn handler(self, handler: impl 'static + Send + Sync + Fn()) -> Self {
-        HtmlFormElement::value(&*self).set_handler(handler);
+        self.html_form_element().set_handler(handler);
         self
     }
 }

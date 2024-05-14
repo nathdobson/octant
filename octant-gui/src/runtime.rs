@@ -71,7 +71,7 @@ impl Runtime {
         self.state
             .borrow_mut()
             .handles
-            .insert(Handle::value(&*result).id(), result.clone());
+            .insert(result.handle().id(), result.clone());
         result
     }
     pub fn handle<T: HasLocalType>(&self, key: TypedHandle<T>) -> Arc<T::Local> {
@@ -90,7 +90,7 @@ impl Runtime {
 pub trait HasTypedHandle: Handle {
     type TypeTag: TypeTag;
     fn typed_handle(&self) -> TypedHandle<Self::TypeTag> {
-        TypedHandle(Handle::value(self).id(), PhantomData)
+        TypedHandle(self.handle().id(), PhantomData)
     }
 }
 
