@@ -33,21 +33,6 @@ impl Ranked for BaseValue {
     type Rank = Zero;
 }
 
-//
-// impl CastTrait for dyn Base {
-//     // fn into_parent_object(
-//     //     &self,
-//     // ) -> for<'a> fn(this: StackBox<'a, dyn CastObject>) -> Option<StackBox<'a, dyn CastObject>>
-//     // {
-//     //     fn into_parent_object_impl<'a>(
-//     //         _this: StackBox<'a, dyn CastObject>,
-//     //     ) -> Option<StackBox<'a, dyn crate::cast::CastObject>> {
-//     //         None
-//     //     }
-//     //     into_parent_object_impl
-//     // }
-// }
-
 impl Base for BaseValue {
     fn value(&self) -> &BaseValue {
         self

@@ -128,19 +128,19 @@ fn test() {
 fn test_downcast() {
     {
         let x: Rc<dyn A> = Rc::new(DValue::new(1, 2, 3, 4));
-        let x: Rc<dyn A> = downcast_object(x).unwrap();
+        let x: Rc<dyn A> = downcast_object(x).ok().unwrap();
     }
     {
         let x: Rc<dyn A> = Rc::new(DValue::new(1, 2, 3, 4));
-        let x: Rc<dyn B> = downcast_object(x).unwrap();
+        let x: Rc<dyn B> = downcast_object(x).ok().unwrap();
     }
     {
         let x: Rc<dyn A> = Rc::new(DValue::new(1, 2, 3, 4));
-        let x: Rc<dyn C> = downcast_object(x).unwrap();
+        let x: Rc<dyn C> = downcast_object(x).ok().unwrap();
     }
     {
         let x: Rc<dyn A> = Rc::new(DValue::new(1, 2, 3, 4));
-        let x: Rc<dyn D> = downcast_object(x).unwrap();
+        let x: Rc<dyn D> = downcast_object(x).ok().unwrap();
     }
 }
 

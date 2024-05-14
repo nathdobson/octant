@@ -54,8 +54,9 @@ impl dyn HtmlFormElement {
                         let mut commands: Vec<UpMessage> = vec![];
                         let children = form.children();
                         for child in children {
-                            let input: Option<Arc<dyn HtmlInputElement>> = downcast_object(child);
-                            if let Some(input) = input {
+                            let input: Result<Arc<dyn HtmlInputElement>, _> =
+                                downcast_object(child);
+                            if let Ok(input) = input {
                                 input.native().set_attribute("disabled", "true").unwrap();
                                 commands.push(UpMessage::HtmlInputElement(
                                     input.handle(),

@@ -134,22 +134,6 @@ impl<T: ?Sized> SmartPointer<T> {
             }
         }
     }
-    pub(crate) fn try_drop(mut self) {
-        self = match self.into_smart_pointer::<Arc<_>>() {
-            Ok(_) => return,
-            Err(x) => x,
-        };
-        self = match self.into_smart_pointer::<Rc<_>>() {
-            Ok(_) => return,
-            Err(x) => x,
-        };
-        self = match self.into_smart_pointer::<Box<_>>() {
-            Ok(_) => return,
-            Err(x) => x,
-        };
-        mem::forget(self);
-        panic!("Cannot drop");
-    }
 }
 
 impl SmartPointer<dyn Any> {

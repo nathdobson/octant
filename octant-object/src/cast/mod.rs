@@ -15,27 +15,47 @@
 //!     #[derive(Default)]
 //!     pub class Concrete extends Abstract {}
 //! }
+//! define_class! {
+//!     #[derive(Default)]
+//!     pub class Other extends Abstract {}
+//! }
 //!
 //! use octant_object::cast::{downcast_object};
 //! {
+//!     // Cast to the concrete class
 //!     let base: Arc<dyn Base> = Arc::new(ConcreteValue::default());
-//!     let conc: Arc<dyn Concrete> = downcast_object(base).unwrap();
+//!     let conc: Arc<dyn Concrete> = downcast_object(base).ok().unwrap();
 //! }
 //! {
+//!     // Cast to a parent class
 //!     let base: Arc<dyn Base> = Arc::new(ConcreteValue::default());
-//!     let abs: Arc<dyn Abstract> = downcast_object(base).unwrap();
-//!     let conc: Arc<dyn Concrete> = downcast_object(abs).unwrap();
+//!     let abs: Arc<dyn Abstract> = downcast_object(base).ok().unwrap();
+//! }
+//! {
+//!     // Fail to make an illegal cast, but recover the original pointer.
+//!     let base: Arc<dyn Base> = Arc::new(ConcreteValue::default());
+//!     let base: Arc<dyn Base> = downcast_object::<_, Arc<dyn Other>>(base).err().unwrap();
 //! }
 //! ```
-
+//! # Performance notes
+//! Casting an object works as follows:
+//! 1. The object is first cast to its concrete class.
+//! 1. The object is iteratively cast to its immediate parent class.
+//! 1. Once the desired class is reached, the object is reached.
+//! 1. If the [Base] class is reached, the original object is recovered by repeating the same process.
+//!
+//! While casting uses no allocations, it does extensively use dynamic dispatch. As such, compiler
+//! optimizations may not be very effective. The iterative process may make casts for deep
+//! hierarchies inefficient.
 use std::{
     any::Any,
     marker::Unsize,
+    mem,
     ops::Deref,
     ptr::{DynMetadata, Pointee},
+    rc::Rc,
     sync::Arc,
 };
-use std::rc::Rc;
 
 use repr::PtrRepr;
 
@@ -82,15 +102,15 @@ pub trait CastValue: 'static + Any {
 impl<T> CastValue for T
 where
     T: ClassValue,
-    <T as ClassValue>::Dyn: CastTrait,
+    T::Dyn: CastTrait,
 {
     fn into_leaf(&self) -> fn(SmartPointer<dyn Any>) -> BoxCastObject {
         |ptr| {
-            let ptr: SmartPointer<T> = SmartPointer::downcast::<T>(ptr).ok().unwrap();
+            let ptr: SmartPointer<T> = SmartPointer::downcast(ptr).ok().unwrap();
             let ptr: SmartPointer<T::Dyn> = ptr;
             let ptr: InlineBox<SmartPointer<T::Dyn>, _> =
                 InlineBox::<SmartPointer<T::Dyn>, _>::new(ptr);
-            let ptr: InlineBox<dyn CastObject, _> = ptr.unsize();
+            let ptr: InlineBox<dyn CastSmartPointer, _> = ptr.unsize();
             ptr
         }
     }
@@ -138,7 +158,7 @@ where
             let ptr: SmartPointer<T> = ptr.into_inner();
             let ptr: SmartPointer<T::Parent> = ptr;
             let ptr: InlineBox<SmartPointer<T::Parent>, _> = InlineBox::new(ptr);
-            let ptr: InlineBox<dyn CastObject, _> = ptr.unsize();
+            let ptr: InlineBox<dyn CastSmartPointer, _> = ptr.unsize();
             Ok(ptr)
         }
     }
@@ -146,57 +166,68 @@ where
 
 /// A trait implemented for `SmartPointer<dyn T>` where `T` is a class. `into_parent_object` casts a
 /// SmartPointer to its parent class. See also: [CastTrait].
-pub trait CastObject: Any {
+pub trait CastSmartPointer: Any {
     fn into_parent_object(&self) -> fn(BoxCastObject) -> Result<BoxCastObject, BoxCastObject>;
 }
 
-impl<T: 'static + ?Sized + CastTrait> CastObject for SmartPointer<T> {
+impl<T: 'static + ?Sized + CastTrait> CastSmartPointer for SmartPointer<T> {
     fn into_parent_object(&self) -> fn(BoxCastObject) -> Result<BoxCastObject, BoxCastObject> {
         (**self).into_parent_object()
     }
 }
 
 /// A dynamic representation of any smart pointer to a class (e.g. `Arc<dyn Foo>` for some class `Foo`).
-pub type BoxCastObject = InlineBox<dyn CastObject, SmartRepr<PtrRepr<()>>>;
+pub type BoxCastObject = InlineBox<dyn CastSmartPointer, SmartRepr<PtrRepr<()>>>;
 
-pub fn downcast_object<P1, P2: 'static>(x: P1) -> Option<P2>
-where
-    P1: IsSmartPointer,
-    P1::Target: CastValue + Unsize<dyn Any>,
-    P2: IsSmartPointer<Kind = P1::Kind>,
-    <P1 as Deref>::Target: Pointee<Metadata = DynMetadata<<P1 as Deref>::Target>>,
-{
-    let into_leaf = x.into_leaf();
-    let this: SmartPointer<P1::Target> = SmartPointer::new(x);
-    let this: SmartPointer<dyn Any> = this;
-    let mut this: BoxCastObject = into_leaf(this);
+fn downcast_object_impl<T1: Unsize<dyn Any> + ?Sized + CastValue, T2: 'static + ?Sized>(
+    ptr: SmartPointer<T1>,
+) -> Result<SmartPointer<T2>, SmartPointer<dyn Base>> {
+    let into_leaf = ptr.into_leaf();
+    let mut ptr = into_leaf(ptr);
     loop {
-        if (&*this as &dyn Any).is::<SmartPointer<P2::Target>>() {
-            return Some(
-                InlineBox::downcast::<SmartPointer<P2::Target>>(this.unsize())
-                    .unwrap()
-                    .into_inner()
-                    .into_smart_pointer()
-                    .ok()
-                    .unwrap(),
-            );
+        if (&*ptr as &dyn Any).is::<SmartPointer<T2>>() {
+            let ptr: InlineBox<dyn Any, _> = ptr.unsize();
+            let ptr: InlineBox<SmartPointer<T2>, _> = InlineBox::downcast(ptr).ok().unwrap();
+            let ptr: SmartPointer<T2> = ptr.into_inner();
+            return Ok(ptr);
         } else {
-            this = match (this.into_parent_object())(this) {
-                Ok(this) => this,
-                Err(this) => {
-                    let this = InlineBox::downcast::<SmartPointer<dyn Base>>(this.unsize())
-                        .ok()
-                        .unwrap();
-                    let this = this.into_inner();
-                    this.try_drop();
-                    return None;
+            ptr = match (ptr.into_parent_object())(ptr) {
+                Ok(ptr) => ptr,
+                Err(ptr) => {
+                    let ptr: InlineBox<dyn Any, _> = ptr.unsize();
+                    let ptr: InlineBox<SmartPointer<dyn Base>, _> =
+                        InlineBox::downcast(ptr).ok().unwrap();
+                    let ptr: SmartPointer<dyn Base> = ptr.into_inner();
+                    return Err(ptr);
                 }
             }
         }
     }
 }
 
-pub fn downcast_arc<T1: ?Sized, T2: ?Sized>(x: Arc<T1>) -> Option<Arc<T2>>
+pub fn downcast_object<P1, P2: 'static>(ptr: P1) -> Result<P2, P1>
+where
+    P1: IsSmartPointer,
+    P1::Target: CastValue + Unsize<dyn Any>,
+    P2: IsSmartPointer<Kind = P1::Kind>,
+    <P1 as Deref>::Target: Pointee<Metadata = DynMetadata<<P1 as Deref>::Target>>,
+{
+    let ptr = SmartPointer::new(ptr);
+    match downcast_object_impl::<P1::Target, P2::Target>(ptr) {
+        Ok(ptr) => Ok(ptr.into_smart_pointer().ok().unwrap()),
+        Err(ptr) => {
+            match downcast_object_impl::<dyn Base, P1::Target>(ptr) {
+                Ok(ptr) => Err(ptr.into_smart_pointer().ok().unwrap()),
+                Err(ptr) => {
+                    mem::forget(ptr);
+                    panic!("Failed to recover original object after downcast. This causes a memory leak.");
+                }
+            }
+        }
+    }
+}
+
+pub fn downcast_arc<T1: ?Sized, T2: ?Sized>(x: Arc<T1>) -> Result<Arc<T2>, Arc<T1>>
 where
     T1: CastValue + Unsize<dyn Any>,
     T1: Pointee<Metadata = DynMetadata<T1>>,
@@ -205,20 +236,20 @@ where
     downcast_object(x)
 }
 
-pub fn downcast_rc<T1: ?Sized, T2: ?Sized>(x: Rc<T1>) -> Option<Rc<T2>>
-    where
-        T1: CastValue + Unsize<dyn Any>,
-        T1: Pointee<Metadata = DynMetadata<T1>>,
-        T2: 'static,
+pub fn downcast_rc<T1: ?Sized, T2: ?Sized>(x: Rc<T1>) -> Result<Rc<T2>, Rc<T1>>
+where
+    T1: CastValue + Unsize<dyn Any>,
+    T1: Pointee<Metadata = DynMetadata<T1>>,
+    T2: 'static,
 {
     downcast_object(x)
 }
 
-pub fn downcast_box<T1: ?Sized, T2: ?Sized>(x: Box<T1>) -> Option<Box<T2>>
-    where
-        T1: CastValue + Unsize<dyn Any>,
-        T1: Pointee<Metadata = DynMetadata<T1>>,
-        T2: 'static,
+pub fn downcast_box<T1: ?Sized, T2: ?Sized>(x: Box<T1>) -> Result<Box<T2>, Box<T1>>
+where
+    T1: CastValue + Unsize<dyn Any>,
+    T1: Pointee<Metadata = DynMetadata<T1>>,
+    T2: 'static,
 {
     downcast_object(x)
 }

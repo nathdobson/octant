@@ -83,7 +83,7 @@ impl Runtime {
             .unwrap_or_else(|| panic!("unknown handle {:?}", key));
         let dhandle = handle.clone();
         downcast_object(handle)
-            .unwrap_or_else(|| panic!("Cannot cast {:?} to {:?}", dhandle, type_name::<T::Local>()))
+            .unwrap_or_else(|_| panic!("Cannot cast {:?} to {:?}", dhandle, type_name::<T::Local>()))
     }
 }
 

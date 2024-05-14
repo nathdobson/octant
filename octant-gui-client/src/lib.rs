@@ -145,7 +145,7 @@ impl Runtime {
                 .expect("unknown handle")
                 .clone(),
         )
-        .unwrap_or_else(|| panic!("Wrong class for {:?}", handle))
+        .unwrap_or_else(|_| panic!("Wrong class for {:?}", handle))
     }
     async fn invoke_with(
         self: &Arc<Self>,
