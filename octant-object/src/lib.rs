@@ -1,25 +1,112 @@
 //! "Object-oriented" programming in rust.
-//! * ✅ Const field inheritance.
-//! * ✅ Upcasting (implicitly with trait upcasting).
+//! * ✅ Field inheritance.
+//! * ✅ Method inheritance on value types.
+//! * ✅ Upcasting coercions (implicitly with trait upcasting).
 //! * ✅ Downcasting (explicitly with the [cast] module).
 //! * ✅ Non-virtual methods.
+//! * ✅ `#[derive]` and other attributes for value types.
 //!
-//! * ❌ Mutable field inheritance.
+//! * ❌ Implicit method inheritance on `dyn` types. Methods are still accessible, but the object
+//!     must be explicitly upcast.
 //! * ❌ Virtual methods.
 //! * ❌ Method inheritance.
 //! * ❌ Generics.
+//! * ❌ Subclasses as [subtypes](https://doc.rust-lang.org/reference/subtyping.html). E.g. `Vec<Subclass>` is not implicitly coercible to `Vec<Superclass>`.
 //!
 //! ```
 //! #![feature(trait_upcasting)]
-//! use std::any::Any;
+//! # use std::any::Any;
 //! use octant_object::base::{Base, BaseValue};
 //! use octant_object::define_class;
+//!
 //! define_class! {
 //!     pub class Animal extends Base {
 //!         num_legs: usize,
 //!     }
 //! }
+//!
 //! define_class! {
+//!     pub class Dog extends Animal {
+//!         name: String,
+//!     }
+//! }
+//!
+//! impl AnimalValue {
+//!     pub fn new(num_legs: usize) -> Self {
+//!         AnimalValue {
+//!             parent: BaseValue::new(),
+//!             num_legs
+//!         }
+//!     }
+//!     fn num_toes(&self) -> usize {
+//!         self.num_legs * 5
+//!     }
+//! }
+//!
+//! impl dyn Animal {
+//!     // This method must be implemented on `&dyn Animal` instead of `&AnimalValue`, because
+//!     // `&AnimalValue` doesn't know if it's a field inside a `DogValue`.
+//!     fn is_dog(&self) -> bool{
+//!         (self as &dyn Any).is::<DogValue>()
+//!     }
+//! }
+//!
+//! impl DogValue {
+//!     pub fn new(name: String) -> Self {
+//!         DogValue {
+//!             parent: AnimalValue::new(4),
+//!             name,
+//!         }
+//!     }
+//! }
+//!
+//! let dog: Box<dyn Dog> = Box::new(DogValue::new("otto".to_string()));
+//! // Methods on `dyn Animal` are not inherited, but can be accessed through explicit upcasts.
+//! assert!((&*dog as &dyn Animal).is_dog());
+//! // Methods on `AnimalValue` are inherited.
+//! assert_eq!(dog.num_toes(), 20);
+//! // Fields are inherited.
+//! assert_eq!(dog.num_legs, 4);
+//! // Upcast coercions are implicit.
+//! let dog: Box<dyn Animal> = dog;
+//! ```
+//! # `impl FooValue {}` vs `impl dyn Foo {}`
+//! Methods can be added to objects of the class `Foo` in two ways:
+//! ## `impl FooValue {}`
+//!  *  Used for constructors and other functions without a `self` parameter.
+//!  *  Methods using `self` are not inherited.
+//!  *  Methods using `&self` and `&mut self` are inherited.
+//!  *  Methods using `self: Box<Self>`, `self: Rc<Self>`, or `self: Arc<Self>` are not inherited,
+//!     so they're probably wrong. This prevents cloning of the pointer to this object.
+//!  *  Methods cannot determine which subclass is being used.
+//!  *  Methods cannot perform downcasts.
+//!  *  Methods cannot access fields of subclasses.
+//! ## `impl dyn Foo {}`
+//!  *  All methods are inherited, but the caller must explicitly upcast to `dyn Foo`.
+//!  *  Methods using `self` would require [unsized_locals](https://doc.rust-lang.org/unstable-book/language-features/unsized-locals.html), so are not recommended.
+//!  *  Methods using `&self` and `&mut self` offer nothing over `impl FooValue {}`, so they are probably wrong.
+//!  *  Methods using `self: Box<Self>`, `self: Rc<Self>`, or `self: Arc<Self>` may perform downcasts and may clone self.
+//! # `implements`
+//! A class `Foo` may declare that it <i>implements</i> an object-safe trait `Baz`, which makes
+//! `Baz` a [supertrait](https://doc.rust-lang.org/rust-by-example/trait/supertraits.html) of
+//! `Foo`. This forces `FooValue` <b>and every subclass of `Foo`</b> to implement `Baz`. The macro
+//! only accepts one trait, but multiple traits can be specified by combining them into a single
+//! trait.
+//! ```
+//! # #![feature(trait_upcasting)]
+//! # use std::fmt::Debug;
+//! # use octant_object::base::{Base, BaseValue};
+//! # use octant_object::define_class;
+//! trait SendSyncDebug : Send + Sync + Debug {}
+//! impl<T: Send + Sync + Debug> SendSyncDebug for T{}
+//! define_class! {
+//!     #[derive(Debug)]
+//!     pub class Animal extends Base implements SendSyncDebug {
+//!         num_legs: usize,
+//!     }
+//! }
+//! define_class! {
+//!     #[derive(Debug)]
 //!     pub class Dog extends Animal {
 //!         name: String,
 //!     }
@@ -32,11 +119,6 @@
 //!         }
 //!     }
 //! }
-//! impl dyn Animal {
-//!     fn is_dog(&self) -> bool {
-//!         (self as &dyn Any).is::<DogValue>()
-//!     }
-//! }
 //! impl DogValue {
 //!     pub fn new(name: String) -> Self {
 //!         DogValue {
@@ -45,14 +127,9 @@
 //!         }
 //!     }
 //! }
-//! let dog: Box<dyn Dog> = Box::new(DogValue::new("otto".to_string()));
-//! assert_eq!(dog.num_legs, 4);
-//! let dog: Box<dyn Animal> = dog;
-//! assert_eq!(dog.num_legs, 4);
-//! assert!(dog.is_dog());
+//! let dog: Box<dyn Animal> = Box::new(DogValue::new("otto".to_string()));
+//! assert_eq!(&format!("{:?}",dog), r#"DogValue { parent: AnimalValue { parent: BaseValue, num_legs: 4 }, name: "otto" }"#);
 //! ```
-//!
-//!
 
 #![feature(trait_upcasting)]
 #![feature(trait_alias)]
