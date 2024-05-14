@@ -6,21 +6,20 @@ use octant_gui_core::{DocumentMethod, DocumentTag, HandleId};
 use octant_object::define_class;
 
 use crate::{
-    element,
-    element::{ArcElement, ElementValue},
-    html_element,
-    html_element::{ArcHtmlElement, HtmlElementValue},
-    html_form_element,
-    html_form_element::{ArcHtmlFormElement, HtmlFormElementValue},
-    html_input_element,
-    html_input_element::{ArcHtmlInputElement, HtmlInputElementValue},
-    node,
-    node::{Node, NodeValue},
-    peer,
+    element::{ArcElement, ElementValue}
+    ,
+    HasLocalType
+    ,
+    html_element::{ArcHtmlElement, HtmlElementValue}
+    ,
+    html_form_element::{ArcHtmlFormElement, HtmlFormElementValue}
+    ,
+    html_input_element::{ArcHtmlInputElement, HtmlInputElementValue}
+    ,
+    node::{Node, NodeValue}
+    ,
     peer::ArcPeer,
-    text,
     text::{ArcText, TextValue},
-    HasLocalType,
 };
 
 define_class! {

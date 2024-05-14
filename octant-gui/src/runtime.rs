@@ -11,7 +11,7 @@ use weak_table::WeakValueHashMap;
 
 use octant_executor::Spawn;
 use octant_gui_core::{DownMessage, HandleId, Method, TypedHandle, TypeTag};
-use octant_object::cast::Cast;
+use octant_object::cast::downcast_object;
 
 use crate::handle::{Handle, HandleValue};
 
@@ -41,10 +41,12 @@ impl Runtime {
         let ref mut this = *self.state.borrow_mut();
         let handle = HandleId(this.next_handle);
         this.next_handle += 1;
-        self.sink.send(DownMessage::Invoke {
-            assign: handle,
-            method,
-        }).ok();
+        self.sink
+            .send(DownMessage::Invoke {
+                assign: handle,
+                method,
+            })
+            .ok();
         HandleValue::new(self.clone(), handle)
     }
     pub fn delete(&self, handle: HandleId) {
@@ -80,8 +82,7 @@ impl Runtime {
             .get(&key.0)
             .unwrap_or_else(|| panic!("unknown handle {:?}", key));
         let dhandle = handle.clone();
-        handle
-            .downcast_trait()
+        downcast_object(handle)
             .unwrap_or_else(|| panic!("Cannot cast {:?} to {:?}", dhandle, type_name::<T::Local>()))
     }
 }

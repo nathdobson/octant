@@ -4,19 +4,18 @@ use octant_gui_core::{HandleId, WindowMethod, WindowTag};
 use octant_object::define_class;
 
 use crate::{
-    document,
-    document::{ArcDocument, DocumentValue},
-    navigator,
-    navigator::{ArcNavigator, NavigatorValue},
-    object,
-    object::{Object, ObjectValue},
-    peer,
-    peer::ArcPeer,
-    promise,
+    document::{ArcDocument, DocumentValue}
+    ,
+    HasLocalType
+    ,
+    navigator::{ArcNavigator, NavigatorValue}
+    ,
+    object::{Object, ObjectValue}
+    ,
+    peer::ArcPeer
+    ,
     promise::{ArcPromise, PromiseValue},
-    request,
-    request::ArcRequest,
-    HasLocalType, Runtime,
+    request::ArcRequest, Runtime,
 };
 
 define_class! {

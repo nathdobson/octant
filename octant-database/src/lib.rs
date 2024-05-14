@@ -16,8 +16,6 @@
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 #![feature(try_blocks)]
-#![feature(absolute_path)]
-
 pub mod de;
 pub mod derive;
 pub mod file;

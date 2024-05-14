@@ -7,14 +7,14 @@ use octant_gui_core::{
     HandleId, HtmlFormElementMethod, HtmlFormElementTag, HtmlFormElementUpMessage,
     HtmlInputElementUpMessage, TypedHandle, UpMessage, UpMessageList,
 };
-use octant_object::{cast::Cast, define_class};
+use octant_object::{cast::downcast_object, define_class};
 
 use crate::{
-    HasLocalType, html_element, html_element::HtmlElement, html_input_element, peer, Runtime,
+    html_element::{HtmlElement, HtmlElementValue},
+    html_input_element::HtmlInputElement,
+    peer::ArcPeer,
+    HasLocalType, Runtime,
 };
-use crate::html_element::HtmlElementValue;
-use crate::html_input_element::HtmlInputElement;
-use crate::peer::ArcPeer;
 
 define_class! {
     pub class HtmlFormElement extends HtmlElement {
@@ -31,6 +31,9 @@ impl HtmlFormElementValue {
     }
     pub fn handle(&self) -> TypedHandle<HtmlFormElementTag> {
         TypedHandle(self.raw_handle(), PhantomData)
+    }
+    pub fn native(&self) -> &web_sys::HtmlFormElement {
+        &self.html_form_element
     }
 }
 
@@ -51,8 +54,7 @@ impl dyn HtmlFormElement {
                         let mut commands: Vec<UpMessage> = vec![];
                         let children = form.children();
                         for child in children {
-                            let input: Option<Arc<dyn HtmlInputElement>> =
-                                child.downcast_trait();
+                            let input: Option<Arc<dyn HtmlInputElement>> = downcast_object(child);
                             if let Some(input) = input {
                                 input.native().set_attribute("disabled", "true").unwrap();
                                 commands.push(UpMessage::HtmlInputElement(

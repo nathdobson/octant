@@ -1,8 +1,6 @@
-
 use octant_gui_core::HandleId;
 use octant_object::define_class;
 
-use crate::peer;
 use crate::peer::{Peer, PeerValue};
 
 define_class! {
@@ -17,5 +15,8 @@ impl JsValueValue {
             parent: PeerValue::new(handle.into()),
             js_value,
         }
+    }
+    pub fn native(&self) -> &wasm_bindgen::JsValue {
+        &self.js_value
     }
 }

@@ -5,8 +5,8 @@ use web_sys::{CredentialCreationOptions, CredentialRequestOptions, Request, Requ
 use octant_gui_core::{GlobalMethod, HandleId};
 
 use crate::{
-    credential_creation_options, credential_request_options, peer, peer::ArcPeer, request,
-    request_init, window, Runtime,
+    peer::ArcPeer
+    , Runtime, window,
 };
 use crate::credential_creation_options::CredentialCreationOptionsValue;
 use crate::credential_request_options::CredentialRequestOptionsValue;

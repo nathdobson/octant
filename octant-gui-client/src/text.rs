@@ -1,8 +1,7 @@
 use octant_gui_core::HandleId;
 use octant_object::define_class;
 
-use crate::{node, node::Node};
-use crate::node::NodeValue;
+use crate::node::{Node, NodeValue};
 
 define_class! {
     pub class Text extends Node {
@@ -16,5 +15,8 @@ impl TextValue {
             parent: NodeValue::new(handle, text.clone().into()),
             text,
         }
+    }
+    pub fn native(&self) -> &web_sys::Text {
+        &self.text
     }
 }

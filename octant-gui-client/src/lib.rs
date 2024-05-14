@@ -19,8 +19,9 @@ use web_sys::{console, Event, HtmlAnchorElement, window};
 use octant_gui_core::{
     DownMessage, DownMessageList, HandleId, Method, TypedHandle, TypeTag, UpMessage, UpMessageList,
 };
-use octant_object::cast::Cast;
+use octant_object::cast::downcast_object;
 use wasm_error::WasmError;
+
 use crate::peer::ArcPeer;
 
 mod any_value;
@@ -44,9 +45,9 @@ mod peer;
 mod promise;
 mod request;
 mod request_init;
+mod response;
 mod text;
 mod window;
-mod response;
 
 pub type DownMessageStream = Pin<Box<dyn Stream<Item = anyhow::Result<DownMessageList>>>>;
 pub type UpMessageSink = Box<dyn Fn(UpMessageList) -> anyhow::Result<()>>;
@@ -136,14 +137,15 @@ impl Runtime {
         Ok(())
     }
     fn handle<T: HasLocalType>(&self, handle: TypedHandle<T>) -> Arc<T::Local> {
-        self.state
-            .borrow()
-            .handles
-            .get(&handle.0)
-            .expect("unknown handle")
-            .clone()
-            .downcast_trait()
-            .unwrap_or_else(|| panic!("Wrong class for {:?}", handle))
+        downcast_object(
+            self.state
+                .borrow()
+                .handles
+                .get(&handle.0)
+                .expect("unknown handle")
+                .clone(),
+        )
+        .unwrap_or_else(|| panic!("Wrong class for {:?}", handle))
     }
     async fn invoke_with(
         self: &Arc<Self>,

@@ -7,9 +7,8 @@ use octant_gui_core::{AnyValueMethod, AnyValueTag, HandleId, JsClass};
 use octant_object::define_class;
 
 use crate::{
-    credential, peer,
-    peer::{ArcPeer, Peer, PeerValue},
-    response, HasLocalType, Runtime,
+    HasLocalType
+    , peer::{ArcPeer, Peer, PeerValue}, Runtime,
 };
 use crate::credential::CredentialValue;
 use crate::response::ResponseValue;

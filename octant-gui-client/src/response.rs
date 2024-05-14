@@ -4,13 +4,12 @@ use octant_gui_core::{HandleId, ResponseMethod, ResponseTag, TypedHandle};
 use octant_object::define_class;
 
 use crate::{
-    object,
-    object::Object,
-    peer,
+    HasLocalType
+    ,
+    object::Object
+    ,
     peer::ArcPeer,
-    promise,
-    promise::{ArcPromise, PromiseValue},
-    HasLocalType, Runtime,
+    promise::{ArcPromise, PromiseValue}, Runtime,
 };
 use crate::object::ObjectValue;
 

@@ -1,8 +1,6 @@
-
 use octant_gui_core::HandleId;
 use octant_object::define_class;
 
-use crate::js_value;
 use crate::js_value::{JsValue, JsValueValue};
 
 define_class! {
@@ -17,5 +15,8 @@ impl ObjectValue {
             parent: JsValueValue::new(handle, object.clone().into()),
             object,
         }
+    }
+    pub fn native(&self) -> &js_sys::Object {
+        &self.object
     }
 }

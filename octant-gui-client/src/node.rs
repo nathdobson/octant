@@ -8,7 +8,7 @@ use octant_gui_core::{NodeMethod, NodeTag};
 use octant_gui_core::HandleId;
 use octant_object::define_class;
 
-use crate::{HasLocalType, node, object, peer, Runtime};
+use crate::{HasLocalType, Runtime};
 use crate::object::{Object, ObjectValue};
 use crate::peer::ArcPeer;
 

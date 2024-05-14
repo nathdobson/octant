@@ -77,7 +77,7 @@ impl CookieRouter {
         }
     }
     pub async fn create(&self, session: &Arc<Session>, cookie: String) -> anyhow::Result<()> {
-        let (cookie_token, guard) = self.create_start(cookie);
+        let (cookie_token, _guard) = self.create_start(cookie);
         let request_init = session.global().new_request_init();
         let request = session.global().new_request(
             format!("/create_cookie?token={}", cookie_token),
@@ -93,7 +93,7 @@ impl CookieRouter {
         Ok(())
     }
     pub async fn update(&self, session: &Arc<Session>) -> anyhow::Result<()> {
-        let (cookie_token, guard) = self.update_start(&session);
+        let (cookie_token, _guard) = self.update_start(&session);
         let request_init = session.global().new_request_init();
         let request = session.global().new_request(
             format!("/update_cookie?token={}", cookie_token),

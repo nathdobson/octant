@@ -1,4 +1,3 @@
-use crate::cast::repr::HasRepr;
 use std::{
     any::Any,
     fmt::{Debug, Formatter},
@@ -9,6 +8,8 @@ use std::{
     ptr,
     ptr::{null, Pointee},
 };
+
+use crate::cast::repr::HasRepr;
 
 /// A `Box<T>` that allocates memory from a field within itself. This requires the caller to specify
 /// a representation type `R` with the same layout as the stored value.

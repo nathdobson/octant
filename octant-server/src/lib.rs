@@ -4,7 +4,7 @@
 use std::{
     collections::HashMap,
     net::SocketAddr,
-    sync::{Arc, Weak},
+    sync::{Arc},
 };
 
 use anyhow::anyhow;
@@ -15,7 +15,6 @@ use futures::{
     stream::{SplitSink, SplitStream, StreamExt},
 };
 use itertools::Itertools;
-use parking_lot::Mutex;
 use tokio::{sync::mpsc, try_join};
 use url::Url;
 use uuid::Uuid;
@@ -23,7 +22,6 @@ use warp::{
     Filter,
     Reply, ws::{Message, WebSocket},
 };
-use weak_table::WeakValueHashMap;
 
 use octant_executor::Pool;
 use octant_gui::{

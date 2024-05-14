@@ -1,21 +1,16 @@
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use atomic_refcell::AtomicRefCell;
 use parking_lot::Mutex;
 use url::Url;
 
 use octant_account::SessionTable;
 use octant_gui::{
     builder::{ElementExt, HtmlFormElementExt},
+    element::ArcElement,
     event_loop::Page,
 };
-use octant_gui::element::ArcElement;
-use octant_server::{
-    cookies::{CookieData, CookieRouter},
-    Handler,
-    session::{Session, SessionData},
-};
+use octant_server::{cookies::CookieRouter, session::Session, Handler};
 
 pub struct ScoreHandler {
     pub cookie_router: Arc<CookieRouter>,

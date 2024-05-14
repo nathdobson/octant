@@ -211,6 +211,7 @@ mod test {
         fmt::Debug,
         mem::size_of,
     };
+
     use crate::cast::inlinebox::InlineBox;
     use crate::cast::smart_pointer::SmartPointer;
 

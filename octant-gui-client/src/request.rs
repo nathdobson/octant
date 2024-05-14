@@ -5,7 +5,7 @@ use octant_gui_core::{
 };
 use octant_object::define_class;
 
-use crate::{HasLocalType, object, peer, Runtime};
+use crate::{HasLocalType, Runtime};
 use crate::object::{Object, ObjectValue};
 use crate::peer::ArcPeer;
 

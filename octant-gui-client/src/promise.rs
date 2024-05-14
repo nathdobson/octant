@@ -12,10 +12,12 @@ use octant_gui_core::{
 };
 use octant_object::define_class;
 
-use crate::{any_value, object, object::Object, peer, HasLocalType, Runtime};
-use crate::any_value::AnyValueValue;
-use crate::object::ObjectValue;
-use crate::peer::ArcPeer;
+use crate::{
+    any_value::AnyValueValue,
+    object::{Object, ObjectValue},
+    peer::ArcPeer,
+    HasLocalType, Runtime,
+};
 
 define_class! {
     pub class Promise extends Object {

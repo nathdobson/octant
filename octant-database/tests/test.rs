@@ -1,4 +1,3 @@
-#![feature(absolute_path)]
 #![feature(arbitrary_self_types)]
 
 use std::{

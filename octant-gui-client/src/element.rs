@@ -1,24 +1,18 @@
 use std::sync::Arc;
 
-use atomic_refcell::AtomicRefCell;
-
 use octant_gui_core::{ElementMethod, ElementTag, HandleId};
 use octant_object::define_class;
 
 use crate::{
-    node,
+    HasLocalType
+    ,
     node::{Node, NodeValue},
-    peer,
-    peer::ArcPeer,
-    HasLocalType, Runtime,
+    peer::ArcPeer, Runtime,
 };
-
-struct State {}
 
 define_class! {
     pub class Element extends Node {
         element: web_sys::Element,
-        state: AtomicRefCell<State>,
     }
 }
 
@@ -27,7 +21,6 @@ impl ElementValue {
         ElementValue {
             parent: NodeValue::new(handle, element.clone().into()),
             element,
-            state: AtomicRefCell::new(State {}),
         }
     }
     pub fn native(&self) -> &web_sys::Element {

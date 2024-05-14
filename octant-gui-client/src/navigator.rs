@@ -4,11 +4,10 @@ use octant_gui_core::{HandleId, NavigatorMethod, NavigatorTag};
 use octant_object::define_class;
 
 use crate::{
-    credentials_container,
-    credentials_container::{ArcCredentialsContainer, CredentialsContainerValue},
-    object,
-    object::{Object, ObjectValue},
-    peer, HasLocalType,
+    credentials_container::{ArcCredentialsContainer, CredentialsContainerValue}
+    ,
+    HasLocalType
+    , object::{Object, ObjectValue},
 };
 use crate::peer::ArcPeer;
 

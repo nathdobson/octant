@@ -28,7 +28,6 @@
 //! }
 //! ```
 
-use repr::PtrRepr;
 use std::{
     any::Any,
     marker::Unsize,
@@ -37,6 +36,8 @@ use std::{
     sync::Arc,
 };
 use std::rc::Rc;
+
+use repr::PtrRepr;
 
 use crate::{
     base::Base,

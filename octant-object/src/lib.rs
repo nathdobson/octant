@@ -87,7 +87,7 @@ pub mod reexports {
 /// A class `Foo` <i>implements</i> a trait `Baz` if:
 /// * the `Foo` trait extends the `Baz` trait.
 /// * `FooValue` and all descendants implement `Baz`. Note that this is fundamentally different
-///   from interfaces in Java. 
+///   from interfaces in Java.
 ///
 /// The following code:
 /// ```
