@@ -1,20 +1,27 @@
 #![allow(incomplete_features)]
 #![feature(specialization)]
 #![feature(trait_upcasting)]
+#![feature(unsize)]
 #![allow(unused_variables)]
 #![deny(unused_must_use)]
 
-use catalog::{register, Builder, BuilderFrom, Registry};
+use catalog::{Builder, BuilderFrom, Registry};
 use serde::{
     de::{DeserializeSeed, Error as _, MapAccess, SeqAccess, Visitor},
     ser::{Error, SerializeStruct},
     Deserialize, Deserializer, Serialize, Serializer,
 };
 use std::{
+    any::{type_name, Any},
     collections::HashMap,
-    fmt::{Debug, Formatter},
-    marker::PhantomData,
+    fmt::Formatter,
+    marker::{PhantomData, Unsize},
 };
+
+pub mod reexports {
+    pub use catalog;
+    pub use serde;
+}
 
 pub type OctantDeserializer<'a, 'de> =
     &'a mut serde_json::Deserializer<serde_json::de::SliceRead<'de>>;
@@ -33,33 +40,30 @@ pub fn deserialize<'de, T: Deserialize<'de>>(de: &'de [u8]) -> Result<T, serde_j
     ))
 }
 
-type DeserializeFn = for<'a, 'de> fn(
-    OctantDeserializer<'a, 'de>,
-) -> Result<
-    Box<dyn MyTrait>,
-    <OctantDeserializer<'a, 'de> as Deserializer<'de>>::Error,
->;
-struct DeserializeImp<T> {
-    name: &'static str,
-    deserialize: DeserializeFn,
+type DeserializeFn<U> =
+    for<'a, 'de> fn(
+        OctantDeserializer<'a, 'de>,
+    )
+        -> Result<Box<U>, <OctantDeserializer<'a, 'de> as Deserializer<'de>>::Error>;
+pub struct DeserializeImp<U: ?Sized, T> {
+    pub name: &'static str,
+    pub deserialize: DeserializeFn<U>,
     phantom: PhantomData<T>,
 }
 
-impl<T: 'static + MyTrait + for<'de> Deserialize<'de>> DeserializeImp<T> {
+impl<U: ?Sized, T: 'static + Unsize<U> + for<'de> Deserialize<'de>> DeserializeImp<U, T> {
     pub fn new(name: &'static str) -> Self {
         DeserializeImp {
             name,
-            deserialize: |de| Ok(Box::new(T::deserialize(de)?)),
+            deserialize: |de| Ok(Box::<T>::new(T::deserialize(de)?)),
             phantom: PhantomData,
         }
     }
 }
 
-struct DeserializeRegistry {
-    deserializers: HashMap<String, DeserializeFn>,
+pub struct DeserializeRegistry {
+    deserializers: HashMap<String, &'static (dyn Sync + Send + Any)>,
 }
-
-static DESERIALIZE_REGISTRY: Registry<DeserializeRegistry> = Registry::new();
 
 impl Builder for DeserializeRegistry {
     type Output = DeserializeRegistry;
@@ -75,10 +79,12 @@ impl Builder for DeserializeRegistry {
     }
 }
 
-impl<T> BuilderFrom<&'static DeserializeImp<T>> for DeserializeRegistry {
-    fn insert(&mut self, element: &'static DeserializeImp<T>) {
-        self.deserializers
-            .insert(element.name.to_string(), element.deserialize);
+impl<U: ?Sized, T> BuilderFrom<&'static DeserializeImp<U, T>> for DeserializeRegistry {
+    fn insert(&mut self, element: &'static DeserializeImp<U, T>) {
+        assert!(self
+            .deserializers
+            .insert(element.name.to_string(), &element.deserialize)
+            .is_none());
     }
 }
 
@@ -102,24 +108,28 @@ impl<T: Serialize + SerializeType> SerializeDyn for T {
     }
 }
 
-struct DeserializeValue(String);
+struct DeserializeValue<U: ?Sized>(String, PhantomData<U>);
 
-trait DeserializeSpec<'de, D: Deserializer<'de>> {
-    fn deserialize_spec(self, d: D) -> Result<Box<dyn MyTrait>, D::Error>;
+trait DeserializeSpec<'de, U: ?Sized, D: Deserializer<'de>> {
+    fn deserialize_spec(self, d: D) -> Result<Box<U>, D::Error>;
 }
 
-impl<'de, D: Deserializer<'de>> DeserializeSpec<'de, D> for DeserializeValue {
-    default fn deserialize_spec(self, d: D) -> Result<Box<dyn MyTrait>, D::Error> {
-        Err(D::Error::custom("missing specialization"))
+impl<'de, U: 'static + ?Sized, D: Deserializer<'de>> DeserializeSpec<'de, U, D>
+    for DeserializeValue<U>
+{
+    default fn deserialize_spec(self, d: D) -> Result<Box<U>, D::Error> {
+        Err(D::Error::custom("missing deserialize specialization"))
     }
 }
 
-impl<'a, 'de> DeserializeSpec<'de, OctantDeserializer<'a, 'de>> for DeserializeValue {
+impl<'a, 'de, U: 'static + ?Sized> DeserializeSpec<'de, U, OctantDeserializer<'a, 'de>>
+    for DeserializeValue<U>
+{
     fn deserialize_spec(
         self,
         d: OctantDeserializer<'a, 'de>,
-    ) -> Result<Box<dyn MyTrait>, <OctantDeserializer<'a, 'de> as Deserializer<'de>>::Error> {
-        let imp = DESERIALIZE_REGISTRY
+    ) -> Result<Box<U>, <OctantDeserializer<'a, 'de> as Deserializer<'de>>::Error> {
+        let imp = *DESERIALIZE_REGISTRY
             .deserializers
             .get(&self.0)
             .ok_or_else(|| {
@@ -127,64 +137,62 @@ impl<'a, 'de> DeserializeSpec<'de, OctantDeserializer<'a, 'de>> for DeserializeV
                     "Missing deserializer",
                 )
             })?;
+        let imp = imp.downcast_ref::<DeserializeFn<U>>().unwrap();
         imp(d)
     }
 }
 
-impl<'de> DeserializeSeed<'de> for DeserializeValue {
-    type Value = Box<dyn MyTrait>;
+impl<'de, U: 'static + ?Sized> DeserializeSeed<'de> for DeserializeValue<U> {
+    type Value = Box<U>;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
     {
-        <Self as DeserializeSpec<D>>::deserialize_spec(self, deserializer)
+        <Self as DeserializeSpec<U, D>>::deserialize_spec(self, deserializer)
     }
 }
 
-impl<'de> Deserialize<'de> for Box<dyn MyTrait> {
-    fn deserialize<D>(d: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct V {}
-        impl<'de> Visitor<'de> for V {
-            type Value = Box<dyn MyTrait>;
+pub fn deserialize_box<'de, U: 'static + ?Sized, D: Deserializer<'de>>(
+    d: D,
+) -> Result<Box<U>, D::Error> {
+    struct V<U: 'static + ?Sized>(PhantomData<U>);
+    impl<'de, U: ?Sized> Visitor<'de> for V<U> {
+        type Value = Box<U>;
 
-            fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
-                write!(f, "MyTrait")
-            }
-            fn visit_seq<A>(self, mut d: A) -> Result<Self::Value, A::Error>
-            where
-                A: SeqAccess<'de>,
-            {
-                let typ = d
-                    .next_element::<String>()?
-                    .ok_or_else(|| A::Error::custom("missing type"))?;
-                let value = d
-                    .next_element_seed(DeserializeValue(typ))?
-                    .ok_or_else(|| A::Error::custom("missing value"))?;
-                Ok(value)
-            }
-            fn visit_map<A: MapAccess<'de>>(self, mut d: A) -> Result<Self::Value, A::Error> {
-                let typ = d
-                    .next_key::<String>()?
-                    .ok_or_else(|| A::Error::custom("missing type"))?;
-                if typ != "type" {
-                    return Err(A::Error::custom("first field should be `type`"));
-                }
-                let typ = d.next_value::<String>()?;
-                let value = d
-                    .next_key::<String>()?
-                    .ok_or_else(|| A::Error::custom("missing type"))?;
-                if value != "value" {
-                    return Err(A::Error::custom("second field should be `value`"));
-                }
-                let value = d.next_value_seed(DeserializeValue(typ))?;
-                Ok(value)
-            }
+        fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
+            write!(f, "{}", type_name::<U>())
         }
-        d.deserialize_struct("MyTrait", &["type", "value"], V {})
+        fn visit_seq<A>(self, mut d: A) -> Result<Self::Value, A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            let typ = d
+                .next_element::<String>()?
+                .ok_or_else(|| A::Error::custom("missing type"))?;
+            let value = d
+                .next_element_seed(DeserializeValue(typ, PhantomData))?
+                .ok_or_else(|| A::Error::custom("missing value"))?;
+            Ok(value)
+        }
+        fn visit_map<A: MapAccess<'de>>(self, mut d: A) -> Result<Self::Value, A::Error> {
+            let typ = d
+                .next_key::<String>()?
+                .ok_or_else(|| A::Error::custom("missing type"))?;
+            if typ != "type" {
+                return Err(A::Error::custom("first field should be `type`"));
+            }
+            let typ = d.next_value::<String>()?;
+            let value = d
+                .next_key::<String>()?
+                .ok_or_else(|| A::Error::custom("missing type"))?;
+            if value != "value" {
+                return Err(A::Error::custom("second field should be `value`"));
+            }
+            let value = d.next_value_seed(DeserializeValue(typ, PhantomData))?;
+            Ok(value)
+        }
     }
+    d.deserialize_struct(type_name::<U>(), &["type", "value"], V::<U>(PhantomData))
 }
 
 trait SerializeSpec<S: Serializer> {
@@ -215,53 +223,58 @@ impl Serialize for dyn SerializeDyn {
     }
 }
 
-impl Serialize for dyn MyTrait {
-    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = s.serialize_struct("MyTrait", 2)?;
-        s.serialize_field("type", self.serialize_type())?;
-        s.serialize_field("value", self as &dyn SerializeDyn)?;
-        s.end()
-    }
+pub fn serialize_box<U: ?Sized + SerializeType + Unsize<dyn SerializeDyn>, S: Serializer>(
+    this: &U,
+    s: S,
+) -> Result<S::Ok, S::Error> {
+    let mut s = s.serialize_struct(type_name::<U>(), 2)?;
+    s.serialize_field("type", this.serialize_type())?;
+    s.serialize_field("value", this as &dyn SerializeDyn)?;
+    s.end()
 }
 
-trait MyTrait: Debug + SerializeDyn {}
+pub static DESERIALIZE_REGISTRY: Registry<DeserializeRegistry> = Registry::new();
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Foo(u32);
+#[macro_export]
+macro_rules! define_serde_trait {
+    ($trait:path) => {
+        impl<'de> $crate::reexports::serde::Deserialize<'de> for ::std::boxed::Box<dyn $trait> {
+            fn deserialize<D>(d: D) -> ::std::result::Result<Self, D::Error>
+            where
+                D: $crate::reexports::serde::Deserializer<'de>,
+            {
+                $crate::deserialize_box(d)
+            }
+        }
 
-#[register(DESERIALIZE_REGISTRY, lazy = true)]
-static FOO_REGISTER: DeserializeImp<Foo> = DeserializeImp::new("octant_serde::test::Foo");
-impl SerializeType for Foo {
-    fn serialize_type(&self) -> &'static str {
-        FOO_REGISTER.name
-    }
+        impl $crate::reexports::serde::Serialize for dyn $trait {
+            fn serialize<S>(&self, s: S) -> ::std::result::Result<S::Ok, S::Error>
+            where
+                S: $crate::reexports::serde::Serializer,
+            {
+                $crate::serialize_box(self, s)
+            }
+        }
+    };
 }
-impl MyTrait for Foo {}
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Bar(String);
-
-#[register(DESERIALIZE_REGISTRY, lazy = true)]
-static BAR_REGISTER: DeserializeImp<Bar> = DeserializeImp::new("octant_serde::test::Bar");
-impl SerializeType for Bar {
-    fn serialize_type(&self) -> &'static str {
-        BAR_REGISTER.name
-    }
-}
-
-impl MyTrait for Bar {}
-
-#[test]
-fn test() {
-    let start: Box<dyn MyTrait> = Box::new(Foo(2));
-    let encoded: Vec<u8> = serialize(&start).unwrap();
-    assert_eq!(
-        r#"{"type":"octant_serde::test::Foo","value":2}"#,
-        std::str::from_utf8(&encoded).unwrap()
-    );
-    let end: Box<dyn MyTrait> = deserialize(&encoded).unwrap();
-    assert_eq!(r#"Foo(2)"#, format!("{:?}", end));
+#[macro_export]
+macro_rules! define_serde_impl {
+    ($type:ty: $trait:path) => {
+        const _: () = {
+            #[$crate::reexports::catalog::register($crate::DESERIALIZE_REGISTRY, lazy = true)]
+            static IMP: $crate::DeserializeImp<dyn $trait, $type> = $crate::DeserializeImp::new(
+                ::std::boxed::Box::leak(::std::boxed::Box::new(::std::format!(
+                    "{}::{}",
+                    env!("CARGO_CRATE_NAME"),
+                    ::std::any::type_name::<$type>()
+                ))),
+            );
+            impl $crate::SerializeType for $type {
+                fn serialize_type(&self) -> &'static str {
+                    IMP.name
+                }
+            }
+        };
+    };
 }
