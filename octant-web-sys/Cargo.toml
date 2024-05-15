@@ -1,0 +1,19 @@
+[package]
+name = "octant-web-sys"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+octant-gui-core = {path="../octant-gui-core"}
+octant-gui = {path = "../octant-gui", optional = true }
+octant-gui-client = {path = "../octant-gui-client", optional=true}
+octant-serde = {path  ="../octant-serde"}
+serde = { version = "1.0.201", features = ["derive"] }
+anyhow = "1.0.83"
+catalog = {path="../../catalog/catalog"}
+wasm-error = {path="../wasm-error"}
+log = "0.4.21"
+
+[features]
+client = ["octant-gui-client"]
+server = ["octant-gui"]

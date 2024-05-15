@@ -30,11 +30,8 @@ impl MyTrait for Bar {}
 #[test]
 fn test() {
     let start: Box<dyn MyTrait> = Box::new(Foo(2));
-    let encoded: Vec<u8> = serialize(&start).unwrap();
-    assert_eq!(
-        r#"{"type":"test::test::Foo","value":2}"#,
-        std::str::from_utf8(&encoded).unwrap()
-    );
+    let encoded: String = serialize(&start).unwrap();
+    assert_eq!(r#"{"type":"test::test::Foo","value":2}"#, encoded);
     let end: Box<dyn MyTrait> = deserialize(&encoded).unwrap();
     assert_eq!(r#"Foo(2)"#, format!("{:?}", end));
 }

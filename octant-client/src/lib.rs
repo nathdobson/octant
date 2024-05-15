@@ -16,6 +16,8 @@ use crate::websocket::WebSocketMessage;
 mod error;
 mod websocket;
 
+extern crate octant_web_sys;
+
 #[wasm_bindgen(module = "index.js")]
 extern "C" {
     #[wasm_bindgen(js_name = displayError)]

@@ -5,12 +5,18 @@
 #![feature(trait_upcasting)]
 #![feature(ptr_metadata)]
 
-use std::pin::Pin;
+use catalog::{Builder, BuilderFrom, Registry};
+use std::{
+    any::{Any, TypeId},
+    collections::HashMap,
+    pin::Pin,
+    sync::Arc,
+};
 
 use futures::Stream;
 
 pub use global::Global;
-use octant_gui_core::UpMessageList;
+use octant_gui_core::{NewUpMessage, UpMessageList};
 pub use runtime::Runtime;
 
 pub mod builder;
@@ -42,7 +48,7 @@ mod response;
 pub mod sink;
 //
 pub type UpMessageStream =
-     Pin<Box<dyn Send + Sync + Stream<Item = anyhow::Result<Option<UpMessageList>>>>>;
+    Pin<Box<dyn Send + Sync + Stream<Item = anyhow::Result<Option<UpMessageList>>>>>;
 // pub type Handle = Arc<dyn handle::Trait>;
 // pub type JsValue = Arc<dyn js_value::Trait>;
 // pub type Window = Arc<dyn window::Trait>;
@@ -72,3 +78,47 @@ pub type UpMessageStream =
 //
 // pub type Credential = Arc<dyn credential::Trait>;
 // pub type Response = Arc<dyn response::Trait>;
+
+pub struct ServerContext<'a> {
+    pub runtime: &'a Arc<Runtime>,
+}
+
+type DynUpMessageHandler = Box<
+    dyn 'static
+        + Send
+        + Sync
+        + for<'a> Fn(ServerContext<'a>, Box<dyn NewUpMessage>) -> anyhow::Result<()>,
+>;
+
+pub struct UpMessageHandlerRegistry {
+    handlers: HashMap<TypeId, DynUpMessageHandler>,
+}
+
+impl Builder for UpMessageHandlerRegistry {
+    type Output = Self;
+    fn new() -> Self {
+        UpMessageHandlerRegistry {
+            handlers: HashMap::new(),
+        }
+    }
+    fn build(self) -> Self::Output {
+        self
+    }
+}
+
+impl<T: NewUpMessage> BuilderFrom<UpMessageHandler<T>> for UpMessageHandlerRegistry {
+    fn insert(&mut self, handler: UpMessageHandler<T>) {
+        self.handlers.insert(
+            TypeId::of::<T>(),
+            Box::new(move |ctx, message| {
+                let message = Box::<dyn Any>::downcast(message as Box<dyn Any>);
+                let message = *message.ok().unwrap();
+                handler(ctx, message)
+            }),
+        );
+    }
+}
+
+pub static UP_MESSAGE_HANDLER_REGISTRY: Registry<UpMessageHandlerRegistry> = Registry::new();
+
+pub type UpMessageHandler<T> = for<'a> fn(ServerContext<'a>, T) -> anyhow::Result<()>;

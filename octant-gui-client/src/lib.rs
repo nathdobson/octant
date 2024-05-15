@@ -2,8 +2,10 @@
 #![feature(trait_upcasting)]
 #![feature(ptr_metadata)]
 #![feature(never_type)]
+#![feature(trait_alias)]
 
 use std::{
+    any::{Any, TypeId},
     collections::HashMap,
     pin::Pin,
     ptr::{DynMetadata, Pointee},
@@ -12,12 +14,14 @@ use std::{
 
 use anyhow::anyhow;
 use atomic_refcell::AtomicRefCell;
+use catalog::{Builder, BuilderFrom, Registry};
 use futures::{Stream, StreamExt};
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
-use web_sys::{console, Event, HtmlAnchorElement, window};
+use web_sys::{console, window, Event, HtmlAnchorElement};
 
 use octant_gui_core::{
-    DownMessage, DownMessageList, HandleId, Method, TypedHandle, TypeTag, UpMessage, UpMessageList,
+    DownMessage, DownMessageList, HandleId, Method, NewDownMessage, TypeTag, TypedHandle,
+    UpMessage, UpMessageList,
 };
 use octant_object::cast::downcast_object;
 use wasm_error::WasmError;
@@ -136,7 +140,7 @@ impl Runtime {
         }
         Ok(())
     }
-    fn handle<T: HasLocalType>(&self, handle: TypedHandle<T>) -> Arc<T::Local> {
+    pub fn handle<T: HasLocalType>(&self, handle: TypedHandle<T>) -> Arc<T::Local> {
         downcast_object(
             self.state
                 .borrow()
@@ -231,12 +235,68 @@ impl Runtime {
                     }
                     DownMessage::Delete(handle) => self.delete(handle),
                     DownMessage::Fail(msg) => return Err(anyhow::Error::msg(msg)),
+                    DownMessage::NewDownMessage(message) => self.invoke_new(message).await?,
                 }
             }
         }
         Err(anyhow!("Websocket terminated."))
     }
+    async fn invoke_new(self: &Arc<Self>, message: Box<dyn NewDownMessage>) -> anyhow::Result<()> {
+        let handler = DOWN_MESSAGE_HANDLER_REGISTRY
+            .handlers
+            .get(&(&*message as &dyn Any).type_id())
+            .ok_or_else(|| anyhow!("Missing handler for {:?}", message))?;
+        handler(ClientContext { runtime: self }, message)?;
+        Ok(())
+    }
     pub fn send(&self, message: UpMessageList) -> anyhow::Result<()> {
         (self.sink)(message)
     }
 }
+
+pub struct ClientContext<'a> {
+    pub runtime: &'a Arc<Runtime>,
+}
+
+type DynDownMessageHandler = Box<
+    dyn 'static
+        + Send
+        + Sync
+        + for<'a> Fn(ClientContext<'a>, Box<dyn NewDownMessage>) -> anyhow::Result<()>,
+>;
+
+pub struct DownMessageHandlerRegistry {
+    handlers: HashMap<TypeId, DynDownMessageHandler>,
+}
+
+impl Builder for DownMessageHandlerRegistry {
+    type Output = Self;
+    fn new() -> Self {
+        DownMessageHandlerRegistry {
+            handlers: HashMap::new(),
+        }
+    }
+    fn build(self) -> Self::Output {
+        self
+    }
+}
+
+impl<T: NewDownMessage> BuilderFrom<DownMessageHandler<T>> for DownMessageHandlerRegistry {
+    fn insert(&mut self, handler: DownMessageHandler<T>) {
+        self.handlers.insert(
+            TypeId::of::<T>(),
+            Box::new(move |ctx, message| {
+                handler(
+                    ctx,
+                    *Box::<dyn Any>::downcast(message as Box<dyn Any>)
+                        .ok()
+                        .unwrap(),
+                )
+            }),
+        );
+    }
+}
+
+pub static DOWN_MESSAGE_HANDLER_REGISTRY: Registry<DownMessageHandlerRegistry> = Registry::new();
+
+pub type DownMessageHandler<T> = for<'a> fn(ClientContext<'a>, T) -> anyhow::Result<()>;

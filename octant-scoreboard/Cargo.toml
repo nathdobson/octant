@@ -10,7 +10,7 @@ simple_logger = "5.0.0"
 tokio = { version = "1.37.0", features = ["rt", "rt-multi-thread", "macros"] }
 octant-gui = { path = "../octant-gui" }
 octant-gui-core = { path = "../octant-gui-core" }
-anyhow = "1.0.82"
+anyhow = "1.0.83"
 atomic_refcell = "0.1.13"
 url = "2.5.0"
 webauthn-rs = "0.5.0"
@@ -20,3 +20,4 @@ log = "0.4.21"
 octant-account = {path="../octant-account"}
 octant-database = {path="../octant-database"}
 parking_lot = "0.12.2"
+octant-web-sys = {path="../octant-web-sys",features = ["server"]}

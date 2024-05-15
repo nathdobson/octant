@@ -16,7 +16,7 @@ impl JsValueValue {
             js_value,
         }
     }
-    pub fn native(&self) -> &wasm_bindgen::JsValue {
+    pub fn js_value(&self) -> &wasm_bindgen::JsValue {
         &self.js_value
     }
 }

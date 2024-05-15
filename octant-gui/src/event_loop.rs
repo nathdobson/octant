@@ -1,12 +1,12 @@
-use std::{panic::AssertUnwindSafe, sync::Arc};
+use anyhow::anyhow;
+use std::{any::Any, panic::AssertUnwindSafe, sync::Arc};
 
 use futures::StreamExt;
 
 use octant_gui_core::UpMessage;
 use octant_panic::catch_error;
 
-use crate::{Global, UpMessageStream};
-use crate::node::ArcNode;
+use crate::{node::ArcNode, Global, ServerContext, UpMessageStream, UP_MESSAGE_HANDLER_REGISTRY};
 
 pub struct EventLoop {
     global: Arc<Global>,
@@ -92,6 +92,18 @@ impl EventLoop {
             }
             UpMessage::Promise(promise, message) => {
                 self.global.runtime().handle(promise).handle_event(message);
+            }
+            UpMessage::NewUpMessage(message) => {
+                let handler = UP_MESSAGE_HANDLER_REGISTRY
+                    .handlers
+                    .get(&(&*message as &dyn Any).type_id())
+                    .ok_or_else(|| anyhow!("Missing handler for {:?}", message))?;
+                handler(
+                    ServerContext {
+                        runtime: self.global.runtime(),
+                    },
+                    message,
+                )?;
             }
         }
         Ok(())

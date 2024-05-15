@@ -4,18 +4,13 @@ use octant_gui_core::{HandleId, WindowMethod, WindowTag};
 use octant_object::define_class;
 
 use crate::{
-    document::{ArcDocument, DocumentValue}
-    ,
-    HasLocalType
-    ,
-    navigator::{ArcNavigator, NavigatorValue}
-    ,
-    object::{Object, ObjectValue}
-    ,
-    peer::ArcPeer
-    ,
+    document::{ArcDocument, DocumentValue},
+    navigator::{ArcNavigator, NavigatorValue},
+    object::{Object, ObjectValue},
+    peer::ArcPeer,
     promise::{ArcPromise, PromiseValue},
-    request::ArcRequest, Runtime,
+    request::ArcRequest,
+    HasLocalType, Runtime,
 };
 
 define_class! {
@@ -62,6 +57,9 @@ impl WindowValue {
                 Some(self.fetch(runtime, handle, &runtime.handle(*request)))
             }
         }
+    }
+    pub fn native(&self) -> &web_sys::Window {
+        &self.window
     }
 }
 

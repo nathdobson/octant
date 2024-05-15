@@ -11,6 +11,7 @@ use octant_gui::{
     event_loop::Page,
 };
 use octant_server::{cookies::CookieRouter, session::Session, Handler};
+use octant_web_sys::prompt;
 
 pub struct ScoreHandler {
     pub cookie_router: Arc<CookieRouter>,
@@ -40,6 +41,11 @@ impl ScoreHandler {
         page: ArcElement,
         session: Arc<Session>,
     ) -> anyhow::Result<()> {
+        prompt(
+            session.global().runtime(),
+            &session.global().window(),
+            "hi".to_string(),
+        );
         let d = session.global().window().document();
         let input = d.create_input_element().attr("type", "text");
         let form = d

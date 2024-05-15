@@ -5,6 +5,7 @@ use std::{
     hash::Hash,
     marker::PhantomData,
 };
+use std::any::Any;
 
 use serde::{Deserialize, Serialize};
 
@@ -34,6 +35,7 @@ pub use html_input_element::*;
 pub use navigator::*;
 pub use node::*;
 pub use object::*;
+use octant_serde::{define_serde_trait, SerializeDyn};
 pub use promise::*;
 pub use pub_key_cred_params::*;
 pub use public_key_credential::*;
@@ -151,6 +153,7 @@ pub enum DownMessage {
     Invoke { assign: HandleId, method: Method },
     Delete(HandleId),
     Fail(String),
+    NewDownMessage(Box<dyn NewDownMessage>),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -160,6 +163,7 @@ pub enum UpMessage {
     HtmlInputElement(TypedHandle<HtmlInputElementTag>, HtmlInputElementUpMessage),
     Promise(TypedHandle<PromiseTag>, PromiseUpMessage),
     Credential(TypedHandle<CredentialTag>, CredentialUpMessage),
+    NewUpMessage(Box<dyn NewUpMessage>),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -188,6 +192,7 @@ impl Debug for DownMessage {
             DownMessage::Fail(_) => {
                 write!(f, "fail")
             }
+            DownMessage::NewDownMessage(x) => Debug::fmt(x, f),
         }
     }
 }
@@ -197,3 +202,10 @@ impl<T: TypeTag> Debug for TypedHandle<T> {
         self.0.fmt(f)
     }
 }
+
+pub trait NewUpMessage: SerializeDyn + Debug + Send + Sync + Any {}
+
+define_serde_trait!(NewUpMessage);
+
+pub trait NewDownMessage: SerializeDyn + Debug + Send + Sync + Any {}
+define_serde_trait!(NewDownMessage);

@@ -24,19 +24,19 @@ pub mod reexports {
 }
 
 pub type OctantDeserializer<'a, 'de> =
-    &'a mut serde_json::Deserializer<serde_json::de::SliceRead<'de>>;
+    &'a mut serde_json::Deserializer<serde_json::de::StrRead<'de>>;
 pub type OctantSerializer<'a> = &'a mut serde_json::Serializer<&'a mut Vec<u8>>;
 
-pub fn serialize<T: ?Sized + Serialize>(x: &T) -> Result<Vec<u8>, serde_json::Error> {
+pub fn serialize<T: ?Sized + Serialize>(x: &T) -> Result<String, serde_json::Error> {
     let mut vec = vec![];
     let mut serializer = serde_json::Serializer::new(&mut vec);
     x.serialize(&mut serializer)?;
-    Ok(vec)
+    Ok(String::from_utf8(vec).unwrap())
 }
 
-pub fn deserialize<'de, T: Deserialize<'de>>(de: &'de [u8]) -> Result<T, serde_json::Error> {
+pub fn deserialize<'de, T: Deserialize<'de>>(de: &'de str) -> Result<T, serde_json::Error> {
     T::deserialize(&mut serde_json::Deserializer::new(
-        serde_json::de::SliceRead::new(de),
+        serde_json::de::StrRead::new(de),
     ))
 }
 
@@ -118,7 +118,12 @@ impl<'de, U: 'static + ?Sized, D: Deserializer<'de>> DeserializeSpec<'de, U, D>
     for DeserializeValue<U>
 {
     default fn deserialize_spec(self, d: D) -> Result<Box<U>, D::Error> {
-        Err(D::Error::custom("missing deserialize specialization"))
+        let expected = type_name::<OctantDeserializer>();
+        let found = type_name::<D>();
+        Err(D::Error::custom(format_args!(
+            "missing deserialize specialization (expected {}, found {})",
+            expected, found
+        )))
     }
 }
 
@@ -134,7 +139,7 @@ impl<'a, 'de, U: 'static + ?Sized> DeserializeSpec<'de, U, OctantDeserializer<'a
             .get(&self.0)
             .ok_or_else(|| {
                 <<OctantDeserializer<'a, 'de> as Deserializer<'de>>::Error as serde::de::Error>::custom(
-                    "Missing deserializer",
+                    format_args!("Missing deserializer for {}", self.0),
                 )
             })?;
         let imp = imp.downcast_ref::<DeserializeFn<U>>().unwrap();
@@ -262,7 +267,7 @@ macro_rules! define_serde_trait {
 macro_rules! define_serde_impl {
     ($type:ty: $trait:path) => {
         const _: () = {
-            #[$crate::reexports::catalog::register($crate::DESERIALIZE_REGISTRY, lazy = true)]
+            #[$crate::reexports::catalog::register($crate::DESERIALIZE_REGISTRY, lazy = true, crate=$crate::reexports::catalog)]
             static IMP: $crate::DeserializeImp<dyn $trait, $type> = $crate::DeserializeImp::new(
                 ::std::boxed::Box::leak(::std::boxed::Box::new(::std::format!(
                     "{}::{}",
