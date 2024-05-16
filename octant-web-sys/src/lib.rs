@@ -2,13 +2,13 @@
 #![allow(unused_imports)]
 
 use catalog::register;
-#[cfg(feature = "server")]
+#[cfg(side="server")]
 use octant_gui::{
     runtime::{HasTypedHandle, Runtime},
     window::ArcWindow,
     ServerContext, UpMessageHandler, UP_MESSAGE_HANDLER_REGISTRY,
 };
-#[cfg(feature = "client")]
+#[cfg(side="client")]
 use octant_gui_client::{ClientContext, DownMessageHandler, DOWN_MESSAGE_HANDLER_REGISTRY};
 use octant_gui_core::{
     DownMessage, NewDownMessage, NewUpMessage, TypedHandle, UpMessage, UpMessageList, WindowTag,
@@ -35,7 +35,7 @@ pub struct PromptResponse {
 define_serde_impl!(PromptResponse: NewUpMessage);
 impl NewUpMessage for PromptResponse {}
 
-#[cfg(feature = "server")]
+#[cfg(side="server")]
 pub fn prompt(runtime: &Arc<Runtime>, window: &ArcWindow, request: String) {
     runtime.send(DownMessage::NewDownMessage(Box::new(PromptRequest {
         window: window.typed_handle(),
@@ -43,7 +43,7 @@ pub fn prompt(runtime: &Arc<Runtime>, window: &ArcWindow, request: String) {
     })));
 }
 
-#[cfg(feature = "client")]
+#[cfg(side="client")]
 #[register(DOWN_MESSAGE_HANDLER_REGISTRY)]
 fn handle_prompt() -> DownMessageHandler<PromptRequest> {
     |ctx: ClientContext, req: PromptRequest| {
@@ -61,7 +61,7 @@ fn handle_prompt() -> DownMessageHandler<PromptRequest> {
     }
 }
 
-#[cfg(feature = "server")]
+#[cfg(side="server")]
 #[register(UP_MESSAGE_HANDLER_REGISTRY)]
 fn handle_prompt_result() -> UpMessageHandler<PromptResponse> {
     |_: ServerContext, resp: PromptResponse| {

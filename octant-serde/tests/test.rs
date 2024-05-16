@@ -31,7 +31,7 @@ impl MyTrait for Bar {}
 fn test() {
     let start: Box<dyn MyTrait> = Box::new(Foo(2));
     let encoded: String = serialize(&start).unwrap();
-    assert_eq!(r#"{"type":"test::test::Foo","value":2}"#, encoded);
+    assert_eq!(r#"{"type":"test::Foo","value":2}"#, encoded);
     let end: Box<dyn MyTrait> = deserialize(&encoded).unwrap();
     assert_eq!(r#"Foo(2)"#, format!("{:?}", end));
 }

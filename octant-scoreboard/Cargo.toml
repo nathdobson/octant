@@ -20,4 +20,4 @@ log = "0.4.21"
 octant-account = {path="../octant-account"}
 octant-database = {path="../octant-database"}
 parking_lot = "0.12.2"
-octant-web-sys = {path="../octant-web-sys",features = ["server"]}
+octant-web-sys-server = {workspace=true}

@@ -52,7 +52,12 @@ pub struct DeserializeImp<U: ?Sized, T> {
 }
 
 impl<U: ?Sized, T: 'static + Unsize<U> + for<'de> Deserialize<'de>> DeserializeImp<U, T> {
-    pub fn new(name: &'static str) -> Self {
+    pub fn new(package_name: &str, type_name: &str) -> Self {
+        let name = Box::leak(Box::new(format!(
+            "{}::{}",
+            package_name,
+            type_name.split_once("::").unwrap().1,
+        )));
         DeserializeImp {
             name,
             deserialize: |de| Ok(Box::<T>::new(T::deserialize(de)?)),
@@ -269,11 +274,8 @@ macro_rules! define_serde_impl {
         const _: () = {
             #[$crate::reexports::catalog::register($crate::DESERIALIZE_REGISTRY, lazy = true, crate=$crate::reexports::catalog)]
             static IMP: $crate::DeserializeImp<dyn $trait, $type> = $crate::DeserializeImp::new(
-                ::std::boxed::Box::leak(::std::boxed::Box::new(::std::format!(
-                    "{}::{}",
-                    env!("CARGO_CRATE_NAME"),
-                    ::std::any::type_name::<$type>()
-                ))),
+                option_env!("OCTANT_SERDE_SHARED_NAME").unwrap_or(env!("CARGO_CRATE_NAME")),
+                ::std::any::type_name::<$type>()
             );
             impl $crate::SerializeType for $type {
                 fn serialize_type(&self) -> &'static str {

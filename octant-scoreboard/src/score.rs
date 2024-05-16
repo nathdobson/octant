@@ -11,7 +11,7 @@ use octant_gui::{
     event_loop::Page,
 };
 use octant_server::{cookies::CookieRouter, session::Session, Handler};
-use octant_web_sys::prompt;
+use octant_web_sys_server::prompt;
 
 pub struct ScoreHandler {
     pub cookie_router: Arc<CookieRouter>,
