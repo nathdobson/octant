@@ -1,13 +1,21 @@
 #![deny(unused_must_use)]
+#![feature(macro_metavar_expr)]
 
 use std::{
+    any::Any,
     fmt::{Debug, Formatter},
     hash::Hash,
     marker::PhantomData,
 };
-use std::any::Any;
 
 use serde::{Deserialize, Serialize};
+
+#[doc(hidden)]
+pub mod reexports {
+    pub use paste;
+    pub use octant_object;
+    pub use serde;
+}
 
 pub use allow_credentials::*;
 pub use allow_credentials_type::*;
@@ -209,3 +217,60 @@ define_serde_trait!(NewUpMessage);
 
 pub trait NewDownMessage: SerializeDyn + Debug + Send + Sync + Any {}
 define_serde_trait!(NewDownMessage);
+
+#[macro_export]
+macro_rules! define_sys_class {
+    {
+        class $class:ident;
+        extends $parent:path;
+        wasm $wasm:path;
+        $(new_client $new_client_dummy:ident;)?
+        $(new_server $new_server_dummy:tt;)?
+    } => {
+        $crate::reexports::paste::paste! {
+            #[cfg(side = "client")]
+            $crate::reexports::octant_object::define_class! {
+                pub class $class extends $parent {
+                    [< $class:snake >]: $wasm,
+                }
+            }
+            $(
+                ${ignore($new_client_dummy)}
+                #[cfg(side = "client")]
+                impl [< $class Value >] {
+                    pub fn new(handle: $crate::HandleId, [< $class:snake >]: $wasm) -> Self {
+                        [< $class Value >] {
+                            parent: <dyn $parent as $crate::reexports::octant_object::class::Class>::Value::new(handle, [< $class:snake >].clone().into()),
+                            [< $class:snake >],
+                        }
+                    }
+                }
+            )?
+
+            #[derive($crate::reexports::serde::Serialize, $crate::reexports::serde::Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
+            pub struct [< $class Tag >];
+
+            impl $crate::TypeTag for [< $class Tag >] {}
+
+            #[cfg(side = "server")]
+            $crate::reexports::octant_object::define_class! {
+                #[derive(Debug)]
+                pub class $class extends $parent {
+
+                }
+            }
+            $(
+                ${ignore($new_server_dummy)}
+                #[cfg(side = "server")]
+                impl [< $class Value >] {
+                    pub fn new(handle: ::octant_gui::handle::HandleValue) -> Self {
+                        [< $class Value >] {
+                            parent: <dyn $parent as $crate::reexports::octant_object::class::Class>::Value::new(handle),
+                        }
+                    }
+                }
+            )?
+
+        }
+    };
+}

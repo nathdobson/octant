@@ -8,3 +8,5 @@ serde = { version = "1.0.201", features = ["derive"] }
 serde_json = "1.0.117"
 base64urlsafedata = "0.5.0"
 octant-serde ={path="../octant-serde"}
+paste = {workspace=true}
+octant-object = {workspace=true}
