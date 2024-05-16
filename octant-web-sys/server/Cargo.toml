@@ -18,6 +18,8 @@ anyhow = "1.0.83"
 catalog = {workspace=true}
 wasm-error = {workspace=true}
 log = "0.4.21"
+octant-object = {workspace=true}
+
 
 [build-dependencies]
 octant-sys-build = {workspace=true}

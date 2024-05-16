@@ -25,3 +25,5 @@ wasm-error = {path="wasm-error"}
 octant-web-sys-server = {path="octant-web-sys/server"}
 octant-web-sys-client = {path="octant-web-sys/client"}
 octant-sys-build = {path= "octant-sys-build"}
+octant-object = {path="octant-object"}
+web-sys = "0.3.69"
