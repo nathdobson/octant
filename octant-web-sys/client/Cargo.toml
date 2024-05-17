@@ -7,7 +7,7 @@ edition = "2021"
 metabuild = ["octant-sys-build"]
 
 [lib]
-path = "../src/lib.rs"
+path = "../src-client/lib.rs"
 
 [dependencies]
 octant-gui-core = {workspace=true}
@@ -22,6 +22,7 @@ octant-object = {workspace=true}
 web-sys = {workspace=true, features=["HtmlDivElement"]}
 wasm-bindgen = {workspace=true}
 js-sys = {workspace=true}
+safe-once = {workspace=true}
 
 [build-dependencies]
 octant-sys-build = {workspace=true}

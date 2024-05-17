@@ -10,7 +10,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
 
 use octant_executor::Spawn;
-use octant_gui_core::{DownMessage, HandleId, Method, TypedHandle, TypeTag};
+use octant_gui_core::{DownMessage, HandleId, Method, TypeTag, TypedHandle};
 use octant_object::cast::downcast_object;
 
 use crate::handle::{Handle, HandleValue};
@@ -74,6 +74,15 @@ impl Runtime {
             .insert(result.handle().id(), result.clone());
         result
     }
+    pub fn add_uninit(self: &Arc<Self>) -> HandleValue {
+        let handle;
+        {
+            let ref mut this = *self.state.borrow_mut();
+            handle = HandleId(this.next_handle);
+            this.next_handle += 1;
+        }
+        HandleValue::new(self.clone(), handle)
+    }
     pub fn handle<T: HasLocalType>(&self, key: TypedHandle<T>) -> Arc<T::Local> {
         let handle = self
             .state
@@ -82,8 +91,9 @@ impl Runtime {
             .get(&key.0)
             .unwrap_or_else(|| panic!("unknown handle {:?}", key));
         let dhandle = handle.clone();
-        downcast_object(handle)
-            .unwrap_or_else(|_| panic!("Cannot cast {:?} to {:?}", dhandle, type_name::<T::Local>()))
+        downcast_object(handle).unwrap_or_else(|_| {
+            panic!("Cannot cast {:?} to {:?}", dhandle, type_name::<T::Local>())
+        })
     }
 }
 

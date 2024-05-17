@@ -41,11 +41,13 @@ impl ScoreHandler {
         page: ArcElement,
         session: Arc<Session>,
     ) -> anyhow::Result<()> {
-        prompt(
-            session.global().runtime(),
-            &session.global().window(),
-            "hi".to_string(),
-        );
+        let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());
+        global.window();
+        // prompt(
+        //     session.global().runtime(),
+        //     &session.global().window(),
+        //     "hi".to_string(),
+        // );
         let d = session.global().window().document();
         let input = d.create_input_element().attr("type", "text");
         let form = d

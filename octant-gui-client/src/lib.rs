@@ -3,10 +3,12 @@
 #![feature(ptr_metadata)]
 #![feature(never_type)]
 #![feature(trait_alias)]
+#![feature(unsize)]
 
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
+    marker::Unsize,
     pin::Pin,
     ptr::{DynMetadata, Pointee},
     sync::Arc,
@@ -26,7 +28,7 @@ use octant_gui_core::{
 use octant_object::cast::downcast_object;
 use wasm_error::WasmError;
 
-use crate::peer::ArcPeer;
+use crate::peer::{ArcPeer, Peer};
 
 pub mod any_value;
 pub mod credential;
@@ -133,6 +135,17 @@ impl Runtime {
             .map_err(WasmError::new)?;
         pop_listener.forget();
         Ok(runtime)
+    }
+    pub fn add<T: HasLocalType>(self: &Arc<Self>, assign: TypedHandle<T>, value: Arc<T::Local>)
+    where
+        T::Local: Unsize<dyn Peer>,
+    {
+        assert!(self
+            .state
+            .borrow_mut()
+            .handles
+            .insert(assign.0, value)
+            .is_none());
     }
     async fn invoke(self: &Arc<Self>, assign: HandleId, method: &Method) -> anyhow::Result<()> {
         if let Some(result) = self.invoke_with(method, assign).await? {

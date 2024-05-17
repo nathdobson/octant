@@ -12,8 +12,8 @@ use serde::{Deserialize, Serialize};
 
 #[doc(hidden)]
 pub mod reexports {
-    pub use paste;
     pub use octant_object;
+    pub use paste;
     pub use serde;
 }
 
@@ -251,6 +251,16 @@ macro_rules! define_sys_class {
             pub struct [< $class Tag >];
 
             impl $crate::TypeTag for [< $class Tag >] {}
+
+            #[cfg(side="server")]
+            impl octant_gui::runtime::HasTypedHandle for [< $class Value >]{
+                type TypeTag = [< $class Tag >];
+            }
+
+            #[cfg(side="client")]
+            impl octant_gui_client::HasLocalType for [< $class Tag >]{
+                type Local = dyn $class;
+            }
 
             #[cfg(side = "server")]
             $crate::reexports::octant_object::define_class! {
