@@ -4,7 +4,7 @@ resolver = "2"
 members = ["octant-build",
     "octant-client", "octant-gui", "octant-gui-client", "octant-gui-core", "octant-object", "octant-panic", "octant-scoreboard",
     "octant-server"
-    , "wasm-error", "octant-build", "octant-database", "octant-account", "octant-executor", "octant-serde", "octant-web-sys/client","octant-web-sys/server", "octant-sys-build"]
+    , "wasm-error", "octant-build", "octant-database", "octant-account", "octant-executor", "octant-serde", "octant-web-sys-client","octant-web-sys-server", "octant-sys-build"]
 
 [profile.release]
 opt-level = "s"
@@ -22,8 +22,8 @@ octant-gui = {path="octant-gui"}
 octant-gui-client = {path="octant-gui-client"}
 octant-serde = {path="octant-serde"}
 wasm-error = {path="wasm-error"}
-octant-web-sys-server = {path="octant-web-sys/server"}
-octant-web-sys-client = {path="octant-web-sys/client"}
+octant-web-sys-server = {path="octant-web-sys-server"}
+octant-web-sys-client = {path="octant-web-sys-client"}
 octant-sys-build = {path= "octant-sys-build"}
 octant-object = {path="octant-object"}
 web-sys = "0.3.69"
