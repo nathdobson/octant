@@ -42,6 +42,7 @@ impl ScoreHandler {
     ) -> anyhow::Result<()> {
         let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());
         global.window();
+        global.alert(format!("hi"));
         // prompt(
         //     session.global().runtime(),
         //     &session.global().window(),

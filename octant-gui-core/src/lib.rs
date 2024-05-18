@@ -290,21 +290,40 @@ macro_rules! define_sys_class {
 #[macro_export]
 macro_rules! define_sys_rpc {
     {
-        fn $name:ident($ctx:ident) -> $output:ident { $($imp:tt)* }
+        fn $name:ident($ctx:ident $(, $input_name:ident: $input:ty)*) -> ( $( $output:ident, )* ) { $($imp:tt)* }
     } => {
         $crate::reexports::paste::paste!{
             #[cfg(side = "server")]
-            fn $name(runtime: &Arc<Runtime>) -> Arc<dyn $output> {
-                let output = Arc::new(<dyn $output as $crate::reexports::octant_object::class::Class>::Value::new(runtime.add_uninit()));
-                runtime.send(DownMessage::NewDownMessage(Box::new([< $name:camel Request >] {
-                    output: $crate::NewTypedHandle::new(output.typed_handle().0),
+            fn $name(
+                ctx: ::octant_gui::ServerContext
+                $(, $input_name: $input)*
+            ) -> (
+                $(
+                    Arc<dyn $output>
+                ),*
+            ) {
+                $(
+                    let [< output_ ${index()} >] = Arc::new(<dyn $output as $crate::reexports::octant_object::class::Class>::Value::new(ctx.runtime.add_uninit()));
+                )*
+                ctx.runtime.send(DownMessage::NewDownMessage(Box::new([< $name:camel Request >] {
+                    $($input_name,)*
+                    $(
+                        ${ignore($output)}
+                        [< output_ ${index()} >]: $crate::NewTypedHandle::new([< output_ ${index()} >].typed_handle().0),
+                    )*
                 })));
-                output
+                ( $(
+                    ${ignore($output)}
+                    [< output_ ${index()} >]
+                ),* )
             }
 
             #[derive(Serialize, Deserialize, Debug)]
             pub struct [< $name:camel Request >] {
-                output: $crate::NewTypedHandle<dyn $output>,
+                $($input_name: $input,)*
+                $(
+                    [< output_ ${index()} >]: $crate::NewTypedHandle<dyn $output>,
+                )*
             }
 
             define_serde_impl!([< $name:camel Request >]: NewDownMessage);
@@ -313,16 +332,25 @@ macro_rules! define_sys_rpc {
             #[cfg(side = "client")]
             #[register(DOWN_MESSAGE_HANDLER_REGISTRY)]
             fn [<handle_ $name>]() -> DownMessageHandler<[< $name:camel Request >]> {
-                |ctx: ClientContext, req: [< $name:camel Request >]| {
+                |ctx: ::octant_gui_client::ClientContext, req: [< $name:camel Request >]| {
                     let runtime=ctx.runtime.clone();
-                    let result = [<impl_ $name>](ctx)?;
-                    runtime.add_new(req.output, Arc::new(<dyn $output>::from_handle(req.output, result)));
+                    let result = [<impl_ $name>](ctx $(, req.$input_name)*)?;
+                    $(
+                        runtime.add_new(req.[< output_ ${index()} >], Arc::new(<dyn $output>::from_handle(req.[< output_ ${index()} >], result.${index()})));
+                    )*
                     Ok(())
                 }
             }
 
             #[cfg(side="client")]
-            fn [<impl_ $name>]($ctx: ClientContext) -> $crate::reexports::anyhow::Result<<dyn $output as $crate::FromHandle>::Builder>{
+            fn [<impl_ $name>](
+                $ctx: ClientContext,
+                $($input_name: $input,)*
+            ) -> $crate::reexports::anyhow::Result<
+                ($(
+                    <dyn $output as $crate::FromHandle>::Builder,
+                )*)
+            >{
                 $($imp)*
             }
         }
