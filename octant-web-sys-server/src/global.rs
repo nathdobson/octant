@@ -1,4 +1,4 @@
-use crate::window::{ArcWindow, WindowTag, WindowValue};
+use crate::window::{ArcWindow, Window, WindowTag, WindowValue};
 use catalog::register;
 #[cfg(side = "server")]
 use octant_gui::{
@@ -8,13 +8,16 @@ use octant_gui::{
 #[cfg(side = "client")]
 use octant_gui_client::{ClientContext, DownMessageHandler, DOWN_MESSAGE_HANDLER_REGISTRY};
 use octant_gui_core::{
-    DownMessage, NewDownMessage, NewUpMessage, TypedHandle, UpMessage, UpMessageList,
+    define_sys_rpc, DownMessage, NewDownMessage, NewUpMessage, TypedHandle, UpMessage,
+    UpMessageList,
 };
 use octant_serde::define_serde_impl;
 use safe_once::sync::OnceLock;
 use serde::{Deserialize, Serialize};
 use std::{marker::PhantomData, sync::Arc};
+use std::hint::must_use;
 use wasm_error::WasmError;
+use octant_gui_core::FromHandle;
 
 #[cfg(side = "server")]
 pub struct Global {
@@ -38,33 +41,12 @@ impl Global {
 #[cfg(side = "server")]
 impl Global {
     pub fn window(&self) -> &ArcWindow {
-        self.window.get_or_init(|| {
-            let window = Arc::new(WindowValue::new(self.runtime.add_uninit()));
-            self.runtime
-                .send(DownMessage::NewDownMessage(Box::new(WindowRequest {
-                    window: window.typed_handle(),
-                })));
-            window
-        })
+        self.window.get_or_init(|| window(&self.runtime))
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct WindowRequest {
-    window: TypedHandle<WindowTag>,
-}
-
-define_serde_impl!(WindowRequest: NewDownMessage);
-impl NewDownMessage for WindowRequest {}
-
-#[cfg(side = "client")]
-#[register(DOWN_MESSAGE_HANDLER_REGISTRY)]
-fn handle_prompt() -> DownMessageHandler<WindowRequest> {
-    |ctx: ClientContext, req: WindowRequest| {
-        ctx.runtime.add(
-            req.window,
-            Arc::new(WindowValue::new(req.window.0, web_sys::window().unwrap())),
-        );
-        Ok(())
+define_sys_rpc! {
+    fn window(_ctx) -> Window {
+        Ok(web_sys::window().unwrap())
     }
 }

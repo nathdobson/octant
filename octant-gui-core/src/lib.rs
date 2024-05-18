@@ -1,17 +1,18 @@
 #![deny(unused_must_use)]
 #![feature(macro_metavar_expr)]
+#![feature(unsize)]
 
 use std::{
     any::Any,
     fmt::{Debug, Formatter},
     hash::Hash,
-    marker::PhantomData,
 };
 
 use serde::{Deserialize, Serialize};
 
 #[doc(hidden)]
 pub mod reexports {
+    pub use anyhow;
     pub use octant_object;
     pub use paste;
     pub use serde;
@@ -38,11 +39,13 @@ pub use document::*;
 pub use element::*;
 pub use error::*;
 pub use global::*;
+pub use handle::*;
 pub use html_form_element::*;
 pub use html_input_element::*;
 pub use navigator::*;
 pub use node::*;
 pub use object::*;
+use octant_object::class::Class;
 use octant_serde::{define_serde_trait, SerializeDyn};
 pub use promise::*;
 pub use pub_key_cred_params::*;
@@ -95,6 +98,7 @@ mod authentication_extensions_client_inputs;
 mod authenticator_assertion_response;
 mod credential;
 mod credential_request_options;
+mod handle;
 mod public_key_credential_request_options;
 mod request;
 mod request_init;
@@ -136,9 +140,6 @@ pub enum Method {
     Response(TypedHandle<ResponseTag>, ResponseMethod),
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
-pub struct HandleId(pub usize);
-
 pub trait TypeTag:
     'static
     + Serialize
@@ -152,9 +153,6 @@ pub trait TypeTag:
     + Hash
 {
 }
-
-#[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
-pub struct TypedHandle<T: TypeTag>(pub HandleId, pub PhantomData<T>);
 
 #[derive(Serialize, Deserialize)]
 pub enum DownMessage {
@@ -205,12 +203,6 @@ impl Debug for DownMessage {
     }
 }
 
-impl<T: TypeTag> Debug for TypedHandle<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
 pub trait NewUpMessage: SerializeDyn + Debug + Send + Sync + Any {}
 
 define_serde_trait!(NewUpMessage);
@@ -237,14 +229,24 @@ macro_rules! define_sys_class {
             $(
                 ${ignore($new_client_dummy)}
                 #[cfg(side = "client")]
-                impl [< $class Value >] {
-                    pub fn new(handle: $crate::HandleId, [< $class:snake >]: $wasm) -> Self {
+                impl $crate::FromHandle for dyn $class {
+                    type Builder = $wasm;
+                    fn from_handle(handle: $crate::NewTypedHandle<Self>, [< $class:snake >]: Self::Builder) -> [< $class Value >]  {
                         [< $class Value >] {
-                            parent: <dyn $parent as $crate::reexports::octant_object::class::Class>::Value::new(handle, [< $class:snake >].clone().into()),
+                            parent: <dyn $parent as $crate::FromHandle>::from_handle(handle.unsize(), [< $class:snake >].clone().into()),
                             [< $class:snake >],
                         }
                     }
                 }
+                // #[cfg(side = "client")]
+                // impl [< $class Value >] {
+                //     pub fn new(handle: $crate::NewTypedHandle<dyn $class>, [< $class:snake >]: $wasm) -> Self {
+                //         [< $class Value >] {
+                //             parent: <dyn $parent as $crate::reexports::octant_object::class::Class>::Value::new(handle.unsize(), [< $class:snake >].clone().into()),
+                //             [< $class:snake >],
+                //         }
+                //     }
+                // }
             )?
 
             #[derive($crate::reexports::serde::Serialize, $crate::reexports::serde::Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
@@ -283,4 +285,51 @@ macro_rules! define_sys_class {
 
         }
     };
+}
+
+#[macro_export]
+macro_rules! define_sys_rpc {
+    {
+        fn $name:ident($ctx:ident) -> $output:ident { $($imp:tt)* }
+    } => {
+        $crate::reexports::paste::paste!{
+            #[cfg(side = "server")]
+            fn $name(runtime: &Arc<Runtime>) -> Arc<dyn $output> {
+                let output = Arc::new(<dyn $output as $crate::reexports::octant_object::class::Class>::Value::new(runtime.add_uninit()));
+                runtime.send(DownMessage::NewDownMessage(Box::new([< $name:camel Request >] {
+                    output: $crate::NewTypedHandle::new(output.typed_handle().0),
+                })));
+                output
+            }
+
+            #[derive(Serialize, Deserialize, Debug)]
+            pub struct [< $name:camel Request >] {
+                output: $crate::NewTypedHandle<dyn $output>,
+            }
+
+            define_serde_impl!([< $name:camel Request >]: NewDownMessage);
+            impl NewDownMessage for [< $name:camel Request >] {}
+
+            #[cfg(side = "client")]
+            #[register(DOWN_MESSAGE_HANDLER_REGISTRY)]
+            fn [<handle_ $name>]() -> DownMessageHandler<[< $name:camel Request >]> {
+                |ctx: ClientContext, req: [< $name:camel Request >]| {
+                    let runtime=ctx.runtime.clone();
+                    let result = [<impl_ $name>](ctx)?;
+                    runtime.add_new(req.output, Arc::new(<dyn $output>::from_handle(req.output, result)));
+                    Ok(())
+                }
+            }
+
+            #[cfg(side="client")]
+            fn [<impl_ $name>]($ctx: ClientContext) -> $crate::reexports::anyhow::Result<<dyn $output as $crate::FromHandle>::Builder>{
+                $($imp)*
+            }
+        }
+    };
+}
+
+pub trait FromHandle: Class {
+    type Builder;
+    fn from_handle(handle: NewTypedHandle<Self>, builder: Self::Builder) -> Self::Value;
 }

@@ -1,6 +1,5 @@
-use octant_gui_core::HandleId;
-use octant_object::{base, define_class};
-use octant_object::base::Base;
+use octant_gui_core::{FromHandle, HandleId, NewTypedHandle};
+use octant_object::{base, base::Base,  define_class};
 
 define_class! {
     pub class Peer extends Base {
@@ -17,5 +16,15 @@ impl PeerValue {
     }
     pub fn raw_handle(&self) -> HandleId {
         self.handle
+    }
+}
+
+impl FromHandle for dyn Peer {
+    type Builder = ();
+    fn from_handle(handle: NewTypedHandle<Self>, _: Self::Builder) -> Self::Value {
+        PeerValue {
+            parent: base::BaseValue::new(),
+            handle: handle.raw(),
+        }
     }
 }

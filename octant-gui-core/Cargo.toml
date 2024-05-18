@@ -10,3 +10,4 @@ base64urlsafedata = "0.5.0"
 octant-serde ={path="../octant-serde"}
 paste = {workspace=true}
 octant-object = {workspace=true}
+anyhow = {workspace=true}

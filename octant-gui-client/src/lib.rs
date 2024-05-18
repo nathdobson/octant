@@ -22,10 +22,10 @@ use wasm_bindgen::{closure::Closure, JsCast, JsValue};
 use web_sys::{console, window, Event, HtmlAnchorElement};
 
 use octant_gui_core::{
-    DownMessage, DownMessageList, HandleId, Method, NewDownMessage, TypeTag, TypedHandle,
-    UpMessage, UpMessageList,
+    DownMessage, DownMessageList, FromHandle, HandleId, Method, NewDownMessage, NewTypedHandle,
+    TypeTag, TypedHandle, UpMessage, UpMessageList,
 };
-use octant_object::cast::downcast_object;
+use octant_object::{cast::downcast_object, class::Class};
 use wasm_error::WasmError;
 
 use crate::peer::{ArcPeer, Peer};
@@ -145,6 +145,18 @@ impl Runtime {
             .borrow_mut()
             .handles
             .insert(assign.0, value)
+            .is_none());
+    }
+    pub fn add_new<T: ?Sized + Class + Unsize<dyn Peer>>(
+        self: &Arc<Self>,
+        assign: NewTypedHandle<T>,
+        value: Arc<T>,
+    ) {
+        assert!(self
+            .state
+            .borrow_mut()
+            .handles
+            .insert(assign.raw(), value)
             .is_none());
     }
     async fn invoke(self: &Arc<Self>, assign: HandleId, method: &Method) -> anyhow::Result<()> {
@@ -313,3 +325,24 @@ impl<T: NewDownMessage> BuilderFrom<DownMessageHandler<T>> for DownMessageHandle
 pub static DOWN_MESSAGE_HANDLER_REGISTRY: Registry<DownMessageHandlerRegistry> = Registry::new();
 
 pub type DownMessageHandler<T> = for<'a> fn(ClientContext<'a>, T) -> anyhow::Result<()>;
+
+pub struct ReturnValue<T: ?Sized + Class> {
+    runtime: Arc<Runtime>,
+    handle: NewTypedHandle<T>,
+}
+
+impl<T: ?Sized + Class + Unsize<dyn Peer>> ReturnValue<T> {
+    pub fn new(runtime: Arc<Runtime>, handle: NewTypedHandle<T>) -> Self {
+        ReturnValue { runtime, handle }
+    }
+    pub fn set_raw(self, value: Arc<T>) {
+        self.runtime.add_new(self.handle, value)
+    }
+    pub fn set(self, builder: T::Builder)
+    where
+        T: FromHandle,
+    {
+        let handle = self.handle;
+        self.set_raw(Arc::<T::Value>::new(T::from_handle(handle, builder)))
+    }
+}

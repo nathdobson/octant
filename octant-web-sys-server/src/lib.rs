@@ -1,16 +1,27 @@
+#![feature(trait_upcasting)]
 #![deny(unused_must_use)]
 #![allow(unused_imports)]
 #![feature(macro_metavar_expr)]
+#![feature(coerce_unsized)]
+#![feature(unsize)]
+#![feature(hint_must_use)]
 
-pub mod prompt;
-pub mod html_div_element;
-pub mod js_value;
-pub mod object;
+use octant_gui_core::{HandleId, NewTypedHandle};
+use std::{
+    marker::{PhantomData, Unsize},
+    ops::CoerceUnsized,
+    ptr::null,
+};
+
 pub mod any_value;
 pub mod document;
-pub mod node;
-pub mod html_element;
-pub mod global;
-pub mod window;
 pub mod element;
-mod text;
+pub mod global;
+pub mod html_div_element;
+pub mod html_element;
+pub mod js_value;
+pub mod node;
+pub mod object;
+pub mod prompt;
+pub mod text;
+pub mod window;
