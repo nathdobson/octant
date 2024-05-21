@@ -12,7 +12,7 @@ pub trait ParentTrait = Send + Sync + Any + Debug;
 
 define_class! {
     pub class Handle extends Base implements ParentTrait{
-        root: Arc<Runtime>,
+        runtime: Arc<Runtime>,
         id : HandleId,
     }
 }
@@ -25,15 +25,15 @@ impl Debug for HandleValue {
 
 impl Drop for HandleValue {
     fn drop(&mut self) {
-        self.root.delete(self.id)
+        self.runtime.delete(self.id)
     }
 }
 
 impl HandleValue {
-    pub fn new(root: Arc<Runtime>, handle: HandleId) -> Self {
+    pub fn new(runtime: Arc<Runtime>, handle: HandleId) -> Self {
         HandleValue {
             parent: base::BaseValue::new(),
-            root,
+            runtime,
             id: handle,
         }
     }
@@ -41,13 +41,13 @@ impl HandleValue {
         self.id
     }
     pub fn runtime(&self) -> &Arc<Runtime> {
-        &self.root
+        &self.runtime
     }
 }
 
 impl HandleValue {
     pub fn invoke(&self, method: Method) -> HandleValue {
-        self.root.invoke(method)
+        self.runtime.invoke(method)
     }
     pub fn handle(&self) -> HandleId {
         self.id

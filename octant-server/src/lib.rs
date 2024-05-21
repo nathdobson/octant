@@ -1,11 +1,7 @@
 #![feature(future_join)]
 #![deny(unused_must_use)]
 
-use std::{
-    collections::HashMap,
-    net::SocketAddr,
-    sync::{Arc},
-};
+use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
 use anyhow::anyhow;
 use clap::Parser;
@@ -24,15 +20,10 @@ use warp::{
 };
 
 use octant_executor::Pool;
-use octant_gui::{
-    event_loop::{Application, EventLoop, Page},
-    Global,
-    Runtime, sink::BufferedDownMessageSink,
-};
-use octant_gui_core::{DownMessageList, UpMessageList};
+use octant_gui::{event_loop::{Application, EventLoop, Page}, Global, Runtime, ServerDownMessageList, sink::BufferedDownMessageSink};
+use octant_gui_core::UpMessageList;
 
-use crate::cookies::CookieRouter;
-use crate::session::Session;
+use crate::{cookies::CookieRouter, session::Session};
 
 pub mod cookies;
 pub mod session;
@@ -107,7 +98,7 @@ impl OctantServer {
     pub fn add_handler(&mut self, handler: impl Handler) {
         self.handlers.insert(handler.prefix(), Arc::new(handler));
     }
-    async fn encode(x: DownMessageList) -> anyhow::Result<Message> {
+    async fn encode(x: ServerDownMessageList) -> anyhow::Result<Message> {
         Ok(Message::binary(serde_json::to_vec(&x)?))
     }
     fn decode(x: Message) -> anyhow::Result<Option<UpMessageList>> {

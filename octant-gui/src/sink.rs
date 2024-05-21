@@ -1,24 +1,24 @@
 use std::{
     mem,
-    pin::Pin,
     task::{Context, Poll},
 };
 
-use futures::{Sink, SinkExt};
+use futures::SinkExt;
 use tokio::sync::mpsc::UnboundedReceiver;
 
-use octant_gui_core::{DownMessage, DownMessageList};
-
-pub type DownMessageSink = Pin<Box<dyn Send + Sync + Sink<DownMessageList, Error = anyhow::Error>>>;
+use crate::{DownMessageSink, ServerDownMessage, ServerDownMessageList};
 
 pub struct BufferedDownMessageSink {
-    source: UnboundedReceiver<DownMessage>,
-    buffer: Vec<DownMessage>,
+    source: UnboundedReceiver<Box<dyn ServerDownMessage>>,
+    buffer: Vec<Box<dyn ServerDownMessage>>,
     sink: DownMessageSink,
 }
 
 impl BufferedDownMessageSink {
-    pub fn new(source: UnboundedReceiver<DownMessage>, sink: DownMessageSink) -> Self {
+    pub fn new(
+        source: UnboundedReceiver<Box<dyn ServerDownMessage>>,
+        sink: DownMessageSink,
+    ) -> Self {
         BufferedDownMessageSink {
             source,
             buffer: vec![],
@@ -32,7 +32,7 @@ impl BufferedDownMessageSink {
         let mut pending = false;
         if !self.buffer.is_empty() {
             if let Poll::Ready(()) = self.sink.poll_ready_unpin(cx)? {
-                let down = DownMessageList {
+                let down = ServerDownMessageList {
                     commands: mem::replace(&mut self.buffer, vec![]),
                 };
                 log::info!("Sending {:#?}", down);

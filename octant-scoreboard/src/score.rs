@@ -10,7 +10,7 @@ use octant_gui::{
     element::ArcElement,
     event_loop::Page,
 };
-use octant_server::{cookies::CookieRouter, session::Session, Handler};
+use octant_server::{cookies::CookieRouter, Handler, session::Session};
 
 pub struct ScoreHandler {
     pub cookie_router: Arc<CookieRouter>,
@@ -41,8 +41,7 @@ impl ScoreHandler {
         session: Arc<Session>,
     ) -> anyhow::Result<()> {
         let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());
-        global.window();
-        global.alert(format!("hi"));
+        global.window().alert(format!("hi"));
         // prompt(
         //     session.global().runtime(),
         //     &session.global().window(),
@@ -82,17 +81,22 @@ impl Handler for ScoreHandler {
     }
 
     fn handle(self: Arc<Self>, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
-        let d = session.global().window().document();
-        let page = d.create_element("div");
+        let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());
+        global.window().alert(format!("hi"));
+        let d = global.window().document().create_div();
+        todo!();
 
-        session.global().runtime().spawner().spawn({
-            let session = session.clone();
-            let page = page.clone();
-            async move {
-                self.handle_impl(page, session.clone()).await?;
-                Ok(())
-            }
-        });
-        Ok(Page::new(session.global().clone(), page))
+        // let d = session.global().window().document();
+        // let page = d.create_element("div");
+        //
+        // session.global().runtime().spawner().spawn({
+        //     let session = session.clone();
+        //     let page = page.clone();
+        //     async move {
+        //         self.handle_impl(page, session.clone()).await?;
+        //         Ok(())
+        //     }
+        // });
+        // Ok(Page::new(session.global().clone(), page))
     }
 }

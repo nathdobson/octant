@@ -10,10 +10,13 @@ use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
 
 use octant_executor::Spawn;
-use octant_gui_core::{DownMessage, HandleId, Method, TypeTag, TypedHandle};
+use octant_gui_core::{DownMessage, HandleId, Method, TypedHandle, TypeTag};
 use octant_object::cast::downcast_object;
 
-use crate::handle::{Handle, HandleValue};
+use crate::{
+    handle::{Handle, HandleValue},
+    ServerDownMessage,
+};
 
 struct State {
     next_handle: usize,
@@ -23,11 +26,11 @@ struct State {
 pub struct Runtime {
     state: AtomicRefCell<State>,
     spawn: Arc<Spawn>,
-    sink: UnboundedSender<DownMessage>,
+    sink: UnboundedSender<Box<dyn ServerDownMessage>>,
 }
 
 impl Runtime {
-    pub fn new(sink: UnboundedSender<DownMessage>, spawn: Arc<Spawn>) -> Self {
+    pub fn new(sink: UnboundedSender<Box<dyn ServerDownMessage>>, spawn: Arc<Spawn>) -> Self {
         Runtime {
             state: AtomicRefCell::new(State {
                 next_handle: 0,
@@ -38,21 +41,26 @@ impl Runtime {
         }
     }
     pub fn invoke(self: &Arc<Self>, method: Method) -> HandleValue {
-        let ref mut this = *self.state.borrow_mut();
-        let handle = HandleId(this.next_handle);
-        this.next_handle += 1;
-        self.sink
-            .send(DownMessage::Invoke {
-                assign: handle,
-                method,
-            })
-            .ok();
-        HandleValue::new(self.clone(), handle)
+        todo!();
+        // let ref mut this = *self.state.borrow_mut();
+        // let handle = HandleId(this.next_handle);
+        // this.next_handle += 1;
+        // self.sink
+        //     .send(DownMessage::Invoke {
+        //         assign: handle,
+        //         method,
+        //     })
+        //     .ok();
+        // HandleValue::new(self.clone(), handle)
     }
     pub fn delete(&self, handle: HandleId) {
         self.send(DownMessage::Delete(handle));
     }
     pub fn send(&self, command: DownMessage) {
+        // self.sink.send(command).ok();
+        todo!()
+    }
+    pub fn new_send(&self, command: Box<dyn ServerDownMessage>) {
         self.sink.send(command).ok();
     }
     pub fn spawner(&self) -> &Arc<Spawn> {

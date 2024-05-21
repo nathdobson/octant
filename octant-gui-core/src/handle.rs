@@ -1,11 +1,14 @@
-use crate::TypeTag;
-use octant_object::class::Class;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     any::type_name,
     fmt::{Debug, Formatter},
     marker::{PhantomData, Unsize},
 };
+
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+use octant_object::class::Class;
+
+use crate::TypeTag;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct HandleId(pub usize);

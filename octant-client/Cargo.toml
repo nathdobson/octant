@@ -35,3 +35,5 @@ serde_json = "1.0.117"
 wasm-error = { workspace=true }
 octant-gui-core = { workspace=true }
 octant-web-sys-client = {workspace=true}
+octant-serde = {workspace=true}
+safe-once = {workspace=true}

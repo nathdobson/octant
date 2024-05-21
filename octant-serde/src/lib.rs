@@ -5,18 +5,21 @@
 #![allow(unused_variables)]
 #![deny(unused_must_use)]
 
-use catalog::{Builder, BuilderFrom, Registry};
-use serde::{
-    de::{DeserializeSeed, Error as _, MapAccess, SeqAccess, Visitor},
-    ser::{Error, SerializeStruct},
-    Deserialize, Deserializer, Serialize, Serializer,
-};
 use std::{
-    any::{type_name, Any},
+    any::{Any, type_name},
     collections::HashMap,
     fmt::Formatter,
     marker::{PhantomData, Unsize},
+    sync::Arc,
 };
+
+use catalog::{Builder, BuilderFrom, Registry};
+use serde::{
+    de::{DeserializeSeed, Error as _, MapAccess, SeqAccess, Visitor},
+    Deserialize,
+    Deserializer, ser::{Error, SerializeStruct}, Serialize, Serializer,
+};
+pub use type_map::TypeMap;
 
 pub mod reexports {
     pub use catalog;
@@ -34,24 +37,128 @@ pub fn serialize<T: ?Sized + Serialize>(x: &T) -> Result<String, serde_json::Err
     Ok(String::from_utf8(vec).unwrap())
 }
 
-pub fn deserialize<'de, T: Deserialize<'de>>(de: &'de str) -> Result<T, serde_json::Error> {
-    T::deserialize(&mut serde_json::Deserializer::new(
-        serde_json::de::StrRead::new(de),
-    ))
+pub fn deserialize<'de, T: DeserializeWith<'de>>(
+    ctx: &TypeMap,
+    de: &'de str,
+) -> Result<T, serde_json::Error> {
+    T::deserialize_with(
+        ctx,
+        &mut serde_json::Deserializer::new(serde_json::de::StrRead::new(de)),
+    )
+}
+
+pub trait DeserializeWith<'de>: Sized {
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error>;
+}
+
+pub trait DeserializeArcWith<'de> {
+    fn deserialize_arc_with<D: Deserializer<'de>>(
+        ctx: &TypeMap,
+        d: D,
+    ) -> Result<Arc<Self>, D::Error>;
+}
+
+impl<'de, T: ?Sized> DeserializeWith<'de> for Arc<T>
+where
+    T: DeserializeArcWith<'de>,
+{
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Arc<T>, D::Error> {
+        T::deserialize_arc_with(ctx, d)
+    }
+}
+
+pub struct DeserializeWithSeed<'c, O>(&'c TypeMap, PhantomData<O>);
+
+impl<'c, T> DeserializeWithSeed<'c, T> {
+    pub fn new(c: &'c TypeMap) -> Self {
+        DeserializeWithSeed(c, PhantomData)
+    }
+}
+
+impl<'c, 'de, T> DeserializeSeed<'de> for DeserializeWithSeed<'c, T>
+where
+    T: DeserializeWith<'de>,
+{
+    type Value = T;
+    fn deserialize<D>(self, d: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        T::deserialize_with(self.0, d)
+    }
+}
+
+impl<'de> DeserializeWith<'de> for () {
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+        <()>::deserialize(d)
+    }
+}
+
+impl<'de, T1> DeserializeWith<'de> for (T1,)
+where
+    T1: DeserializeWith<'de>,
+{
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<(T1,), D::Error> {
+        struct V<'c, T1>(&'c TypeMap, PhantomData<T1>);
+        impl<'c, 'de, T1: DeserializeWith<'de>> Visitor<'de> for V<'c, T1> {
+            type Value = (T1,);
+            fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
+                write!(f, "a tuple of length 1")
+            }
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: SeqAccess<'de>,
+            {
+                Ok((seq
+                    .next_element_seed(DeserializeWithSeed::new(self.0))?
+                    .ok_or_else(|| A::Error::custom("missing tuple argument"))?,))
+            }
+        }
+        d.deserialize_tuple(1, V(ctx, PhantomData))
+    }
+}
+
+impl<'de, T1, T2> DeserializeWith<'de> for (T1, T2)
+where
+    T1: DeserializeWith<'de>,
+    T2: DeserializeWith<'de>,
+{
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<(T1, T2), D::Error> {
+        struct V<'c, T1, T2>(&'c TypeMap, PhantomData<(T1, T2)>);
+        impl<'c, 'de, T1: DeserializeWith<'de>, T2: DeserializeWith<'de>> Visitor<'de> for V<'c, T1, T2> {
+            type Value = (T1, T2);
+            fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
+                write!(f, "a tuple of length 1")
+            }
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: SeqAccess<'de>,
+            {
+                Ok((
+                    seq.next_element_seed(DeserializeWithSeed::new(self.0))?
+                        .ok_or_else(|| A::Error::custom("missing tuple argument"))?,
+                    seq.next_element_seed(DeserializeWithSeed::new(self.0))?
+                        .ok_or_else(|| A::Error::custom("missing tuple argument"))?,
+                ))
+            }
+        }
+        d.deserialize_tuple(2, V(ctx, PhantomData))
+    }
 }
 
 type DeserializeFn<U> =
     for<'a, 'de> fn(
+        &'a TypeMap,
         OctantDeserializer<'a, 'de>,
     )
         -> Result<Box<U>, <OctantDeserializer<'a, 'de> as Deserializer<'de>>::Error>;
 pub struct DeserializeImp<U: ?Sized, T> {
     pub name: &'static str,
     pub deserialize: DeserializeFn<U>,
-    phantom: PhantomData<T>,
+    phantom: PhantomData<fn() -> T>,
 }
 
-impl<U: ?Sized, T: 'static + Unsize<U> + for<'de> Deserialize<'de>> DeserializeImp<U, T> {
+impl<U: ?Sized, T: 'static + Unsize<U> + for<'de> DeserializeWith<'de>> DeserializeImp<U, T> {
     pub fn new(package_name: &str, type_name: &str) -> Self {
         let name = Box::leak(Box::new(format!(
             "{}::{}",
@@ -60,7 +167,7 @@ impl<U: ?Sized, T: 'static + Unsize<U> + for<'de> Deserialize<'de>> DeserializeI
         )));
         DeserializeImp {
             name,
-            deserialize: |de| Ok(Box::<T>::new(T::deserialize(de)?)),
+            deserialize: |ctx, de| Ok(Box::<T>::new(T::deserialize_with(ctx, de)?)),
             phantom: PhantomData,
         }
     }
@@ -113,14 +220,18 @@ impl<T: Serialize + SerializeType> SerializeDyn for T {
     }
 }
 
-struct DeserializeValue<U: ?Sized>(String, PhantomData<U>);
+struct DeserializeValue<'a, U: ?Sized> {
+    typ: String,
+    ctx: &'a TypeMap,
+    phantom: PhantomData<U>,
+}
 
 trait DeserializeSpec<'de, U: ?Sized, D: Deserializer<'de>> {
     fn deserialize_spec(self, d: D) -> Result<Box<U>, D::Error>;
 }
 
-impl<'de, U: 'static + ?Sized, D: Deserializer<'de>> DeserializeSpec<'de, U, D>
-    for DeserializeValue<U>
+impl<'a, 'de, U: 'static + ?Sized, D: Deserializer<'de>> DeserializeSpec<'de, U, D>
+    for DeserializeValue<'a, U>
 {
     default fn deserialize_spec(self, d: D) -> Result<Box<U>, D::Error> {
         let expected = type_name::<OctantDeserializer>();
@@ -133,7 +244,7 @@ impl<'de, U: 'static + ?Sized, D: Deserializer<'de>> DeserializeSpec<'de, U, D>
 }
 
 impl<'a, 'de, U: 'static + ?Sized> DeserializeSpec<'de, U, OctantDeserializer<'a, 'de>>
-    for DeserializeValue<U>
+    for DeserializeValue<'a, U>
 {
     fn deserialize_spec(
         self,
@@ -141,18 +252,18 @@ impl<'a, 'de, U: 'static + ?Sized> DeserializeSpec<'de, U, OctantDeserializer<'a
     ) -> Result<Box<U>, <OctantDeserializer<'a, 'de> as Deserializer<'de>>::Error> {
         let imp = *DESERIALIZE_REGISTRY
             .deserializers
-            .get(&self.0)
+            .get(&self.typ)
             .ok_or_else(|| {
                 <<OctantDeserializer<'a, 'de> as Deserializer<'de>>::Error as serde::de::Error>::custom(
-                    format_args!("Missing deserializer for {}", self.0),
+                    format_args!("Missing deserializer for {}", self.typ),
                 )
             })?;
         let imp = imp.downcast_ref::<DeserializeFn<U>>().unwrap();
-        imp(d)
+        imp(self.ctx, d)
     }
 }
 
-impl<'de, U: 'static + ?Sized> DeserializeSeed<'de> for DeserializeValue<U> {
+impl<'a, 'de, U: 'static + ?Sized> DeserializeSeed<'de> for DeserializeValue<'a, U> {
     type Value = Box<U>;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
@@ -163,10 +274,14 @@ impl<'de, U: 'static + ?Sized> DeserializeSeed<'de> for DeserializeValue<U> {
 }
 
 pub fn deserialize_box<'de, U: 'static + ?Sized, D: Deserializer<'de>>(
+    ctx: &TypeMap,
     d: D,
 ) -> Result<Box<U>, D::Error> {
-    struct V<U: 'static + ?Sized>(PhantomData<U>);
-    impl<'de, U: ?Sized> Visitor<'de> for V<U> {
+    struct V<'a, U: 'static + ?Sized> {
+        ctx: &'a TypeMap,
+        phantom: PhantomData<U>,
+    }
+    impl<'a, 'de, U: ?Sized> Visitor<'de> for V<'a, U> {
         type Value = Box<U>;
 
         fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
@@ -180,7 +295,11 @@ pub fn deserialize_box<'de, U: 'static + ?Sized, D: Deserializer<'de>>(
                 .next_element::<String>()?
                 .ok_or_else(|| A::Error::custom("missing type"))?;
             let value = d
-                .next_element_seed(DeserializeValue(typ, PhantomData))?
+                .next_element_seed(DeserializeValue {
+                    typ,
+                    ctx: self.ctx,
+                    phantom: PhantomData,
+                })?
                 .ok_or_else(|| A::Error::custom("missing value"))?;
             Ok(value)
         }
@@ -198,11 +317,22 @@ pub fn deserialize_box<'de, U: 'static + ?Sized, D: Deserializer<'de>>(
             if value != "value" {
                 return Err(A::Error::custom("second field should be `value`"));
             }
-            let value = d.next_value_seed(DeserializeValue(typ, PhantomData))?;
+            let value = d.next_value_seed(DeserializeValue {
+                typ,
+                ctx: self.ctx,
+                phantom: PhantomData,
+            })?;
             Ok(value)
         }
     }
-    d.deserialize_struct(type_name::<U>(), &["type", "value"], V::<U>(PhantomData))
+    d.deserialize_struct(
+        type_name::<U>(),
+        &["type", "value"],
+        V::<U> {
+            ctx,
+            phantom: PhantomData,
+        },
+    )
 }
 
 trait SerializeSpec<S: Serializer> {
@@ -248,12 +378,15 @@ pub static DESERIALIZE_REGISTRY: Registry<DeserializeRegistry> = Registry::new()
 #[macro_export]
 macro_rules! define_serde_trait {
     ($trait:path) => {
-        impl<'de> $crate::reexports::serde::Deserialize<'de> for ::std::boxed::Box<dyn $trait> {
-            fn deserialize<D>(d: D) -> ::std::result::Result<Self, D::Error>
+        impl<'de> $crate::DeserializeWith<'de> for ::std::boxed::Box<dyn $trait> {
+            fn deserialize_with<D>(
+                ctx: &$crate::TypeMap,
+                d: D,
+            ) -> ::std::result::Result<Self, D::Error>
             where
                 D: $crate::reexports::serde::Deserializer<'de>,
             {
-                $crate::deserialize_box(d)
+                $crate::deserialize_box(ctx, d)
             }
         }
 

@@ -1,11 +1,12 @@
 #![deny(unused_must_use)]
 #![feature(exit_status_error)]
 
-use serde::Deserialize;
 use std::{
     fmt::{Display, Formatter},
     process::{Command, Stdio},
 };
+
+use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 struct Metadata {

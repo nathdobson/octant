@@ -1,19 +1,19 @@
+use std::sync::Arc;
 
 use catalog::register;
-#[cfg(side="server")]
+#[cfg(side = "server")]
 use octant_gui::{
     runtime::{HasTypedHandle, Runtime},
-    window::ArcWindow,
-    ServerContext, UpMessageHandler, UP_MESSAGE_HANDLER_REGISTRY,
+    ServerContext,
+    UP_MESSAGE_HANDLER_REGISTRY, UpMessageHandler, window::ArcWindow,
 };
-#[cfg(side="client")]
-use octant_gui_client::{ClientContext, DownMessageHandler, DOWN_MESSAGE_HANDLER_REGISTRY};
+#[cfg(side = "client")]
+use octant_gui_client::{ClientContext, DOWN_MESSAGE_HANDLER_REGISTRY, DownMessageHandler};
 use octant_gui_core::{
-    DownMessage, NewDownMessage, NewUpMessage, TypedHandle, UpMessage, UpMessageList, WindowTag,
+    DownMessage, NewUpMessage, TypedHandle, UpMessage, UpMessageList, WindowTag,
 };
 use octant_serde::define_serde_impl;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use wasm_error::WasmError;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -33,7 +33,7 @@ pub struct PromptResponse {
 define_serde_impl!(PromptResponse: NewUpMessage);
 impl NewUpMessage for PromptResponse {}
 
-#[cfg(side="server")]
+#[cfg(side = "server")]
 pub fn prompt(runtime: &Arc<Runtime>, window: &ArcWindow, request: String) {
     runtime.send(DownMessage::NewDownMessage(Box::new(PromptRequest {
         window: window.typed_handle(),
@@ -41,7 +41,7 @@ pub fn prompt(runtime: &Arc<Runtime>, window: &ArcWindow, request: String) {
     })));
 }
 
-#[cfg(side="client")]
+#[cfg(side = "client")]
 #[register(DOWN_MESSAGE_HANDLER_REGISTRY)]
 fn handle_prompt() -> DownMessageHandler<PromptRequest> {
     |ctx: ClientContext, req: PromptRequest| {
@@ -59,7 +59,7 @@ fn handle_prompt() -> DownMessageHandler<PromptRequest> {
     }
 }
 
-#[cfg(side="server")]
+#[cfg(side = "server")]
 #[register(UP_MESSAGE_HANDLER_REGISTRY)]
 fn handle_prompt_result() -> UpMessageHandler<PromptResponse> {
     |_: ServerContext, resp: PromptResponse| {

@@ -11,3 +11,4 @@ octant-serde ={path="../octant-serde"}
 paste = {workspace=true}
 octant-object = {workspace=true}
 anyhow = {workspace=true}
+catalog = {workspace=true}

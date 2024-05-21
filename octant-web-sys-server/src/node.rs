@@ -1,5 +1,7 @@
-use crate::object::Object;
 use octant_gui_core::define_sys_class;
+
+use crate::object::Object;
+
 define_sys_class! {
     class Node;
     extends Object;

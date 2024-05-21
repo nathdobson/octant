@@ -10,7 +10,7 @@ metabuild = ["octant-sys-build"]
 octant-gui-core = {workspace=true}
 octant-gui-client = {workspace=true}
 octant-serde = {workspace=true}
-serde = { version = "1.0.201", features = ["derive"] }
+serde = { version = "1.0.201", features = ["derive","rc"] }
 anyhow = "1.0.83"
 catalog = {workspace= true}
 wasm-error = {workspace=true}

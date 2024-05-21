@@ -5,12 +5,12 @@ use octant_object::define_class;
 
 use crate::{
     document::{ArcDocument, DocumentValue},
+    HasLocalType,
     navigator::{ArcNavigator, NavigatorValue},
     object::{Object, ObjectValue},
     peer::ArcPeer,
     promise::{ArcPromise, PromiseValue},
-    request::ArcRequest,
-    HasLocalType, Runtime,
+    request::ArcRequest, Runtime,
 };
 
 define_class! {

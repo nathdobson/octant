@@ -10,10 +10,10 @@ use octant_gui_core::{
 use octant_object::{cast::downcast_object, define_class};
 
 use crate::{
+    HasLocalType,
     html_element::{HtmlElement, HtmlElementValue},
     html_input_element::HtmlInputElement,
-    peer::ArcPeer,
-    HasLocalType, Runtime,
+    peer::ArcPeer, Runtime,
 };
 
 define_class! {

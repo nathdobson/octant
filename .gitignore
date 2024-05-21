@@ -16,3 +16,5 @@ Cargo.lock
 # Intellij files.
 octant.iml
 .idea
+
+rustc-ice-*.txt

@@ -6,11 +6,10 @@
 #![feature(unsize)]
 #![feature(hint_must_use)]
 
-use octant_gui_core::{HandleId, NewTypedHandle};
 use std::{
-    marker::{PhantomData, Unsize},
-    ops::CoerceUnsized,
-    ptr::null,
+    marker::Unsize,
+    ops::CoerceUnsized
+    ,
 };
 
 pub mod any_value;
@@ -22,6 +21,6 @@ pub mod html_element;
 pub mod js_value;
 pub mod node;
 pub mod object;
-pub mod prompt;
+// pub mod prompt;
 pub mod text;
 pub mod window;

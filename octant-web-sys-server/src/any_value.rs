@@ -1,10 +1,8 @@
-use octant_gui_core::{define_sys_class, HandleId};
-
-#[cfg(side = "client")]
-use octant_gui_client::peer::{Peer as CustomPeer, PeerValue};
-
 #[cfg(side = "server")]
 use octant_gui::handle::{Handle as CustomPeer, HandleValue};
+#[cfg(side = "client")]
+use octant_gui_client::peer::{Peer as CustomPeer, PeerValue};
+use octant_gui_core::{define_sys_class, HandleId};
 
 define_sys_class! {
     class AnyValue;

@@ -19,3 +19,5 @@ by_address = "1.2.1"
 parking_lot = "0.12.2"
 octant-executor = {path="../octant-executor"}
 catalog = {path="../../catalog/catalog"}
+serde = {workspace=true}
+safe-once = {workspace=true}

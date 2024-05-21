@@ -4,19 +4,25 @@
 #![feature(trait_alias)]
 #![feature(trait_upcasting)]
 #![feature(ptr_metadata)]
+#![allow(unused_variables)]
 
-use catalog::{Builder, BuilderFrom, Registry};
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
+    fmt::Debug,
     pin::Pin,
     sync::Arc,
 };
 
-use futures::Stream;
+use catalog::{Builder, BuilderFrom, Registry};
+use futures::{Sink, Stream};
+use serde::Serialize;
 
 pub use global::Global;
-use octant_gui_core::{NewUpMessage, UpMessageList};
+use octant_gui_core::{
+    NewUpMessage,
+    reexports::octant_serde::{define_serde_trait, SerializeDyn}, UpMessageList,
+};
 pub use runtime::Runtime;
 
 pub mod builder;
@@ -79,15 +85,11 @@ pub type UpMessageStream =
 // pub type Credential = Arc<dyn credential::Trait>;
 // pub type Response = Arc<dyn response::Trait>;
 
-pub struct ServerContext<'a> {
-    pub runtime: &'a Arc<Runtime>,
-}
-
 type DynUpMessageHandler = Box<
     dyn 'static
         + Send
         + Sync
-        + for<'a> Fn(ServerContext<'a>, Box<dyn NewUpMessage>) -> anyhow::Result<()>,
+        + for<'a> Fn(&'a Arc<Runtime>, Box<dyn NewUpMessage>) -> anyhow::Result<()>,
 >;
 
 pub struct UpMessageHandlerRegistry {
@@ -121,4 +123,15 @@ impl<T: NewUpMessage> BuilderFrom<UpMessageHandler<T>> for UpMessageHandlerRegis
 
 pub static UP_MESSAGE_HANDLER_REGISTRY: Registry<UpMessageHandlerRegistry> = Registry::new();
 
-pub type UpMessageHandler<T> = for<'a> fn(ServerContext<'a>, T) -> anyhow::Result<()>;
+pub type UpMessageHandler<T> = for<'a> fn(&'a Arc<Runtime>, T) -> anyhow::Result<()>;
+
+pub type DownMessageSink =
+    Pin<Box<dyn Send + Sync + Sink<ServerDownMessageList, Error = anyhow::Error>>>;
+
+pub trait ServerDownMessage: SerializeDyn + Debug + Send + Sync + Any {}
+define_serde_trait!(ServerDownMessage);
+
+#[derive(Serialize, Debug)]
+pub struct ServerDownMessageList {
+    pub commands: Vec<Box<dyn ServerDownMessage>>,
+}

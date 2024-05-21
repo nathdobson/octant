@@ -4,7 +4,7 @@ use std::{
 };
 
 use wasm_bindgen::JsValue;
-use wasm_bindgen_futures::{spawn_local, JsFuture};
+use wasm_bindgen_futures::{JsFuture, spawn_local};
 
 use octant_gui_core::{
     Error, HandleId, PromiseMethod, PromiseTag, PromiseUpMessage, TypedHandle, UpMessage,
@@ -14,9 +14,9 @@ use octant_object::define_class;
 
 use crate::{
     any_value::AnyValueValue,
+    HasLocalType,
     object::{Object, ObjectValue},
-    peer::ArcPeer,
-    HasLocalType, Runtime,
+    peer::ArcPeer, Runtime,
 };
 
 define_class! {

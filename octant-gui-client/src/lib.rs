@@ -4,10 +4,13 @@
 #![feature(never_type)]
 #![feature(trait_alias)]
 #![feature(unsize)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
 
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
+    fmt::{Debug, Formatter},
     marker::Unsize,
     pin::Pin,
     ptr::{DynMetadata, Pointee},
@@ -18,12 +21,18 @@ use anyhow::anyhow;
 use atomic_refcell::AtomicRefCell;
 use catalog::{Builder, BuilderFrom, Registry};
 use futures::{Stream, StreamExt};
+use serde::de::Visitor;
+use type_map::TypeMap;
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
-use web_sys::{console, window, Event, HtmlAnchorElement};
+use web_sys::{console, Event, HtmlAnchorElement, window};
 
 use octant_gui_core::{
-    DownMessage, DownMessageList, FromHandle, HandleId, Method, NewDownMessage, NewTypedHandle,
-    TypeTag, TypedHandle, UpMessage, UpMessageList,
+    FromHandle
+    , HandleId, Method, NewTypedHandle, reexports::{
+        octant_serde::{define_serde_trait,  DeserializeWith, SerializeDyn},
+        serde::{ Deserializer, Serialize},
+    }, TypedHandle, TypeTag, UpMessage,
+    UpMessageList,
 };
 use octant_object::{cast::downcast_object, class::Class};
 use wasm_error::WasmError;
@@ -55,7 +64,7 @@ pub mod response;
 pub mod text;
 pub mod window;
 
-pub type DownMessageStream = Pin<Box<dyn Stream<Item = anyhow::Result<DownMessageList>>>>;
+pub type DownMessageStream = Pin<Box<dyn Stream<Item = anyhow::Result<ClientDownMessageList>>>>;
 pub type UpMessageSink = Box<dyn Fn(UpMessageList) -> anyhow::Result<()>>;
 
 struct State {
@@ -176,6 +185,17 @@ impl Runtime {
         )
         .unwrap_or_else(|_| panic!("Wrong class for {:?}", handle))
     }
+    pub fn handle_new<T: ?Sized + Class>(&self, handle: NewTypedHandle<T>) -> Arc<T> {
+        downcast_object(
+            self.state
+                .borrow()
+                .handles
+                .get(&handle.raw())
+                .expect("unknown handle")
+                .clone(),
+        )
+        .unwrap_or_else(|_| panic!("Wrong class for {:?}", handle))
+    }
     async fn invoke_with(
         self: &Arc<Self>,
         method: &Method,
@@ -254,24 +274,20 @@ impl Runtime {
             let commands = commands?;
             for command in commands.commands {
                 console::info_1(&format!("{:?}", command).into());
-                match command {
-                    DownMessage::Invoke { assign, method } => {
-                        self.invoke(assign, &method).await?;
-                    }
-                    DownMessage::Delete(handle) => self.delete(handle),
-                    DownMessage::Fail(msg) => return Err(anyhow::Error::msg(msg)),
-                    DownMessage::NewDownMessage(message) => self.invoke_new(message).await?,
-                }
+                self.invoke_new(command).await?;
             }
         }
         Err(anyhow!("Websocket terminated."))
     }
-    async fn invoke_new(self: &Arc<Self>, message: Box<dyn NewDownMessage>) -> anyhow::Result<()> {
+    async fn invoke_new(
+        self: &Arc<Self>,
+        message: Box<dyn ClientDownMessage>,
+    ) -> anyhow::Result<()> {
         let handler = DOWN_MESSAGE_HANDLER_REGISTRY
             .handlers
             .get(&(&*message as &dyn Any).type_id())
             .ok_or_else(|| anyhow!("Missing handler for {:?}", message))?;
-        handler(ClientContext { runtime: self }, message)?;
+        handler(self, message)?;
         Ok(())
     }
     pub fn send(&self, message: UpMessageList) -> anyhow::Result<()> {
@@ -279,15 +295,11 @@ impl Runtime {
     }
 }
 
-pub struct ClientContext<'a> {
-    pub runtime: &'a Arc<Runtime>,
-}
-
 type DynDownMessageHandler = Box<
     dyn 'static
         + Send
         + Sync
-        + for<'a> Fn(ClientContext<'a>, Box<dyn NewDownMessage>) -> anyhow::Result<()>,
+        + for<'a> Fn(&'a Arc<Runtime>, Box<dyn ClientDownMessage>) -> anyhow::Result<()>,
 >;
 
 pub struct DownMessageHandlerRegistry {
@@ -306,7 +318,7 @@ impl Builder for DownMessageHandlerRegistry {
     }
 }
 
-impl<T: NewDownMessage> BuilderFrom<DownMessageHandler<T>> for DownMessageHandlerRegistry {
+impl<T: ClientDownMessage> BuilderFrom<DownMessageHandler<T>> for DownMessageHandlerRegistry {
     fn insert(&mut self, handler: DownMessageHandler<T>) {
         self.handlers.insert(
             TypeId::of::<T>(),
@@ -324,7 +336,7 @@ impl<T: NewDownMessage> BuilderFrom<DownMessageHandler<T>> for DownMessageHandle
 
 pub static DOWN_MESSAGE_HANDLER_REGISTRY: Registry<DownMessageHandlerRegistry> = Registry::new();
 
-pub type DownMessageHandler<T> = for<'a> fn(ClientContext<'a>, T) -> anyhow::Result<()>;
+pub type DownMessageHandler<T> = for<'a> fn(&'a Arc<Runtime>, T) -> anyhow::Result<()>;
 
 pub struct ReturnValue<T: ?Sized + Class> {
     runtime: Arc<Runtime>,
@@ -344,5 +356,33 @@ impl<T: ?Sized + Class + Unsize<dyn Peer>> ReturnValue<T> {
     {
         let handle = self.handle;
         self.set_raw(Arc::<T::Value>::new(T::from_handle(handle, builder)))
+    }
+}
+
+// impl<'c, 'de, T: ?Sized + Class> DeserializeArcWith<'de> for T {
+//     fn deserialize_arc_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Arc<T>, D::Error> {
+//         let handle = NewTypedHandle::<T>::deserialize(d)?;
+//         Ok(ctx.get::<Arc<Runtime>>().unwrap().handle_new(handle))
+//     }
+// }
+
+pub trait ClientDownMessage: SerializeDyn + Debug + Any {}
+define_serde_trait!(ClientDownMessage);
+
+#[derive(Serialize, Debug)]
+pub struct ClientDownMessageList {
+    pub commands: Vec<Box<dyn ClientDownMessage>>,
+}
+
+impl<'de> DeserializeWith<'de> for ClientDownMessageList {
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+        struct V {}
+        impl<'de> Visitor<'de> for V {
+            type Value = ClientDownMessageList;
+            fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+                todo!()
+            }
+        }
+        d.deserialize_struct("ClientDownMessageList", &["commands"], V {})
     }
 }
