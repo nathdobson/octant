@@ -1,6 +1,7 @@
 #![feature(future_join)]
 #![deny(unused_must_use)]
 #![allow(unused_variables)]
+#![feature(trait_upcasting)]
 
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
@@ -140,6 +141,8 @@ impl OctantServer {
         });
         let mut event_loop = EventLoop::new(global.runtime().clone(), events);
         spawn.spawn(async move { event_loop.handle_events().await });
+        let d=global.window().document();
+        d.append_child(d.create_text_node("Hello"));
         pool.run().await?;
         Ok(())
     }

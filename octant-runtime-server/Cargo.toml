@@ -1,0 +1,13 @@
+cargo-features = ["metabuild"]
+[package]
+name = "octant-runtime-server"
+version = "0.1.0"
+edition = "2021"
+metabuild = ["octant-sys-build"]
+
+[build-dependencies]
+octant-sys-build = { workspace = true }
+
+[package.metadata.octant-sys-build]
+side = "server"
+shared-name = "octant-runtime"

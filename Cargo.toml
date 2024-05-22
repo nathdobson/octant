@@ -19,7 +19,7 @@ members = [
   "octant-serde",
   "octant-web-sys-client",
   "octant-web-sys-server",
-  "octant-sys-build",
+  "octant-sys-build", "octant-runtime-client", "octant-runtime-server",
 ]
 
 [profile.release]

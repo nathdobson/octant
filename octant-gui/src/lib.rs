@@ -7,14 +7,12 @@
 #![allow(unused_variables)]
 
 use std::{
-    any::{Any, TypeId},
-    collections::HashMap,
+    any::{Any},
     fmt::{Debug, Formatter},
     pin::Pin,
     sync::Arc,
 };
 
-use catalog::{Builder, BuilderFrom, Registry};
 use futures::{Sink, Stream};
 use serde::{de::Visitor, Deserializer, Serialize};
 use type_map::TypeMap;
@@ -31,45 +29,45 @@ pub mod sink;
 pub type UpMessageStream =
     Pin<Box<dyn Send + Sync + Stream<Item = anyhow::Result<Option<ServerUpMessageList>>>>>;
 
-type DynUpMessageHandler = Box<
-    dyn 'static
-        + Send
-        + Sync
-        + for<'a> Fn(&'a Arc<Runtime>, Box<dyn ServerUpMessage>) -> anyhow::Result<()>,
->;
-
-pub struct UpMessageHandlerRegistry {
-    handlers: HashMap<TypeId, DynUpMessageHandler>,
-}
-
-impl Builder for UpMessageHandlerRegistry {
-    type Output = Self;
-    fn new() -> Self {
-        UpMessageHandlerRegistry {
-            handlers: HashMap::new(),
-        }
-    }
-    fn build(self) -> Self::Output {
-        self
-    }
-}
-
-impl<T: ServerUpMessage> BuilderFrom<UpMessageHandler<T>> for UpMessageHandlerRegistry {
-    fn insert(&mut self, handler: UpMessageHandler<T>) {
-        self.handlers.insert(
-            TypeId::of::<T>(),
-            Box::new(move |ctx, message| {
-                let message = Box::<dyn Any>::downcast(message as Box<dyn Any>);
-                let message = *message.ok().unwrap();
-                handler(ctx, message)
-            }),
-        );
-    }
-}
-
-pub static UP_MESSAGE_HANDLER_REGISTRY: Registry<UpMessageHandlerRegistry> = Registry::new();
-
-pub type UpMessageHandler<T> = for<'a> fn(&'a Arc<Runtime>, T) -> anyhow::Result<()>;
+// type DynUpMessageHandler = Box<
+//     dyn 'static
+//         + Send
+//         + Sync
+//         + for<'a> Fn(&'a Arc<Runtime>, Box<dyn ServerUpMessage>) -> anyhow::Result<()>,
+// >;
+//
+// pub struct UpMessageHandlerRegistry {
+//     handlers: HashMap<TypeId, DynUpMessageHandler>,
+// }
+//
+// impl Builder for UpMessageHandlerRegistry {
+//     type Output = Self;
+//     fn new() -> Self {
+//         UpMessageHandlerRegistry {
+//             handlers: HashMap::new(),
+//         }
+//     }
+//     fn build(self) -> Self::Output {
+//         self
+//     }
+// }
+//
+// impl<T: ServerUpMessage> BuilderFrom<UpMessageHandler<T>> for UpMessageHandlerRegistry {
+//     fn insert(&mut self, handler: UpMessageHandler<T>) {
+//         self.handlers.insert(
+//             TypeId::of::<T>(),
+//             Box::new(move |ctx, message| {
+//                 let message = Box::<dyn Any>::downcast(message as Box<dyn Any>);
+//                 let message = *message.ok().unwrap();
+//                 handler(ctx, message)
+//             }),
+//         );
+//     }
+// }
+//
+// pub static UP_MESSAGE_HANDLER_REGISTRY: Registry<UpMessageHandlerRegistry> = Registry::new();
+//
+// pub type UpMessageHandler<T> = for<'a> fn(&'a Arc<Runtime>, T) -> anyhow::Result<()>;
 
 pub type DownMessageSink =
     Pin<Box<dyn Send + Sync + Sink<ServerDownMessageList, Error = anyhow::Error>>>;
@@ -77,7 +75,9 @@ pub type DownMessageSink =
 pub trait ServerDownMessage: SerializeDyn + Debug + Send + Sync + Any {}
 define_serde_trait!(ServerDownMessage);
 
-pub trait ServerUpMessage: SerializeDyn + Debug + Send + Sync + Any {}
+pub trait ServerUpMessage: SerializeDyn + Debug + Send + Sync + Any {
+    fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()>;
+}
 define_serde_trait!(ServerUpMessage);
 
 #[derive(Serialize, Debug)]

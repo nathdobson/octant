@@ -8,7 +8,7 @@
 #![allow(dead_code)]
 
 use std::{
-    any::{Any, TypeId},
+    any::{Any},
     collections::HashMap,
     fmt::{Debug, Formatter},
     marker::Unsize,
@@ -18,7 +18,6 @@ use std::{
 
 use anyhow::anyhow;
 use atomic_refcell::AtomicRefCell;
-use catalog::{Builder, BuilderFrom, Registry};
 use futures::{Stream, StreamExt};
 use serde::de::Visitor;
 use type_map::TypeMap;
@@ -155,60 +154,61 @@ impl Runtime {
         self: &Arc<Self>,
         message: Box<dyn ClientDownMessage>,
     ) -> anyhow::Result<()> {
-        let handler = DOWN_MESSAGE_HANDLER_REGISTRY
-            .handlers
-            .get(&(&*message as &dyn Any).type_id())
-            .ok_or_else(|| anyhow!("Missing handler for {:?}", message))?;
-        handler(self, message)?;
+        message.run(self)?;
+        // let handler = DOWN_MESSAGE_HANDLER_REGISTRY
+        //     .handlers
+        //     .get(&(&*message as &dyn Any).type_id())
+        //     .ok_or_else(|| anyhow!("Missing handler for {:?}", message))?;
+        // handler(self, message)?;
         Ok(())
     }
-    pub fn send(&self, message: ClientUpMessageList) -> anyhow::Result<()> {
-        (self.sink)(message)
+    pub fn send(&self, message: ClientUpMessageList) {
+        (self.sink)(message).unwrap()
     }
 }
 
-type DynDownMessageHandler = Box<
-    dyn 'static
-        + Send
-        + Sync
-        + for<'a> Fn(&'a Arc<Runtime>, Box<dyn ClientDownMessage>) -> anyhow::Result<()>,
->;
+// type DynDownMessageHandler = Box<
+//     dyn 'static
+//         + Send
+//         + Sync
+//         + for<'a> Fn(&'a Arc<Runtime>, Box<dyn ClientDownMessage>) -> anyhow::Result<()>,
+// >;
+//
+// pub struct DownMessageHandlerRegistry {
+//     handlers: HashMap<TypeId, DynDownMessageHandler>,
+// }
+//
+// impl Builder for DownMessageHandlerRegistry {
+//     type Output = Self;
+//     fn new() -> Self {
+//         DownMessageHandlerRegistry {
+//             handlers: HashMap::new(),
+//         }
+//     }
+//     fn build(self) -> Self::Output {
+//         self
+//     }
+// }
+//
+// impl<T: ClientDownMessage> BuilderFrom<DownMessageHandler<T>> for DownMessageHandlerRegistry {
+//     fn insert(&mut self, handler: DownMessageHandler<T>) {
+//         self.handlers.insert(
+//             TypeId::of::<T>(),
+//             Box::new(move |ctx, message| {
+//                 handler(
+//                     ctx,
+//                     *Box::<dyn Any>::downcast(message as Box<dyn Any>)
+//                         .ok()
+//                         .unwrap(),
+//                 )
+//             }),
+//         );
+//     }
+// }
 
-pub struct DownMessageHandlerRegistry {
-    handlers: HashMap<TypeId, DynDownMessageHandler>,
-}
+// pub static DOWN_MESSAGE_HANDLER_REGISTRY: Registry<DownMessageHandlerRegistry> = Registry::new();
 
-impl Builder for DownMessageHandlerRegistry {
-    type Output = Self;
-    fn new() -> Self {
-        DownMessageHandlerRegistry {
-            handlers: HashMap::new(),
-        }
-    }
-    fn build(self) -> Self::Output {
-        self
-    }
-}
-
-impl<T: ClientDownMessage> BuilderFrom<DownMessageHandler<T>> for DownMessageHandlerRegistry {
-    fn insert(&mut self, handler: DownMessageHandler<T>) {
-        self.handlers.insert(
-            TypeId::of::<T>(),
-            Box::new(move |ctx, message| {
-                handler(
-                    ctx,
-                    *Box::<dyn Any>::downcast(message as Box<dyn Any>)
-                        .ok()
-                        .unwrap(),
-                )
-            }),
-        );
-    }
-}
-
-pub static DOWN_MESSAGE_HANDLER_REGISTRY: Registry<DownMessageHandlerRegistry> = Registry::new();
-
-pub type DownMessageHandler<T> = for<'a> fn(&'a Arc<Runtime>, T) -> anyhow::Result<()>;
+// pub type DownMessageHandler<T> = for<'a> fn(&'a Arc<Runtime>, T) -> anyhow::Result<()>;
 
 pub struct ReturnValue<T: ?Sized + Class> {
     runtime: Arc<Runtime>,
@@ -222,23 +222,11 @@ impl<T: ?Sized + Class + Unsize<dyn Peer>> ReturnValue<T> {
     pub fn set_raw(self, value: Arc<T>) {
         self.runtime.add_new(self.handle, value)
     }
-    // pub fn set(self, builder: T::Builder)
-    // where
-    //     T: FromHandle,
-    // {
-    //     let handle = self.handle;
-    //     self.set_raw(Arc::<T::Value>::new(T::from_handle(handle, builder)))
-    // }
 }
 
-// impl<'c, 'de, T: ?Sized + Class> DeserializeArcWith<'de> for T {
-//     fn deserialize_arc_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Arc<T>, D::Error> {
-//         let handle = NewTypedHandle::<T>::deserialize(d)?;
-//         Ok(ctx.get::<Arc<Runtime>>().unwrap().handle_new(handle))
-//     }
-// }
-
-pub trait ClientDownMessage: SerializeDyn + Debug + Any {}
+pub trait ClientDownMessage: SerializeDyn + Debug + Any {
+    fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()>;
+}
 define_serde_trait!(ClientDownMessage);
 
 #[derive(Serialize, Debug)]

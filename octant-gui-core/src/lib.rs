@@ -153,25 +153,29 @@ macro_rules! define_sys_rpc {
             #[cfg(side="client")]
             $crate::reexports::octant_serde::define_serde_impl!([< $name:camel Request >]: octant_gui_client::ClientDownMessage);
             #[cfg(side="client")]
-            impl octant_gui_client::ClientDownMessage for [< $name:camel Request >] {}
+            impl octant_gui_client::ClientDownMessage for [< $name:camel Request >] {
+                fn run(self:Box<Self>, runtime:&Arc<octant_gui_client::Runtime>) -> $crate::reexports::anyhow::Result<()>{
+                    todo!();
+                }
+            }
 
             #[cfg(side="server")]
             $crate::reexports::octant_serde::define_serde_impl!([< $name:camel Request >]: octant_gui::ServerDownMessage);
             #[cfg(side="server")]
             impl octant_gui::ServerDownMessage for [< $name:camel Request >] {}
 
-            #[cfg(side = "client")]
-            #[$crate::reexports::catalog::register(octant_gui_client::DOWN_MESSAGE_HANDLER_REGISTRY)]
-            fn [<handle_ $name>]() -> octant_gui_client::DownMessageHandler<[< $name:camel Request >]> {
-                |runtime: &::std::sync::Arc<::octant_gui_client::Runtime>, req: [< $name:camel Request >]| {
-                    let runtime = runtime.clone();
-                    let result = [<impl_ $name>](&runtime $(, req.$input_name)*)?;
-                    $(
-                        runtime.add_new(req.[< output_ ${index()} >], ::std::sync::Arc::new(<dyn $output as $crate::FromHandle>::from_handle(req.[< output_ ${index()} >], result.${index()})));
-                    )*
-                    Ok(())
-                }
-            }
+            // #[cfg(side = "client")]
+            // #[$crate::reexports::catalog::register(octant_gui_client::DOWN_MESSAGE_HANDLER_REGISTRY)]
+            // fn [<handle_ $name>]() -> octant_gui_client::DownMessageHandler<[< $name:camel Request >]> {
+            //     |runtime: &::std::sync::Arc<::octant_gui_client::Runtime>, req: [< $name:camel Request >]| {
+            //         let runtime = runtime.clone();
+            //         let result = [<impl_ $name>](&runtime $(, req.$input_name)*)?;
+            //         $(
+            //             runtime.add_new(req.[< output_ ${index()} >], ::std::sync::Arc::new(<dyn $output as $crate::FromHandle>::from_handle(req.[< output_ ${index()} >], result.${index()})));
+            //         )*
+            //         Ok(())
+            //     }
+            // }
 
             #[cfg(side="client")]
             fn [<impl_ $name>](
