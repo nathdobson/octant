@@ -25,6 +25,9 @@ members = [
 [profile.release]
 opt-level = "s"
 
+[profile.dev]
+debug = true
+
 [patch.crates-io]
 base64urlsafedata = { git = "https://github.com/nathdobson/webauthn-rs.git" }
 webauthn-rs = { git = "https://github.com/nathdobson/webauthn-rs.git" }

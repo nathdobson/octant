@@ -3,6 +3,7 @@
 
 use std::{
     any::Any,
+    fmt::DebugStruct,
     marker::Unsize,
     ptr::{DynMetadata, Pointee},
 };
@@ -83,4 +84,8 @@ where
     fn deref_mut_ranked(&mut self) -> &mut Self::TargetRanked {
         DerefRanked::<N1, N2>::deref_mut_ranked(self)
     }
+}
+
+pub trait DebugClass {
+    fn fmt_class(&self, s: &mut DebugStruct);
 }

@@ -12,7 +12,6 @@ pub trait SendSyncDebug: Send + Sync + Debug {}
 impl<T> SendSyncDebug for T where T: Send + Sync + Debug {}
 
 define_class! {
-    #[derive(Debug)]
     pub class Peer extends Base implements SendSyncDebug{
         runtime: Arc<Runtime>,
         handle: RawHandle,

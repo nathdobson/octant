@@ -3,12 +3,17 @@
 #![allow(unused_variables)]
 #![deny(unused_must_use)]
 
-use std::fmt::{Display, Formatter};
-use crate::{handle::TypedHandle, runtime::Runtime};
+use crate::{
+    handle::{RawHandle, TypedHandle},
+    runtime::Runtime,
+};
 use octant_object::class::Class;
 use octant_serde::TypeMap;
 use serde::{de::Error, Deserialize, Deserializer};
-use std::sync::Arc;
+use std::{
+    fmt::{Display, Formatter},
+    sync::Arc,
+};
 
 pub mod define_sys_class;
 pub mod define_sys_rpc;
@@ -46,15 +51,15 @@ pub fn deserialize_object_with<'de, T: ?Sized + Class, D: Deserializer<'de>>(
 }
 
 pub enum LookupError {
-    NotFound,
+    NotFound(RawHandle),
     DowncastFailed,
 }
 
-impl Display for LookupError{
+impl Display for LookupError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self{
-            LookupError::NotFound => write!(f,"object not found"),
-            LookupError::DowncastFailed => write!(f,"object downcast failed"),
+        match self {
+            LookupError::NotFound(handle) => write!(f, "object {:?} not found", handle),
+            LookupError::DowncastFailed => write!(f, "object downcast failed"),
         }
     }
 }

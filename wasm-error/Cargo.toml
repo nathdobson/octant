@@ -8,4 +8,4 @@ sendable = { workspace = true }
 wasm-bindgen = { workspace = true }
 web-sys = { workspace = true, features = ["console"] }
 log = { workspace = true }
-anyhow = { workspace = true }
+anyhow = { workspace = true, features= ["backtrace"] }

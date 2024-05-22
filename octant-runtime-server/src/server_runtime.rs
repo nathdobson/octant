@@ -22,7 +22,7 @@ pub struct Runtime {
 
 impl Debug for Runtime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "todo")
+        f.debug_struct("Runtime").finish_non_exhaustive()
     }
 }
 
@@ -76,7 +76,7 @@ impl Runtime {
                 .borrow()
                 .handles
                 .get(&handle.raw())
-                .ok_or_else(|| LookupError::NotFound)?,
+                .ok_or_else(|| LookupError::NotFound(handle.raw()))?,
         )
         .map_err(|_| LookupError::DowncastFailed)?)
     }

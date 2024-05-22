@@ -12,7 +12,6 @@ macro_rules! define_sys_class {
         $crate::reexports::paste::paste! {
             #[cfg(side = "client")]
             $crate::reexports::octant_object::define_class! {
-                #[derive(Debug)]
                 pub class $class extends $parent implements ::std::fmt::Debug{
                     [< $class:snake >]: $wasm,
                     $($client_field : $client_field_type, )*
@@ -40,7 +39,6 @@ macro_rules! define_sys_class {
 
             #[cfg(side = "server")]
             $crate::reexports::octant_object::define_class! {
-                #[derive(Debug)]
                 pub class $class extends $parent {
                     $($server_field : $server_field_type, )*
                 }

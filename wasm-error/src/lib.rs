@@ -44,7 +44,7 @@ impl TryFrom<anyhow::Error> for WasmError {
 }
 
 pub fn log_error(x: &anyhow::Error) {
-    log::error!("{:?}", x);
+    log::error!("{}", x);
     if let Some(wasm) = x.downcast_ref::<WasmError>() {
         if let Some(js) = wasm.as_ref() {
             console::error_1(js);

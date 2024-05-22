@@ -71,10 +71,6 @@ impl<'de, T: ?Sized + Class> Deserialize<'de> for TypedHandle<T> {
 impl<T: ?Sized + Class> Debug for TypedHandle<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}({:?})", &type_name::<T>(), self.0)
-        // f.debug_struct("TypedHandle")
-        //     .field("type", &type_name::<T>())
-        //     .field("id", &self.0)
-        //     .finish()
     }
 }
 

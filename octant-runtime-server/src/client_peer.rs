@@ -11,7 +11,6 @@ use safe_once::{
     cell::{OnceCell},
 };
 define_class! {
-    #[derive(Debug)]
     pub class Peer extends Base implements Debug {
         handle: OnceCell<RawHandle>,
     }

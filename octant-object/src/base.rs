@@ -1,10 +1,10 @@
 //! The base class that all other classes extend.
 
-use std::any::Any;
+use std::{any::Any, fmt::DebugStruct};
 
 use crate::{
     cast::{BoxCastObject, CastTrait, CastValue},
-    class::{Class, ClassValue, Ranked, Zero},
+    class::{Class, ClassValue, DebugClass, Ranked, Zero},
 };
 
 pub trait Base: 'static + Any + CastValue {
@@ -65,4 +65,8 @@ impl Default for BaseValue {
     fn default() -> Self {
         BaseValue {}
     }
+}
+
+impl DebugClass for BaseValue {
+    fn fmt_class(&self, _: &mut DebugStruct) {}
 }

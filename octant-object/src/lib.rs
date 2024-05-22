@@ -100,13 +100,11 @@
 //! trait SendSyncDebug : Send + Sync + Debug {}
 //! impl<T: Send + Sync + Debug> SendSyncDebug for T{}
 //! define_class! {
-//!     #[derive(Debug)]
 //!     pub class Animal extends Base implements SendSyncDebug {
 //!         num_legs: usize,
 //!     }
 //! }
 //! define_class! {
-//!     #[derive(Debug)]
 //!     pub class Dog extends Animal {
 //!         name: String,
 //!     }
@@ -128,7 +126,7 @@
 //!     }
 //! }
 //! let dog: Box<dyn Animal> = Box::new(DogValue::new("otto".to_string()));
-//! assert_eq!(&format!("{:?}",dog), r#"DogValue { parent: AnimalValue { parent: BaseValue, num_legs: 4 }, name: "otto" }"#);
+//! assert_eq!(&format!("{:?}",dog), r#"Dog { num_legs: 4, name: "otto" }"#);
 //! ```
 
 #![feature(trait_upcasting)]
@@ -174,6 +172,7 @@ pub mod reexports {
 /// #     pub class Bar extends Base{}
 /// # }
 /// # trait Baz{}
+/// # #[derive(Debug)]
 /// # struct Field;
 /// define_class! {
 ///     pub class Foo extends Bar implements Baz {
@@ -231,6 +230,21 @@ macro_rules! define_class {
             pub struct [< $class Value >] {
                 parent: <dyn $parent as $crate::class::Class>::Value,
                 $($field : $type,)*
+            }
+            impl ::std::fmt::Debug for [< $class Value >] {
+                fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+                    let mut f = f.debug_struct(::std::stringify!($class));
+                    $crate::class::DebugClass::fmt_class(self, &mut f);
+                    f.finish()
+                }
+            }
+            impl $crate::class::DebugClass for [< $class Value >] {
+                fn fmt_class(&self, f: &mut ::std::fmt::DebugStruct) {
+                    $crate::class::DebugClass::fmt_class(&self.parent, f);
+                    $(
+                        f.field(std::stringify!($field), &self.$field);
+                    )*
+                }
             }
             pub trait $class: $parent $(+ $interface)? {
                 fn [< $class:snake >](&self) -> &[< $class Value >];

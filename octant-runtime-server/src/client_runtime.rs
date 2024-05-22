@@ -51,7 +51,7 @@ impl Runtime {
                 .handles
                 .get(&handle.raw())
                 .cloned()
-                .ok_or_else(|| LookupError::NotFound)?,
+                .ok_or_else(|| LookupError::NotFound(handle.raw()))?,
         )
         .map_err(|_| LookupError::DowncastFailed)?)
     }
