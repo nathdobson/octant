@@ -1,5 +1,7 @@
-use std::any::{Any, TypeId};
-use std::sync::Arc;
+use std::{
+    any::{Any, TypeId},
+    sync::Arc,
+};
 
 use memo_map::MemoMap;
 

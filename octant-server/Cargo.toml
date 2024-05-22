@@ -4,22 +4,22 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-clap = { workspace=true, features = ["derive"] }
-warp = { workspace=true, features = ["tls"] }
-futures = {workspace=true}
-anyhow = {workspace=true}
-log = {workspace=true}
-octant-gui = {workspace=true}
-octant-gui-core = {workspace=true}
-serde_json = {workspace=true}
-tokio = {workspace=true}
-memo-map = {workspace=true}
-atomic_refcell = {workspace=true}
-url = {workspace=true}
-octant-executor = {workspace=true}
-parking_lot = {workspace=true}
-uuid = { workspace=true, features = ["v4"] }
-weak-table = {workspace=true}
-cookie = {workspace=true}
-itertools ={workspace=true}
-octant-web-sys-server = {workspace=true}
+clap = { workspace = true, features = ["derive"] }
+warp = { workspace = true, features = ["tls"] }
+futures = { workspace = true }
+anyhow = { workspace = true }
+log = { workspace = true }
+octant-gui = { workspace = true }
+octant-gui-core = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+memo-map = { workspace = true }
+atomic_refcell = { workspace = true }
+url = { workspace = true }
+octant-executor = { workspace = true }
+parking_lot = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
+weak-table = { workspace = true }
+cookie = { workspace = true }
+itertools = { workspace = true }
+octant-web-sys-server = { workspace = true }

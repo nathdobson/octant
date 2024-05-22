@@ -4,18 +4,18 @@ use serde::{Deserialize, Serialize};
 use serde_json::ser::PrettyFormatter;
 use tokio::{
     fs,
-    fs::{File, read_dir},
+    fs::{read_dir, File},
     io::AsyncWriteExt,
     sync::RwLock,
 };
 
-use crate::de::forest::DeserializeForest;
-use crate::de::update::DeserializeUpdate;
-use crate::forest::Forest;
-use crate::json::JsonProxy;
-use crate::ser::forest::SerializeForest;
-use crate::ser::update::SerializeUpdate;
-use crate::tree::{Tree, TreeId};
+use crate::{
+    de::{forest::DeserializeForest, update::DeserializeUpdate},
+    forest::Forest,
+    json::JsonProxy,
+    ser::{forest::SerializeForest, update::SerializeUpdate},
+    tree::{Tree, TreeId},
+};
 
 pub struct Database {
     forest: Arc<RwLock<Forest>>,
@@ -24,9 +24,7 @@ pub struct Database {
 }
 
 impl Database {
-    fn serializer(
-        vec: &mut Vec<u8>,
-    ) -> serde_json::Serializer<&mut Vec<u8>, PrettyFormatter> {
+    fn serializer(vec: &mut Vec<u8>) -> serde_json::Serializer<&mut Vec<u8>, PrettyFormatter> {
         serde_json::Serializer::with_formatter(vec, PrettyFormatter::new())
     }
     pub async fn new<

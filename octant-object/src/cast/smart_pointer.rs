@@ -172,6 +172,7 @@ impl<T: ?Sized + Debug> Debug for SmartPointer<T> {
         Debug::fmt(&**self, f)
     }
 }
+
 /// The [representation](crate::cast::repr) of a `SmartPointer`.
 #[repr(C)]
 pub struct SmartRepr<T> {
@@ -196,8 +197,7 @@ mod test {
         mem::size_of,
     };
 
-    use crate::cast::inlinebox::InlineBox;
-    use crate::cast::smart_pointer::SmartPointer;
+    use crate::cast::{inlinebox::InlineBox, smart_pointer::SmartPointer};
 
     #[test]
     fn test_smart_pointer() {

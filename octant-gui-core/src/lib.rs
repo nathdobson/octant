@@ -7,6 +7,7 @@ use std::fmt::{Debug, Formatter};
 pub use error::*;
 pub use handle::*;
 use octant_object::class::Class;
+
 #[doc(hidden)]
 pub mod reexports {
     pub use anyhow;
@@ -17,6 +18,7 @@ pub mod reexports {
     pub use octant_object;
     pub use octant_serde;
 }
+
 mod error;
 mod handle;
 

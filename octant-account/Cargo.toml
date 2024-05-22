@@ -4,18 +4,18 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = {workspace=true}
-url = {workspace=true}
-tokio = {workspace=true}
-log = {workspace=true}
-webauthn-rs = {workspace=true}
-webauthn-rs-proto = {workspace=true}
-octant-gui = {workspace=true}
-atomic_refcell = {workspace=true}
-octant-server = {workspace=true}
-octant-gui-core = {workspace=true}
-octant-database = {workspace=true}
-base64urlsafedata = {workspace=true}
-parking_lot = {workspace=true}
-uuid = {workspace=true}
-octant-web-sys-server = {workspace=true}
+anyhow = { workspace = true }
+url = { workspace = true }
+tokio = { workspace = true }
+log = { workspace = true }
+webauthn-rs = { workspace = true }
+webauthn-rs-proto = { workspace = true }
+octant-gui = { workspace = true }
+atomic_refcell = { workspace = true }
+octant-server = { workspace = true }
+octant-gui-core = { workspace = true }
+octant-database = { workspace = true }
+base64urlsafedata = { workspace = true }
+parking_lot = { workspace = true }
+uuid = { workspace = true }
+octant-web-sys-server = { workspace = true }

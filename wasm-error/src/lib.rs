@@ -1,6 +1,8 @@
-use std::convert::TryFrom;
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
+use std::{
+    convert::TryFrom,
+    error::Error,
+    fmt::{Debug, Display, Formatter},
+};
 
 use sendable::SendOption;
 use wasm_bindgen::JsValue;
@@ -12,7 +14,9 @@ pub struct WasmError {
 }
 
 impl Display for WasmError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result { Debug::fmt(self, f) }
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(self, f)
+    }
 }
 
 impl Error for WasmError {}
@@ -20,7 +24,7 @@ impl Error for WasmError {}
 impl WasmError {
     pub fn new(x: JsValue) -> Self {
         WasmError {
-            value: SendOption::new(Some(x))
+            value: SendOption::new(Some(x)),
         }
     }
     pub fn new_anyhow(x: JsValue) -> anyhow::Error {
@@ -40,7 +44,7 @@ impl TryFrom<anyhow::Error> for WasmError {
 }
 
 pub fn log_error(x: &anyhow::Error) {
-    log::error!("{:?}",x);
+    log::error!("{:?}", x);
     if let Some(wasm) = x.downcast_ref::<WasmError>() {
         if let Some(js) = wasm.as_ref() {
             console::error_1(js);

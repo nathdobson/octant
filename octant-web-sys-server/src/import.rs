@@ -1,14 +1,15 @@
+use crate::{
+    authentication_extensions_client_outputs::AuthenticationExtensionsClientOutputs,
+    authenticator_assertion_response::AuthenticatorAssertionResponse,
+    authenticator_attestation_response::AuthenticatorAttestationResponse,
+    authenticator_response::AuthenticatorResponse, credential_data::CredentialData,
+    public_key_credential::PublicKeyCredential,
+};
 use base64urlsafedata::Base64UrlSafeData;
 use js_sys::{ArrayBuffer, Object, Uint8Array};
-use wasm_bindgen::{JsCast, JsValue};
-use web_sys::{console};
 use octant_gui_core::Error;
-use crate::authentication_extensions_client_outputs::AuthenticationExtensionsClientOutputs;
-use crate::authenticator_assertion_response::AuthenticatorAssertionResponse;
-use crate::authenticator_attestation_response::AuthenticatorAttestationResponse;
-use crate::authenticator_response::AuthenticatorResponse;
-use crate::credential_data::CredentialData;
-use crate::public_key_credential::PublicKeyCredential;
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::console;
 
 pub trait Import<T> {
     fn import(&self) -> T;
@@ -54,9 +55,7 @@ impl Import<AuthenticatorResponse> for web_sys::AuthenticatorResponse {
     }
 }
 
-impl Import<AuthenticatorAttestationResponse>
-for web_sys::AuthenticatorAttestationResponse
-{
+impl Import<AuthenticatorAttestationResponse> for web_sys::AuthenticatorAttestationResponse {
     fn import(&self) -> AuthenticatorAttestationResponse {
         AuthenticatorAttestationResponse {
             attestation_object: self.attestation_object().import(),
@@ -77,8 +76,8 @@ impl Import<AuthenticatorAssertionResponse> for web_sys::AuthenticatorAssertionR
 }
 
 impl<T1, T2> Import<Option<T2>> for Option<T1>
-    where
-        T1: Import<T2>,
+where
+    T1: Import<T2>,
 {
     fn import(&self) -> Option<T2> {
         self.as_ref().map(|x| x.import())
@@ -86,9 +85,9 @@ impl<T1, T2> Import<Option<T2>> for Option<T1>
 }
 
 impl<T1, T2, E1, E2> Import<Result<T2, E2>> for Result<T1, E1>
-    where
-        T1: Import<T2>,
-        E1: Import<E2>,
+where
+    T1: Import<T2>,
+    E1: Import<E2>,
 {
     fn import(&self) -> Result<T2, E2> {
         match self {

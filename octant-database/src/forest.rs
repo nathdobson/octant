@@ -3,19 +3,23 @@ use std::{
     mem,
     ops::{Deref, DerefMut},
     sync::{
-        Arc,
         atomic::{AtomicUsize, Ordering},
+        Arc,
     },
 };
 
 use parking_lot::{Mutex, RwLockReadGuard, RwLockWriteGuard};
 
-use crate::tack::Tack;
-use crate::tree::{Tree, TreeId};
+use crate::{
+    tack::Tack,
+    tree::{Tree, TreeId},
+};
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Debug, Copy, Clone)]
 pub(crate) struct ForestId(usize);
+
 static FOREST_ID_COUNTER: AtomicUsize = AtomicUsize::new(1);
+
 impl ForestId {
     pub fn new() -> Self {
         ForestId(FOREST_ID_COUNTER.fetch_add(1, Ordering::Relaxed))
@@ -33,6 +37,7 @@ pub struct Forest {
 }
 
 pub struct TreeReadGuard<'a, T: ?Sized>(RwLockReadGuard<'a, T>);
+
 pub struct TreeWriteGuard<'a, T: ?Sized>(RwLockWriteGuard<'a, T>);
 
 impl<'a, T: ?Sized> Deref for TreeReadGuard<'a, T> {

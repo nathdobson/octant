@@ -1,7 +1,7 @@
 use std::sync::{Arc, Weak};
 
 use pretty_assertions::assert_eq;
-use serde::{de::DeserializeSeed, Deserializer, ser::SerializeStruct, Serializer};
+use serde::{de::DeserializeSeed, ser::SerializeStruct, Deserializer, Serializer};
 use serde_json::{de::SliceRead, ser::PrettyFormatter};
 
 use crate::{
@@ -15,6 +15,7 @@ use crate::{
         update::{DeserializeSnapshotSeed, DeserializeUpdate, DeserializeUpdateSeed},
     },
     forest::Forest,
+    json::JsonProxy,
     ser::{
         forest::SerializeForest,
         proxy::SerializerProxy,
@@ -24,7 +25,6 @@ use crate::{
     tree::{Tree, TreeId},
     value::{field::Field, prim::Prim},
 };
-use crate::json::JsonProxy;
 
 const EXPECTED: &str = r#"{
   "id": 0,
@@ -59,8 +59,6 @@ fn serializer(buf: &mut Vec<u8>) -> serde_json::Serializer<&mut Vec<u8>, PrettyF
 fn deserializer(buf: &str) -> serde_json::Deserializer<SliceRead> {
     serde_json::Deserializer::new(serde_json::de::SliceRead::new(buf.as_bytes()))
 }
-
-
 
 #[derive(Debug)]
 struct MyStruct {

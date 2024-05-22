@@ -13,11 +13,11 @@ use octant_gui_core::{define_sys_class, define_sys_rpc, NewTypedHandle};
 
 use crate::{
     document::{ArcDocument, Document},
+    navigator::ArcNavigator,
     object::Object,
     request::ArcRequest,
     response::ArcResponse,
 };
-use crate::navigator::ArcNavigator;
 
 define_sys_class! {
     class Window;

@@ -1,8 +1,9 @@
-use std::sync::Arc;
+use crate::{
+    credential_creation_options::ArcCredentialCreationOptions, credential_data::CredentialData,
+    credential_request_options::ArcCredentialRequestOptions,
+};
 use octant_gui_core::define_sys_class;
-use crate::credential_creation_options::ArcCredentialCreationOptions;
-use crate::credential_data::CredentialData;
-use crate::credential_request_options::ArcCredentialRequestOptions;
+use std::sync::Arc;
 
 use crate::object::Object;
 

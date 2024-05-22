@@ -4,9 +4,8 @@ use std::any::Any;
 
 use crate::{
     cast::{BoxCastObject, CastTrait, CastValue},
-    class::{Class, ClassValue},
+    class::{Class, ClassValue, Ranked, Zero},
 };
-use crate::class::{Ranked, Zero};
 
 pub trait Base: 'static + Any + CastValue {
     fn value(&self) -> &BaseValue;
@@ -38,6 +37,7 @@ impl Base for BaseValue {
         self
     }
 }
+
 impl CastTrait for dyn Base {
     fn into_parent_object(&self) -> fn(BoxCastObject) -> Result<BoxCastObject, BoxCastObject> {
         |ptr| Err(ptr)

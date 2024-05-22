@@ -4,7 +4,7 @@ use octant_gui_core::define_sys_class;
 
 use crate::html_element::HtmlElement;
 
-define_sys_class!{
+define_sys_class! {
     class HtmlDivElement;
     extends HtmlElement;
     wasm web_sys::HtmlDivElement;

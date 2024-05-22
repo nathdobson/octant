@@ -4,17 +4,13 @@
 #![allow(dead_code)]
 #![feature(arbitrary_self_types)]
 
-use std::{
-    path::Path,
-    sync::Arc,
-    time::Duration,
-};
+use std::{path::Path, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use parking_lot::Mutex;
 
 use octant_account::{
-    AccountDatabase, login::LoginHandler, register::RegisterHandler, SessionTable,
+    login::LoginHandler, register::RegisterHandler, AccountDatabase, SessionTable,
 };
 use octant_database::{database_struct, file::Database, tree::Tree};
 use octant_panic::register_handler;

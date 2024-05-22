@@ -1,11 +1,12 @@
 use webauthn_rs_proto::{AuthenticatorAssertionResponseRaw, AuthenticatorAttestationResponseRaw};
 
-use octant_web_sys_server::authentication_extensions_client_outputs::AuthenticationExtensionsClientOutputs;
-use octant_web_sys_server::authenticator_assertion_response::AuthenticatorAssertionResponse;
-use octant_web_sys_server::authenticator_attestation_response::AuthenticatorAttestationResponse;
-use octant_web_sys_server::authenticator_response::AuthenticatorResponse;
-use octant_web_sys_server::credential_data::CredentialData;
-use octant_web_sys_server::public_key_credential::PublicKeyCredential;
+use octant_web_sys_server::{
+    authentication_extensions_client_outputs::AuthenticationExtensionsClientOutputs,
+    authenticator_assertion_response::AuthenticatorAssertionResponse,
+    authenticator_attestation_response::AuthenticatorAttestationResponse,
+    authenticator_response::AuthenticatorResponse, credential_data::CredentialData,
+    public_key_credential::PublicKeyCredential,
+};
 
 pub trait IntoAuth<O> {
     fn into_auth(self) -> O;

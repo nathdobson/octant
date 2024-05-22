@@ -1,8 +1,9 @@
-use std::sync::Arc;
 use octant_gui_core::define_sys_class;
+use std::sync::Arc;
 
-use crate::object::Object;
-use crate::public_key_credential_creation_options::PublicKeyCredentialCreationOptions;
+use crate::{
+    object::Object, public_key_credential_creation_options::PublicKeyCredentialCreationOptions,
+};
 
 define_sys_class! {
     class CredentialCreationOptions;

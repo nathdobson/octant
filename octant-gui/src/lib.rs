@@ -9,28 +9,24 @@
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
-    fmt::Debug,
+    fmt::{Debug, Formatter},
     pin::Pin,
     sync::Arc,
 };
-use std::fmt::Formatter;
 
 use catalog::{Builder, BuilderFrom, Registry};
 use futures::{Sink, Stream};
-use serde::{Deserializer, Serialize};
-use serde::de::Visitor;
+use serde::{de::Visitor, Deserializer, Serialize};
 use type_map::TypeMap;
 
-use octant_gui_core::{
-    reexports::octant_serde::{define_serde_trait, SerializeDyn},
-};
-use octant_gui_core::reexports::octant_serde::DeserializeWith;
+use octant_gui_core::reexports::octant_serde::{define_serde_trait, DeserializeWith, SerializeDyn};
 pub use runtime::Runtime;
 
 pub mod event_loop;
 pub mod handle;
 pub mod runtime;
 pub mod sink;
+
 //
 pub type UpMessageStream =
     Pin<Box<dyn Send + Sync + Stream<Item = anyhow::Result<Option<ServerUpMessageList>>>>>;

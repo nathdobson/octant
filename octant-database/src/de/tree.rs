@@ -1,6 +1,4 @@
-use crate::de::forest::DeserializeForest;
-use crate::de::proxy::DeserializerProxy;
-use crate::de::update::DeserializeUpdate;
+use crate::de::{forest::DeserializeForest, proxy::DeserializerProxy, update::DeserializeUpdate};
 
 pub(crate) trait DeserializeTree<DP: DeserializerProxy> {
     fn deserialize_update_by_proxy<'up, 'de>(
@@ -29,4 +27,3 @@ fn is_object_safe<T: DeserializeTree<DP>, DP: DeserializerProxy>(
 ) -> &dyn DeserializeTree<DP> {
     x
 }
-

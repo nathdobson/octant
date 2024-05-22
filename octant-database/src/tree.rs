@@ -8,8 +8,8 @@ use std::{
 use parking_lot::{Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{
     de::{DeserializeSeed, Error},
-    Deserialize,
-    Deserializer, ser::SerializeStruct, Serialize, Serializer,
+    ser::SerializeStruct,
+    Deserialize, Deserializer, Serialize, Serializer,
 };
 
 use crate::{

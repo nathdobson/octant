@@ -1,18 +1,17 @@
 use std::{
-    alloc::{Allocator, Global, handle_alloc_error, Layout},
+    alloc::{handle_alloc_error, Allocator, Global, Layout},
     any::Any,
     cell::UnsafeCell,
     marker::Unsize,
-    mem
-    ,
+    mem,
+    mem::MaybeUninit,
     ops::{CoerceUnsized, Deref, DerefMut},
     ptr::NonNull,
     sync::{
-        Arc,
-        atomic::{AtomicUsize, Ordering}, Weak,
+        atomic::{AtomicUsize, Ordering},
+        Arc, Weak,
     },
 };
-use std::mem::MaybeUninit;
 
 #[repr(C)]
 struct ArcInner<T: ?Sized> {
@@ -146,6 +145,7 @@ impl AssertDropped {
         MustDrop(self)
     }
 }
+
 struct MustDrop<'a>(&'a mut AssertDropped);
 
 impl<'a> Drop for MustDrop<'a> {

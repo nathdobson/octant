@@ -4,20 +4,20 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-octant-server = {workspace=true}
-octant-panic = {workspace=true}
-simple_logger = {workspace=true}
-tokio = { workspace=true, features = ["rt", "rt-multi-thread", "macros"] }
-octant-gui = {workspace=true}
-octant-gui-core = {workspace=true}
-anyhow = {workspace=true}
-atomic_refcell = {workspace=true}
-url = {workspace=true}
-webauthn-rs = {workspace=true}
-webauthn-rs-core = {workspace=true}
-js-sys = {workspace=true}
-log = {workspace=true}
-octant-account = {workspace=true}
-octant-database = {workspace=true}
-parking_lot = {workspace=true}
-octant-web-sys-server = {workspace=true}
+octant-server = { workspace = true }
+octant-panic = { workspace = true }
+simple_logger = { workspace = true }
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }
+octant-gui = { workspace = true }
+octant-gui-core = { workspace = true }
+anyhow = { workspace = true }
+atomic_refcell = { workspace = true }
+url = { workspace = true }
+webauthn-rs = { workspace = true }
+webauthn-rs-core = { workspace = true }
+js-sys = { workspace = true }
+log = { workspace = true }
+octant-account = { workspace = true }
+octant-database = { workspace = true }
+parking_lot = { workspace = true }
+octant-web-sys-server = { workspace = true }

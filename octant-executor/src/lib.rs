@@ -2,12 +2,12 @@
 #![feature(never_type)]
 
 use std::{
-    future::{Future, poll_fn},
+    future::{poll_fn, Future},
     sync::{
-        Arc,
         atomic::{AtomicBool, Ordering},
+        Arc,
     },
-    task::{Context, Poll, ready, Wake, Waker},
+    task::{ready, Context, Poll, Wake, Waker},
 };
 
 use futures::future::BoxFuture;
@@ -142,8 +142,7 @@ impl Spawn {
 
 #[cfg(test)]
 mod test {
-    use std::mem;
-    use std::task::Poll;
+    use std::{mem, task::Poll};
 
     use parking_lot::Mutex;
     use tokio::task::yield_now;

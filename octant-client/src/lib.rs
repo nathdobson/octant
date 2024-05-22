@@ -17,7 +17,6 @@ use wasm_error::{log_error, WasmError};
 
 use crate::websocket::WebSocketMessage;
 
-mod error;
 mod websocket;
 
 #[wasm_bindgen(module = "index.js")]

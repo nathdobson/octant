@@ -55,7 +55,7 @@ async fn test_file() -> io::Result<()> {
         db.serialize().await?;
     }
     {
-        let ( mut db, root) = Database::new::<MyStruct>(&path, || todo!()).await?;
+        let (mut db, root) = Database::new::<MyStruct>(&path, || todo!()).await?;
         {
             let forest = db.forest().read().await;
             let root = forest.read(&root);

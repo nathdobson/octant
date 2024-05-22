@@ -4,17 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-serde = { workspace=true, features = ["derive", "unstable"] }
-serde_assert = {workspace=true}
-tokio = { workspace=true, features = ["io-util", "rt", "macros","sync","time"] }
-serde_json = {workspace=true}
-anyhow = {workspace=true}
-tmpdir = {workspace=true}
-parking_lot = {workspace=true}
-by_address = {workspace=true}
-weak-table = {workspace=true}
+serde = { workspace = true, features = ["derive", "unstable"] }
+serde_assert = { workspace = true }
+tokio = { workspace = true, features = ["io-util", "rt", "macros", "sync", "time"] }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tmpdir = { workspace = true }
+parking_lot = { workspace = true }
+by_address = { workspace = true }
+weak-table = { workspace = true }
 
 [dev-dependencies]
-serde-value = {workspace=true}
-parking_lot = {workspace=true, features = ["deadlock_detection"] }
-pretty_assertions = {workspace=true}
+serde-value = { workspace = true }
+parking_lot = { workspace = true, features = ["deadlock_detection"] }
+pretty_assertions = { workspace = true }

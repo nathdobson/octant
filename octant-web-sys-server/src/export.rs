@@ -1,21 +1,19 @@
 use crate::{
+    allow_credentials::AllowCredentials, allow_credentials_type::AllowCredentialsType,
+    attestation_conveyance_preference::AttestationConveyancePreference,
+    authentication_extensions_client_inputs::AuthenticationExtensionsClientInputs,
+    authenticator_attachment::AuthenticatorAttachment,
     authenticator_selection_criteria::AuthenticatorSelectionCriteria,
+    authenticator_transport::AuthenticatorTransport, pub_key_cred_params::PubKeyCredParams,
     public_key_credential_creation_options::PublicKeyCredentialCreationOptions,
     public_key_credential_request_options::PublicKeyCredentialRequestOptions,
+    public_key_credential_rp_entity::PublicKeyCredentialRpEntity,
+    public_key_credential_user_entity::PublicKeyCredentialUserEntity,
     user_verification_requirement::UserVerificationRequirement,
 };
 use base64urlsafedata::Base64UrlSafeData;
 use js_sys::{Array, Object, Reflect, Uint8Array};
 use wasm_bindgen::JsValue;
-use crate::allow_credentials::AllowCredentials;
-use crate::allow_credentials_type::AllowCredentialsType;
-use crate::attestation_conveyance_preference::AttestationConveyancePreference;
-use crate::authentication_extensions_client_inputs::AuthenticationExtensionsClientInputs;
-use crate::authenticator_attachment::AuthenticatorAttachment;
-use crate::authenticator_transport::AuthenticatorTransport;
-use crate::pub_key_cred_params::PubKeyCredParams;
-use crate::public_key_credential_rp_entity::PublicKeyCredentialRpEntity;
-use crate::public_key_credential_user_entity::PublicKeyCredentialUserEntity;
 
 pub trait Export<T> {
     fn export(&self) -> T;

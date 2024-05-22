@@ -4,34 +4,34 @@ resolver = "2"
 members = ["octant-build",
     "octant-client", "octant-gui", "octant-gui-client", "octant-gui-core", "octant-object", "octant-panic", "octant-scoreboard",
     "octant-server"
-    , "wasm-error", "octant-build", "octant-database", "octant-account", "octant-executor", "octant-serde", "octant-web-sys-client","octant-web-sys-server", "octant-sys-build"]
+    , "wasm-error", "octant-build", "octant-database", "octant-account", "octant-executor", "octant-serde", "octant-web-sys-client", "octant-web-sys-server", "octant-sys-build"]
 
 [profile.release]
 opt-level = "s"
 
 [patch.crates-io]
-base64urlsafedata = {git = "https://github.com/nathdobson/webauthn-rs.git"}
-webauthn-rs = {git=  "https://github.com/nathdobson/webauthn-rs.git"}
-webauthn-rs-core = {git=  "https://github.com/nathdobson/webauthn-rs.git"}
-webauthn-rs-proto = {git=  "https://github.com/nathdobson/webauthn-rs.git"}
+base64urlsafedata = { git = "https://github.com/nathdobson/webauthn-rs.git" }
+webauthn-rs = { git = "https://github.com/nathdobson/webauthn-rs.git" }
+webauthn-rs-core = { git = "https://github.com/nathdobson/webauthn-rs.git" }
+webauthn-rs-proto = { git = "https://github.com/nathdobson/webauthn-rs.git" }
 
 [workspace.dependencies]
-catalog = {path="../catalog/catalog"}
-octant-gui-core = {path="octant-gui-core"}
-octant-gui = {path="octant-gui"}
-octant-gui-client = {path="octant-gui-client"}
-octant-serde = {path="octant-serde"}
-wasm-error = {path="wasm-error"}
-octant-web-sys-server = {path="octant-web-sys-server"}
-octant-web-sys-client = {path="octant-web-sys-client"}
-octant-sys-build = {path= "octant-sys-build"}
-octant-object = {path="octant-object"}
+catalog = { path = "../catalog/catalog" }
+octant-gui-core = { path = "octant-gui-core" }
+octant-gui = { path = "octant-gui" }
+octant-gui-client = { path = "octant-gui-client" }
+octant-serde = { path = "octant-serde" }
+wasm-error = { path = "wasm-error" }
+octant-web-sys-server = { path = "octant-web-sys-server" }
+octant-web-sys-client = { path = "octant-web-sys-client" }
+octant-sys-build = { path = "octant-sys-build" }
+octant-object = { path = "octant-object" }
 web-sys = "0.3.69"
 paste = "1.0.15"
 wasm-bindgen = "0.2.92"
 js-sys = "0.3.69"
-safe-once = {path= "../safe-once"}
-anyhow="1.0.85"
+safe-once = { path = "../safe-once" }
+anyhow = "1.0.86"
 serde = "1.0.202"
 type-map = "0.5.0"
 base64urlsafedata = "0.5.0"
@@ -41,8 +41,8 @@ log = "0.4.21"
 webauthn-rs = "0.5.0"
 webauthn-rs-proto = "0.5.0"
 atomic_refcell = "0.1.13"
-octant-server ={path="octant-server"}
-octant-database = {path="octant-database"}
+octant-server = { path = "octant-server" }
+octant-database = { path = "octant-database" }
 parking_lot = "0.12.2"
 uuid = "1.8.0"
 clap = "4.5.4"
@@ -59,12 +59,12 @@ weak-table = "0.3.2"
 serde-value = "0.7.0"
 pretty_assertions = "1.4.0"
 octant-panic = { path = "octant-panic" }
-octant-executor = {path="octant-executor"}
+octant-executor = { path = "octant-executor" }
 serde-wasm-bindgen = "0.6.5"
 prokio = "0.1.0"
-octant-account = {path="octant-account"}
+octant-account = { path = "octant-account" }
 simple_logger = "5.0.0"
-webauthn-rs-core = {git=  "https://github.com/nathdobson/webauthn-rs.git"}
+webauthn-rs-core = { git = "https://github.com/nathdobson/webauthn-rs.git" }
 cookie = "0.18.1"
 itertools = "0.13.0"
 memo-map = "0.3.2"

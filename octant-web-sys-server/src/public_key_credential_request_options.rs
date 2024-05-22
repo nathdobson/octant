@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     allow_credentials::AllowCredentials,
     authentication_extensions_client_inputs::AuthenticationExtensionsClientInputs,
+    user_verification_requirement::UserVerificationRequirement,
 };
-use crate::user_verification_requirement::UserVerificationRequirement;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PublicKeyCredentialRequestOptions {

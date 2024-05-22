@@ -6,7 +6,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use type_map::TypeMap;
 
 use octant_serde::{
-    define_serde_impl, define_serde_trait, deserialize, DeserializeWith, serialize, SerializeDyn,
+    define_serde_impl, define_serde_trait, deserialize, serialize, DeserializeWith, SerializeDyn,
 };
 
 trait MyTrait: Debug + SerializeDyn {}
@@ -17,6 +17,7 @@ mod a {
 
     define_serde_trait!(crate::MyTrait);
 }
+
 #[derive(Debug, Serialize, Deserialize)]
 struct Foo(u32);
 

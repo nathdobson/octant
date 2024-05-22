@@ -1,8 +1,4 @@
-use serde::{
-    de
-
-    , Deserializer,
-};
+use serde::{de, Deserializer};
 
 pub trait DeserializerProxy {
     type Error: de::Error;

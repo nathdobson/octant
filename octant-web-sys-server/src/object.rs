@@ -9,4 +9,3 @@ define_sys_class! {
     new_client a;
     new_server a;
 }
-

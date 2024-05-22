@@ -16,10 +16,12 @@
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 #![feature(try_blocks)]
+
 pub mod de;
 pub mod derive;
 pub mod file;
 pub mod forest;
+pub mod json;
 pub mod ser;
 pub mod tack;
 #[cfg(test)]
@@ -27,7 +29,6 @@ mod test;
 pub mod tree;
 mod unique_arc;
 pub mod value;
-pub mod json;
 
 pub mod reexports {
     pub use serde;

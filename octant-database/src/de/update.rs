@@ -1,10 +1,8 @@
 use std::marker::PhantomData;
 
-use serde::de::DeserializeSeed;
-use serde::Deserializer;
+use serde::{de::DeserializeSeed, Deserializer};
 
-use crate::de::forest::DeserializeForest;
-use crate::de::proxy::DeserializerProxy;
+use crate::de::{forest::DeserializeForest, proxy::DeserializerProxy};
 
 pub trait DeserializeUpdate<'de>: Sized {
     fn deserialize_snapshot<D: Deserializer<'de>, DP: DeserializerProxy>(

@@ -1,8 +1,10 @@
 use base64urlsafedata::Base64UrlSafeData;
 use serde::{Deserialize, Serialize};
 
-use crate::authentication_extensions_client_outputs::AuthenticationExtensionsClientOutputs;
-use crate::authenticator_response::AuthenticatorResponse;
+use crate::{
+    authentication_extensions_client_outputs::AuthenticationExtensionsClientOutputs,
+    authenticator_response::AuthenticatorResponse,
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PublicKeyCredential {

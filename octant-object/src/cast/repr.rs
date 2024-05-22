@@ -27,6 +27,7 @@ pub trait HasRepr: Sized {
 }
 
 impl IsRepr for () {}
+
 impl HasRepr for () {
     type Repr = ();
 }
@@ -36,33 +37,41 @@ impl<T: ?Sized> HasRepr for DynMetadata<T> {
 }
 
 impl IsRepr for u8 {}
+
 impl HasRepr for u8 {
     type Repr = u8;
 }
+
 impl HasRepr for i8 {
     type Repr = u8;
 }
 
 impl IsRepr for u16 {}
+
 impl HasRepr for u16 {
     type Repr = u16;
 }
+
 impl HasRepr for i16 {
     type Repr = u16;
 }
 
 impl IsRepr for u32 {}
+
 impl HasRepr for u32 {
     type Repr = u32;
 }
+
 impl HasRepr for i32 {
     type Repr = u32;
 }
 
 impl IsRepr for u64 {}
+
 impl HasRepr for u64 {
     type Repr = u64;
 }
+
 impl HasRepr for i64 {
     type Repr = u64;
 }
@@ -70,6 +79,7 @@ impl HasRepr for i64 {
 impl HasRepr for usize {
     type Repr = PtrRepr<()>;
 }
+
 impl HasRepr for isize {
     type Repr = PtrRepr<()>;
 }
@@ -128,4 +138,3 @@ where
 {
     type Repr = PtrRepr<<<T as Pointee>::Metadata as HasRepr>::Repr>;
 }
-

@@ -1,14 +1,12 @@
-use std::any::Any;
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{any::Any, collections::HashMap, sync::Arc};
 
 use serde::de::Error;
 
-use crate::de::proxy::DeserializerProxy;
-use crate::de::tree::DeserializeTree;
-use crate::de::update::DeserializeUpdate;
-use crate::tree::{Tree, TreeId};
-use crate::unique_arc::UniqueArc;
+use crate::{
+    de::{proxy::DeserializerProxy, tree::DeserializeTree, update::DeserializeUpdate},
+    tree::{Tree, TreeId},
+    unique_arc::UniqueArc,
+};
 
 pub struct DeserializeForest<DP: DeserializerProxy> {
     pub(crate) updaters: HashMap<TreeId, Arc<Tree<dyn DeserializeTree<DP>>>>,

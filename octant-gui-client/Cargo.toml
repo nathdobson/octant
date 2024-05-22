@@ -4,26 +4,26 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-futures = {workspace=true}
-octant-gui-core = {workspace=true}
-octant-object = {workspace=true}
-anyhow = {workspace=true}
-log = {workspace=true}
-wasm-bindgen = {workspace=true}
-serde-wasm-bindgen = {workspace=true}
-wasm-error = {workspace=true}
-web-sys = { workspace=true, features = [
+futures = { workspace = true }
+octant-gui-core = { workspace = true }
+octant-object = { workspace = true }
+anyhow = { workspace = true }
+log = { workspace = true }
+wasm-bindgen = { workspace = true }
+serde-wasm-bindgen = { workspace = true }
+wasm-error = { workspace = true }
+web-sys = { workspace = true, features = [
     "Location",
     "Response",
     "Request",
-    "RequestInit","AuthenticatorAssertionResponse","PublicKeyCredentialRequestOptions", "CredentialRequestOptions", "AuthenticatorAttestationResponse", "Document", "Window", "HtmlElement", "Text", "HtmlFormElement", "InputEvent", "HtmlCollection", "HtmlInputElement", "HtmlAnchorElement", "History", "PopStateEvent", "Navigator", "CredentialsContainer", "CredentialCreationOptions", "PublicKeyCredentialCreationOptions", "PublicKeyCredentialRpEntity", "PublicKeyCredentialUserEntity", "PublicKeyCredential", "AuthenticatorResponse", "AuthenticatorSelectionCriteria", "AttestationConveyancePreference", "AuthenticationExtensionsClientInputs", "AuthenticatorAttachment", "UserVerificationRequirement"] }
-atomic_refcell = {workspace=true}
-prokio = {workspace=true}
-by_address = {workspace=true}
-wasm-bindgen-futures = {workspace=true}
-js-sys = {workspace=true}
-base64urlsafedata = {workspace=true}
-catalog = {workspace=true}
-serde = {workspace=true}
-type-map = {workspace=true}
-octant-serde = {workspace=true}
+    "RequestInit", "AuthenticatorAssertionResponse", "PublicKeyCredentialRequestOptions", "CredentialRequestOptions", "AuthenticatorAttestationResponse", "Document", "Window", "HtmlElement", "Text", "HtmlFormElement", "InputEvent", "HtmlCollection", "HtmlInputElement", "HtmlAnchorElement", "History", "PopStateEvent", "Navigator", "CredentialsContainer", "CredentialCreationOptions", "PublicKeyCredentialCreationOptions", "PublicKeyCredentialRpEntity", "PublicKeyCredentialUserEntity", "PublicKeyCredential", "AuthenticatorResponse", "AuthenticatorSelectionCriteria", "AttestationConveyancePreference", "AuthenticationExtensionsClientInputs", "AuthenticatorAttachment", "UserVerificationRequirement"] }
+atomic_refcell = { workspace = true }
+prokio = { workspace = true }
+by_address = { workspace = true }
+wasm-bindgen-futures = { workspace = true }
+js-sys = { workspace = true }
+base64urlsafedata = { workspace = true }
+catalog = { workspace = true }
+serde = { workspace = true }
+type-map = { workspace = true }
+octant-serde = { workspace = true }

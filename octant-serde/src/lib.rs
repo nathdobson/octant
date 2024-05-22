@@ -178,6 +178,7 @@ type DeserializeFn<U> =
         OctantDeserializer<'a, 'de>,
     )
         -> Result<Box<U>, <OctantDeserializer<'a, 'de> as Deserializer<'de>>::Error>;
+
 pub struct DeserializeImp<U: ?Sized, T> {
     pub name: &'static str,
     pub deserialize: DeserializeFn<U>,

@@ -4,12 +4,7 @@
 
 use std::{any::Any, rc::Rc};
 
-use octant_object::{
-    base,
-    base::Base,
-    define_class,
-};
-use octant_object::cast::downcast_object;
+use octant_object::{base, base::Base, cast::downcast_object, define_class};
 
 trait Parent = Send + Sync + Any;
 
@@ -143,4 +138,3 @@ fn test_downcast() {
         let x: Rc<dyn D> = downcast_object(x).ok().unwrap();
     }
 }
-

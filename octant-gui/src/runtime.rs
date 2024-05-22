@@ -1,6 +1,4 @@
-use std::{
-    sync::{Arc, Weak},
-};
+use std::sync::{Arc, Weak};
 
 use atomic_refcell::AtomicRefCell;
 use tokio::sync::mpsc::UnboundedSender;

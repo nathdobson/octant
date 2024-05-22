@@ -1,15 +1,10 @@
 use core::mem;
-use std::pin::Pin;
-use std::str;
-use std::str::Utf8Error;
-use std::sync::Arc;
-use std::task::Poll;
+use std::{pin::Pin, str, str::Utf8Error, sync::Arc, task::Poll};
 
 use anyhow::{anyhow, Context};
 use futures::Stream;
 use tokio::sync::mpsc;
-use wasm_bindgen::{JsCast, JsValue};
-use wasm_bindgen::closure::Closure;
+use wasm_bindgen::{closure::Closure, JsCast, JsValue};
 use web_sys::{CloseEvent, ErrorEvent, Event, MessageEvent, WebSocket};
 
 use wasm_error::WasmError;
@@ -62,8 +57,8 @@ impl WebSocketStream {
             WebSocketMessage::Text(x) => self.socket.send_with_str(&x),
             WebSocketMessage::Binary(x) => self.socket.send_with_u8_array(&x),
         }
-            .map_err(WasmError::new)
-            .context("Failed to send.")
+        .map_err(WasmError::new)
+        .context("Failed to send.")
     }
 }
 

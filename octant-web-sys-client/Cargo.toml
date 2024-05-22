@@ -7,23 +7,23 @@ edition = "2021"
 metabuild = ["octant-sys-build"]
 
 [dependencies]
-octant-gui-core = {workspace=true}
-octant-gui-client = {workspace=true}
-octant-serde = {workspace=true}
-serde = {workspace=true, features = ["derive","rc"] }
-anyhow = {workspace=true}
-catalog = {workspace= true}
-wasm-error = {workspace=true}
-log = {workspace=true}
-octant-object = {workspace=true}
-web-sys = {workspace=true, features=["HtmlDivElement"]}
-wasm-bindgen = {workspace=true}
-js-sys = {workspace=true}
-safe-once = {workspace=true}
-base64urlsafedata= {workspace=true}
+octant-gui-core = { workspace = true }
+octant-gui-client = { workspace = true }
+octant-serde = { workspace = true }
+serde = { workspace = true, features = ["derive", "rc"] }
+anyhow = { workspace = true }
+catalog = { workspace = true }
+wasm-error = { workspace = true }
+log = { workspace = true }
+octant-object = { workspace = true }
+web-sys = { workspace = true, features = ["HtmlDivElement"] }
+wasm-bindgen = { workspace = true }
+js-sys = { workspace = true }
+safe-once = { workspace = true }
+base64urlsafedata = { workspace = true }
 
 [build-dependencies]
-octant-sys-build = {workspace=true}
+octant-sys-build = { workspace = true }
 
 [package.metadata.octant-sys-build]
 side = "client"

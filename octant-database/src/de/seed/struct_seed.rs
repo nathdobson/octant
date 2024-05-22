@@ -1,8 +1,9 @@
-use std::fmt::Formatter;
-use std::slice;
+use std::{fmt::Formatter, slice};
 
-use serde::de::{DeserializeSeed, Error, MapAccess, SeqAccess, Visitor};
-use serde::Deserializer;
+use serde::{
+    de::{DeserializeSeed, Error, MapAccess, SeqAccess, Visitor},
+    Deserializer,
+};
 
 use crate::de::seed::identifier_seed::IdentifierSeed;
 

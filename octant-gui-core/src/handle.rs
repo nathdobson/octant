@@ -8,10 +8,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use octant_object::class::Class;
 
-
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct HandleId(pub usize);
-
 
 pub struct NewTypedHandle<T: ?Sized + Class>(
     HandleId,
@@ -19,6 +17,7 @@ pub struct NewTypedHandle<T: ?Sized + Class>(
 );
 
 impl<T: ?Sized + Class> Copy for NewTypedHandle<T> {}
+
 impl<T: ?Sized + Class> Clone for NewTypedHandle<T> {
     fn clone(&self) -> Self {
         *self

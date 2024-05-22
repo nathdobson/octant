@@ -6,11 +6,11 @@ use url::Url;
 use webauthn_rs::prelude::{Passkey, Uuid};
 
 use octant_database::{forest::Forest, tack::Tack, tree::Tree};
-use octant_server::{Handler, Page, session::Session};
+use octant_server::{session::Session, Handler, Page};
 use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
 
 use crate::{
-    Account, AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant,
+    build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, Account, AccountDatabase,
 };
 
 pub struct RegisterHandler {
