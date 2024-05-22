@@ -13,10 +13,39 @@ wasm-bindgen = { workspace = true }
 serde-wasm-bindgen = { workspace = true }
 wasm-error = { workspace = true }
 web-sys = { workspace = true, features = [
-    "Location",
-    "Response",
-    "Request",
-    "RequestInit", "AuthenticatorAssertionResponse", "PublicKeyCredentialRequestOptions", "CredentialRequestOptions", "AuthenticatorAttestationResponse", "Document", "Window", "HtmlElement", "Text", "HtmlFormElement", "InputEvent", "HtmlCollection", "HtmlInputElement", "HtmlAnchorElement", "History", "PopStateEvent", "Navigator", "CredentialsContainer", "CredentialCreationOptions", "PublicKeyCredentialCreationOptions", "PublicKeyCredentialRpEntity", "PublicKeyCredentialUserEntity", "PublicKeyCredential", "AuthenticatorResponse", "AuthenticatorSelectionCriteria", "AttestationConveyancePreference", "AuthenticationExtensionsClientInputs", "AuthenticatorAttachment", "UserVerificationRequirement"] }
+  "Location",
+  "Response",
+  "Request",
+  "RequestInit",
+  "AuthenticatorAssertionResponse",
+  "PublicKeyCredentialRequestOptions",
+  "CredentialRequestOptions",
+  "AuthenticatorAttestationResponse",
+  "Document",
+  "Window",
+  "HtmlElement",
+  "Text",
+  "HtmlFormElement",
+  "InputEvent",
+  "HtmlCollection",
+  "HtmlInputElement",
+  "HtmlAnchorElement",
+  "History",
+  "PopStateEvent",
+  "Navigator",
+  "CredentialsContainer",
+  "CredentialCreationOptions",
+  "PublicKeyCredentialCreationOptions",
+  "PublicKeyCredentialRpEntity",
+  "PublicKeyCredentialUserEntity",
+  "PublicKeyCredential",
+  "AuthenticatorResponse",
+  "AuthenticatorSelectionCriteria",
+  "AttestationConveyancePreference",
+  "AuthenticationExtensionsClientInputs",
+  "AuthenticatorAttachment",
+  "UserVerificationRequirement",
+] }
 atomic_refcell = { workspace = true }
 prokio = { workspace = true }
 by_address = { workspace = true }

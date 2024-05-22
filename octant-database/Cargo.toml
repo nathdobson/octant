@@ -6,7 +6,13 @@ edition = "2021"
 [dependencies]
 serde = { workspace = true, features = ["derive", "unstable"] }
 serde_assert = { workspace = true }
-tokio = { workspace = true, features = ["io-util", "rt", "macros", "sync", "time"] }
+tokio = { workspace = true, features = [
+  "io-util",
+  "rt",
+  "macros",
+  "sync",
+  "time",
+] }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 tmpdir = { workspace = true }
