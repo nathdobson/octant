@@ -36,7 +36,7 @@ impl ScoreHandler {
     }
     pub async fn handle_impl(
         self: &Arc<Self>,
-        page: ArcElement,
+        mut page: ArcElement,
         session: Arc<Session>,
     ) -> anyhow::Result<()> {
         let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());
@@ -61,9 +61,9 @@ impl ScoreHandler {
                 }
             });
         for guess in &*self.guesses.lock() {
-            page.append_child(
+            page = page.child(
                 d.create_element("p")
-                    .child(d.create_text_node(&format!("{}: {}", guess.email, guess.guess))),
+                    .child(d.create_text_node(format!("{}: {}", guess.email, guess.guess))),
             );
         }
         page.child(form);

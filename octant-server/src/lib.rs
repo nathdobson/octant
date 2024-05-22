@@ -28,6 +28,7 @@ use octant_runtime_server::{
 };
 use octant_serde::TypeMap;
 use octant_web_sys_server::{global::Global, node::ArcNode};
+use octant_web_sys_server::node::Node;
 
 use crate::{cookies::CookieRouter, session::Session, sink::BufferedDownMessageSink};
 
@@ -151,7 +152,7 @@ impl OctantServer {
             }
         });
         let d = global.window().document();
-        d.append_child(d.create_text_node("Hello"));
+        (d.clone() as Arc<dyn Node>).append_child(d.create_text_node(format!("Hello")));
         pool.run().await?;
         Ok(())
     }

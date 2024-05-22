@@ -5,4 +5,6 @@ define_sys_class! {
     class Text;
     extends Node;
     wasm web_sys::Text;
+    new_client _;
+    new_server _;
 }

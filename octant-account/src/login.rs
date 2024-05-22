@@ -81,7 +81,7 @@ impl Handler for LoginHandler {
     fn handle(self: Arc<Self>, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
         let url = url.clone();
         let d = session.global().window().document();
-        let text = d.create_text_node("Register");
+        let text = d.create_text_node(format!("Register"));
         let email = d
             .create_input_element()
             .attr("type", "text")

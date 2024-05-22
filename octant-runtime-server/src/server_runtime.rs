@@ -1,17 +1,13 @@
-use crate::{
-    handle::RawHandle,
-    peer::{Peer, PeerValue},
-    proto::DownMessage,
-};
+use crate::{delete::delete_rpc, handle::{RawHandle, TypedHandle}, LookupError, peer::{Peer, PeerValue}, proto::{DownMessage, UpMessageList}};
 use atomic_refcell::AtomicRefCell;
 use octant_executor::Spawn;
+use octant_object::{cast::downcast_object, class::Class};
 use std::{
     fmt::{Debug, Formatter},
     sync::{Arc, Weak},
 };
 use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
-use crate::proto::UpMessageList;
 
 struct State {
     next_handle: u64,
@@ -66,9 +62,22 @@ impl Runtime {
         PeerValue::new(self.clone(), handle)
     }
     pub fn delete(self: &Arc<Self>, handle: RawHandle) {
+        delete_rpc(self, handle);
+    }
+    pub fn run_batch(self: &Arc<Self>, batch: UpMessageList) -> anyhow::Result<()> {
         todo!();
     }
-    pub fn run_batch(self:&Arc<Self>,batch:UpMessageList)->anyhow::Result<()>{
-        todo!();
+    pub fn lookup<T: ?Sized + Class>(
+        self: &Arc<Self>,
+        handle: TypedHandle<T>,
+    ) -> Result<Arc<T>, LookupError> {
+        Ok(downcast_object(
+            self.state
+                .borrow()
+                .handles
+                .get(&handle.raw())
+                .ok_or_else(|| LookupError::NotFound)?,
+        )
+        .map_err(|_| LookupError::DowncastFailed)?)
     }
 }

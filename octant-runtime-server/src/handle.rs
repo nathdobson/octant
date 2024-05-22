@@ -1,5 +1,5 @@
-
 use octant_object::class::Class;
+use octant_serde::{DeserializeWith, TypeMap};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     any::type_name,
@@ -37,8 +37,8 @@ impl<T: ?Sized + Class> Clone for TypedHandle<T> {
 
 impl<T: ?Sized + Class> TypedHandle<T> {
     pub fn unsize<U: ?Sized + Class>(self) -> TypedHandle<U>
-        where
-            T: Unsize<U>,
+    where
+        T: Unsize<U>,
     {
         TypedHandle(self.0, PhantomData)
     }
@@ -52,8 +52,8 @@ impl<T: ?Sized + Class> TypedHandle<T> {
 
 impl<T: ?Sized + Class> Serialize for TypedHandle<T> {
     fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         self.0.serialize(s)
     }
@@ -61,8 +61,8 @@ impl<T: ?Sized + Class> Serialize for TypedHandle<T> {
 
 impl<'de, T: ?Sized + Class> Deserialize<'de> for TypedHandle<T> {
     fn deserialize<D>(d: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         Ok(TypedHandle(RawHandle::deserialize(d)?, PhantomData))
     }
@@ -70,9 +70,22 @@ impl<'de, T: ?Sized + Class> Deserialize<'de> for TypedHandle<T> {
 
 impl<T: ?Sized + Class> Debug for TypedHandle<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("NewTypedHandle")
-            .field("type", &type_name::<T>())
-            .field("id", &self.0)
-            .finish()
+        write!(f, "{}({:?})", &type_name::<T>(), self.0)
+        // f.debug_struct("TypedHandle")
+        //     .field("type", &type_name::<T>())
+        //     .field("id", &self.0)
+        //     .finish()
+    }
+}
+
+impl<'de> DeserializeWith<'de> for RawHandle {
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+        Self::deserialize(d)
+    }
+}
+
+impl<'de, T: ?Sized + Class> DeserializeWith<'de> for TypedHandle<T> {
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+        Self::deserialize(d)
     }
 }

@@ -1,3 +1,4 @@
+use std::marker::Unsize;
 use std::sync::Arc;
 
 use crate::{
@@ -14,16 +15,16 @@ pub trait ElementExt {
     fn attr(self, name: &str, value: &str) -> Self;
 }
 
-impl<T: ?Sized + Node> NodeExt for Arc<T> {
+impl<T: ?Sized + Unsize<dyn Node>> NodeExt for Arc<T> {
     fn child(self, child: ArcNode) -> Self {
-        self.node().append_child(child);
+        (self.clone() as Arc<dyn Node>).append_child(child);
         self
     }
 }
 
-impl<T: ?Sized + Element> ElementExt for Arc<T> {
+impl<T: ?Sized + Unsize<dyn Element>> ElementExt for Arc<T> {
     fn attr(self, name: &str, value: &str) -> Self {
-        self.element().set_attribute(name, value);
+        (self.clone() as Arc<dyn Element>).set_attribute(name, value);
         self
     }
 }

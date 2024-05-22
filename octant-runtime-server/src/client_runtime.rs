@@ -1,18 +1,14 @@
 use crate::{
     handle::{RawHandle, TypedHandle},
     peer::{ArcPeer, Peer},
-    proto::UpMessage,
+    proto::{DownMessage, DownMessageList, UpMessage},
+    LookupError,
 };
 use atomic_refcell::AtomicRefCell;
 use octant_object::{cast::downcast_object, class::Class};
-use std::{
-    collections::HashMap,
-    marker::Unsize,
-    sync::Arc,
-};
+use std::{collections::HashMap, marker::Unsize, sync::Arc};
 use tokio::sync::mpsc::UnboundedSender;
 use web_sys::console;
-use crate::proto::{DownMessage, DownMessageList};
 
 struct State {
     handles: HashMap<RawHandle, ArcPeer>,
@@ -39,6 +35,8 @@ impl Runtime {
         assign: TypedHandle<T>,
         value: Arc<T>,
     ) {
+        let value = value as Arc<dyn Peer>;
+        value.set_handle(assign.raw());
         assert!(self
             .state
             .borrow_mut()
@@ -46,18 +44,18 @@ impl Runtime {
             .insert(assign.raw(), value)
             .is_none());
     }
-    pub fn get<T: ?Sized + Class>(&self, handle: TypedHandle<T>) -> Arc<T> {
-        downcast_object(
+    pub fn lookup<T: ?Sized + Class>(&self, handle: TypedHandle<T>) -> Result<Arc<T>, LookupError> {
+        Ok(downcast_object(
             self.state
                 .borrow()
                 .handles
                 .get(&handle.raw())
-                .expect("unknown handle")
-                .clone(),
+                .cloned()
+                .ok_or_else(|| LookupError::NotFound)?,
         )
-        .unwrap_or_else(|_| panic!("Wrong class for {:?}", handle))
+        .map_err(|_| LookupError::DowncastFailed)?)
     }
-    pub fn remove(self: &Arc<Self>, handle: RawHandle) {
+    pub fn delete(self: &Arc<Self>, handle: RawHandle) {
         self.state.borrow_mut().handles.remove(&handle);
     }
     pub async fn run_batch(self: &Arc<Self>, messages: DownMessageList) -> anyhow::Result<()> {
@@ -67,10 +65,7 @@ impl Runtime {
         }
         Ok(())
     }
-    async fn run_message(
-        self: &Arc<Self>,
-        message: Box<dyn DownMessage>,
-    ) -> anyhow::Result<()> {
+    async fn run_message(self: &Arc<Self>, message: Box<dyn DownMessage>) -> anyhow::Result<()> {
         message.run(self)?;
         Ok(())
     }
@@ -78,4 +73,3 @@ impl Runtime {
         self.sink.send(message).ok();
     }
 }
-

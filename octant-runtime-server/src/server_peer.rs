@@ -43,6 +43,6 @@ impl dyn Peer {
 
 impl Drop for PeerValue {
     fn drop(&mut self) {
-        todo!()
+        self.runtime().delete(self.handle);
     }
 }

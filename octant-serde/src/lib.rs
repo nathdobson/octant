@@ -5,6 +5,8 @@
 #![allow(unused_variables)]
 #![deny(unused_must_use)]
 
+mod deserialize_with_impl;
+
 use std::{
     any::{type_name, Any},
     collections::HashMap,
@@ -17,7 +19,7 @@ use catalog::{Builder, BuilderFrom, Registry};
 use serde::{
     de::{DeserializeSeed, Error as _, MapAccess, SeqAccess, Visitor},
     ser::{Error, SerializeStruct},
-    Deserialize, Deserializer, Serialize, Serializer,
+    Deserializer, Serialize, Serializer,
 };
 pub use type_map::TypeMap;
 
@@ -85,90 +87,6 @@ where
         D: Deserializer<'de>,
     {
         T::deserialize_with(self.0, d)
-    }
-}
-
-impl<'de> DeserializeWith<'de> for () {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
-        <()>::deserialize(d)
-    }
-}
-
-impl<'de, T1> DeserializeWith<'de> for (T1,)
-where
-    T1: DeserializeWith<'de>,
-{
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<(T1,), D::Error> {
-        struct V<'c, T1>(&'c TypeMap, PhantomData<T1>);
-        impl<'c, 'de, T1: DeserializeWith<'de>> Visitor<'de> for V<'c, T1> {
-            type Value = (T1,);
-            fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
-                write!(f, "a tuple of length 1")
-            }
-            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-            where
-                A: SeqAccess<'de>,
-            {
-                Ok((seq
-                    .next_element_seed(DeserializeWithSeed::new(self.0))?
-                    .ok_or_else(|| A::Error::custom("missing tuple argument"))?,))
-            }
-        }
-        d.deserialize_tuple(1, V(ctx, PhantomData))
-    }
-}
-
-impl<'de, T1, T2> DeserializeWith<'de> for (T1, T2)
-where
-    T1: DeserializeWith<'de>,
-    T2: DeserializeWith<'de>,
-{
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<(T1, T2), D::Error> {
-        struct V<'c, T1, T2>(&'c TypeMap, PhantomData<(T1, T2)>);
-        impl<'c, 'de, T1: DeserializeWith<'de>, T2: DeserializeWith<'de>> Visitor<'de> for V<'c, T1, T2> {
-            type Value = (T1, T2);
-            fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
-                write!(f, "a tuple of length 1")
-            }
-            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-            where
-                A: SeqAccess<'de>,
-            {
-                Ok((
-                    seq.next_element_seed(DeserializeWithSeed::new(self.0))?
-                        .ok_or_else(|| A::Error::custom("missing tuple argument"))?,
-                    seq.next_element_seed(DeserializeWithSeed::new(self.0))?
-                        .ok_or_else(|| A::Error::custom("missing tuple argument"))?,
-                ))
-            }
-        }
-        d.deserialize_tuple(2, V(ctx, PhantomData))
-    }
-}
-
-impl<'de, T: DeserializeWith<'de>> DeserializeWith<'de> for Option<T> {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
-        struct V<'c, T>(&'c TypeMap, PhantomData<T>);
-        impl<'c, 'de, T: DeserializeWith<'de>> Visitor<'de> for V<'c, T> {
-            type Value = Option<T>;
-
-            fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
-                write!(f, "an option")
-            }
-            fn visit_none<E>(self) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Ok(None)
-            }
-            fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
-            where
-                D: Deserializer<'de>,
-            {
-                Ok(Some(T::deserialize_with(self.0, d)?))
-            }
-        }
-        d.deserialize_option(V(ctx, PhantomData))
     }
 }
 
@@ -444,4 +362,49 @@ macro_rules! define_serde_impl {
             }
         };
     };
+}
+
+#[macro_export]
+macro_rules! derive_deserialize_with_for_struct {
+    {
+        struct $struct:ident {
+            $($field:ident: $type:ty, )*
+        }
+    } => {
+        impl<'de> $crate::DeserializeWith<'de> for $struct {
+            fn deserialize_with<D:$crate::reexports::serde::Deserializer<'de>>(ctx:&$crate::TypeMap,d:D)->::std::result::Result<Self, D::Error>{
+                #[allow(non_camel_case_types)]
+                #[derive($crate::reexports::serde::Deserialize)]
+                enum Field{
+                    $( $field ),*
+                }
+                struct V<'c>{ctx:&'c $crate::TypeMap}
+                impl<'c,'de> $crate::reexports::serde::de::Visitor<'de> for V<'c>{
+                    type Value = $struct;
+                    fn expecting(&self, f:&mut ::std::fmt::Formatter)->::std::fmt::Result{
+                        write!(f,::std::stringify!($struct))
+                    }
+                    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: $crate::reexports::serde::de::MapAccess<'de> {
+                        $( let mut $field: Option<$type> = None; )*
+                        while let Some(field) = map.next_key::<Field>()? {
+                            match field {
+                                $(
+                                    Field::$field => {
+                                        $field = Some(map.next_value_seed($crate::DeserializeWithSeed::<$type>::new(self.ctx))?);
+                                    }
+                                )*
+                            }
+                        }
+                        $(
+                            let $field = $field.ok_or_else(||
+                                <A::Error as $crate::reexports::serde::de::Error>::custom(format_args!("Missing field {}",std::stringify!($field)))
+                            )?;
+                        )*
+                        Ok($struct {$($field,)*})
+                    }
+                }
+                d.deserialize_struct(::std::stringify!($struct),&[$(::std::stringify!($field)),*],V{ctx})
+            }
+        }
+    }
 }
