@@ -9,7 +9,7 @@ use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serialize
 #[cfg(side = "server")]
 #[cfg(side = "client")]
 use octant_gui_client::Runtime;
-use octant_gui_core::{define_sys_class, define_sys_rpc, NewTypedHandle, TypedHandle};
+use octant_gui_core::{define_sys_class, define_sys_rpc, NewTypedHandle};
 
 use crate::{
     document::{ArcDocument, Document},

@@ -1,27 +1,32 @@
 use base64urlsafedata::Base64UrlSafeData;
 use js_sys::{ArrayBuffer, Object, Uint8Array};
 use wasm_bindgen::{JsCast, JsValue};
-use web_sys::{console, PublicKeyCredential};
-
-use octant_gui_core::{AuthenticationExtensionsClientOutputs, AuthenticatorAssertionResponse, AuthenticatorAttestationResponse, AuthenticatorResponse, Error};
+use web_sys::{console};
+use octant_gui_core::Error;
+use crate::authentication_extensions_client_outputs::AuthenticationExtensionsClientOutputs;
+use crate::authenticator_assertion_response::AuthenticatorAssertionResponse;
+use crate::authenticator_attestation_response::AuthenticatorAttestationResponse;
+use crate::authenticator_response::AuthenticatorResponse;
+use crate::credential_data::CredentialData;
+use crate::public_key_credential::PublicKeyCredential;
 
 pub trait Import<T> {
     fn import(&self) -> T;
 }
 
-impl Import<octant_gui_core::CredentialData> for web_sys::Credential {
-    fn import(&self) -> octant_gui_core::CredentialData {
-        if let Some(this) = self.dyn_ref::<PublicKeyCredential>() {
-            octant_gui_core::CredentialData::PublicKeyCredential(this.import())
+impl Import<CredentialData> for web_sys::Credential {
+    fn import(&self) -> CredentialData {
+        if let Some(this) = self.dyn_ref::<web_sys::PublicKeyCredential>() {
+            CredentialData::PublicKeyCredential(this.import())
         } else {
             todo!();
         }
     }
 }
 
-impl Import<octant_gui_core::PublicKeyCredential> for web_sys::PublicKeyCredential {
-    fn import(&self) -> octant_gui_core::PublicKeyCredential {
-        octant_gui_core::PublicKeyCredential {
+impl Import<PublicKeyCredential> for web_sys::PublicKeyCredential {
+    fn import(&self) -> PublicKeyCredential {
+        PublicKeyCredential {
             id: self.id(),
             raw_id: self.raw_id().import(),
             response: self.response().import(),
@@ -36,12 +41,12 @@ impl Import<Base64UrlSafeData> for ArrayBuffer {
     }
 }
 
-impl Import<octant_gui_core::AuthenticatorResponse> for web_sys::AuthenticatorResponse {
+impl Import<AuthenticatorResponse> for web_sys::AuthenticatorResponse {
     fn import(&self) -> AuthenticatorResponse {
         if let Some(this) = self.dyn_ref::<web_sys::AuthenticatorAttestationResponse>() {
-            octant_gui_core::AuthenticatorResponse::AuthenticatorAttestationResponse(this.import())
+            AuthenticatorResponse::AuthenticatorAttestationResponse(this.import())
         } else if let Some(this) = self.dyn_ref::<web_sys::AuthenticatorAssertionResponse>() {
-            octant_gui_core::AuthenticatorResponse::AuthenticatorAssertionResponse(this.import())
+            AuthenticatorResponse::AuthenticatorAssertionResponse(this.import())
         } else {
             console::info_1(self);
             todo!();
@@ -49,8 +54,8 @@ impl Import<octant_gui_core::AuthenticatorResponse> for web_sys::AuthenticatorRe
     }
 }
 
-impl Import<octant_gui_core::AuthenticatorAttestationResponse>
-    for web_sys::AuthenticatorAttestationResponse
+impl Import<AuthenticatorAttestationResponse>
+for web_sys::AuthenticatorAttestationResponse
 {
     fn import(&self) -> AuthenticatorAttestationResponse {
         AuthenticatorAttestationResponse {
@@ -72,8 +77,8 @@ impl Import<AuthenticatorAssertionResponse> for web_sys::AuthenticatorAssertionR
 }
 
 impl<T1, T2> Import<Option<T2>> for Option<T1>
-where
-    T1: Import<T2>,
+    where
+        T1: Import<T2>,
 {
     fn import(&self) -> Option<T2> {
         self.as_ref().map(|x| x.import())
@@ -81,9 +86,9 @@ where
 }
 
 impl<T1, T2, E1, E2> Import<Result<T2, E2>> for Result<T1, E1>
-where
-    T1: Import<T2>,
-    E1: Import<E2>,
+    where
+        T1: Import<T2>,
+        E1: Import<E2>,
 {
     fn import(&self) -> Result<T2, E2> {
         match self {

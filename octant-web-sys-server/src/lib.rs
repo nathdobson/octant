@@ -7,11 +7,7 @@
 #![feature(hint_must_use)]
 #![allow(unused_variables)]
 
-use std::{
-    marker::Unsize,
-    ops::CoerceUnsized
-    ,
-};
+use std::{marker::Unsize, ops::CoerceUnsized};
 
 pub mod any_value;
 pub mod document;
@@ -23,12 +19,6 @@ pub mod js_value;
 pub mod node;
 pub mod object;
 // pub mod prompt;
-pub mod text;
-pub mod window;
-pub mod request_init;
-pub mod request;
-pub mod response;
-pub mod credential_request_options;
 pub mod allow_credentials;
 pub mod allow_credentials_type;
 pub mod attestation_conveyance_preference;
@@ -40,19 +30,29 @@ pub mod authenticator_attestation_response;
 pub mod authenticator_response;
 pub mod authenticator_selection_criteria;
 pub mod authenticator_transport;
+#[cfg(side = "server")]
+pub mod builder;
+pub mod credential;
+pub mod credential_creation_options;
+pub mod credential_data;
+pub mod credential_request_options;
+pub mod credentials_container;
+#[cfg(side = "client")]
+pub mod export;
+pub mod html_form_element;
+pub mod html_input_element;
+#[cfg(side = "client")]
+pub mod import;
+pub mod navigator;
 pub mod pub_key_cred_params;
 pub mod public_key_credential;
 pub mod public_key_credential_creation_options;
 pub mod public_key_credential_request_options;
 pub mod public_key_credential_rp_entity;
 pub mod public_key_credential_user_entity;
+pub mod request;
+pub mod request_init;
+pub mod response;
+pub mod text;
 pub mod user_verification_requirement;
-pub mod navigator;
-pub mod credentials_container;
-pub mod credential;
-pub mod credential_data;
-pub mod credential_creation_options;
-pub mod html_input_element;
-#[cfg(side="server")]
-pub mod builder;
-pub mod html_form_element;
+pub mod window;

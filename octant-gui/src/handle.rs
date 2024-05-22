@@ -1,10 +1,11 @@
-use std::any::Any;
-use std::fmt::{Debug, Formatter};
-use std::sync::Arc;
+use std::{
+    any::Any,
+    fmt::{Debug, Formatter},
+    sync::Arc,
+};
 
-use octant_gui_core::{HandleId, Method};
-use octant_object::{base, define_class};
-use octant_object::base::Base;
+use octant_gui_core::HandleId;
+use octant_object::{base, base::Base, define_class};
 
 use crate::runtime::Runtime;
 
@@ -46,9 +47,6 @@ impl HandleValue {
 }
 
 impl HandleValue {
-    pub fn invoke(&self, method: Method) -> HandleValue {
-        self.runtime.invoke(method)
-    }
     pub fn handle(&self) -> HandleId {
         self.id
     }

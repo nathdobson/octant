@@ -23,8 +23,9 @@ use warp::{
 use octant_executor::Pool;
 use octant_gui::{
     event_loop::EventLoop, sink::BufferedDownMessageSink, Runtime, ServerDownMessageList,
+    ServerUpMessageList,
 };
-use octant_gui_core::UpMessageList;
+use octant_gui_core::reexports::{octant_serde, octant_serde::TypeMap};
 use octant_web_sys_server::{global::Global, node::ArcNode};
 
 use crate::{cookies::CookieRouter, session::Session};
@@ -105,11 +106,14 @@ impl OctantServer {
     async fn encode(x: ServerDownMessageList) -> anyhow::Result<Message> {
         Ok(Message::binary(serde_json::to_vec(&x)?))
     }
-    fn decode(x: Message) -> anyhow::Result<Option<UpMessageList>> {
+    fn decode(runtime: &Arc<Runtime>, x: Message) -> anyhow::Result<Option<ServerUpMessageList>> {
         if x.is_close() {
             Ok(None)
         } else {
-            Ok(serde_json::from_str(
+            let mut ctx = TypeMap::new();
+            ctx.insert::<Arc<Runtime>>(runtime.clone());
+            Ok(octant_serde::deserialize(
+                &ctx,
                 x.to_str().map_err(|_| anyhow!("not text"))?,
             )?)
         }
@@ -125,7 +129,10 @@ impl OctantServer {
         let (spawn, mut pool) = Pool::new(move |cx| sink.poll_flush(cx));
         let runtime = Arc::new(Runtime::new(tx_inner, spawn.clone()));
         let global = Global::new(runtime);
-        let events = Box::pin(rx.map(|x| Self::decode(x?)));
+        let events = Box::pin(rx.map({
+            let runtime = global.runtime().clone();
+            move |x| Self::decode(&runtime, x?)
+        }));
         let session = Arc::new(Session::new(global.clone()));
         let app = Arc::new(OctantApplication {
             server: self,

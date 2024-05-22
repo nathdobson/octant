@@ -13,83 +13,33 @@ use std::{
     pin::Pin,
     sync::Arc,
 };
+use std::fmt::Formatter;
 
 use catalog::{Builder, BuilderFrom, Registry};
 use futures::{Sink, Stream};
-use serde::Serialize;
+use serde::{Deserializer, Serialize};
+use serde::de::Visitor;
+use type_map::TypeMap;
 
-pub use global::Global;
 use octant_gui_core::{
-    NewUpMessage,
-    reexports::octant_serde::{define_serde_trait, SerializeDyn}, UpMessageList,
+    reexports::octant_serde::{define_serde_trait, SerializeDyn},
 };
+use octant_gui_core::reexports::octant_serde::DeserializeWith;
 pub use runtime::Runtime;
 
-pub mod builder;
-pub mod document;
-pub mod element;
 pub mod event_loop;
-pub mod global;
 pub mod handle;
-pub mod html_element;
-pub mod html_form_element;
-pub mod html_input_element;
-pub mod js_value;
-pub mod node;
-pub mod object;
 pub mod runtime;
-pub mod text;
-pub mod window;
-
-mod any_value;
-mod credential;
-pub mod credential_creation_options;
-mod credential_request_options;
-pub mod credentials_container;
-pub mod navigator;
-mod promise;
-mod request;
-mod request_init;
-mod response;
 pub mod sink;
 //
 pub type UpMessageStream =
-    Pin<Box<dyn Send + Sync + Stream<Item = anyhow::Result<Option<UpMessageList>>>>>;
-// pub type Handle = Arc<dyn handle::Trait>;
-// pub type JsValue = Arc<dyn js_value::Trait>;
-// pub type Window = Arc<dyn window::Trait>;
-//
-// pub type Document = Arc<dyn document::Trait>;
-//
-// pub type Navigator = Arc<dyn navigator::Trait>;
-//
-// pub type CredentialsContainer = Arc<dyn credentials_container::Trait>;
-// pub type CredentialCreationOptions = Arc<dyn credential_creation_options::Trait>;
-// pub type CredentialRequestOptions = Arc<dyn credential_request_options::Trait>;
-// pub type RequestInit = Arc<dyn request_init::Trait>;
-// pub type Request = Arc<dyn request::Trait>;
-//
-// pub type HtmlElement = Arc<dyn html_element::Trait>;
-// pub type HtmlFormElement = Arc<dyn html_form_element::Trait>;
-// pub type HtmlInputElement = Arc<dyn html_input_element::Trait>;
-//
-// pub type Element = Arc<dyn element::Trait>;
-//
-// pub type Node = Arc<dyn node::Trait>;
-//
-// pub type Text = Arc<dyn text::Trait>;
-// pub type AnyValue = Arc<dyn any_value::Trait>;
-//
-// pub type Promise = Arc<dyn promise::Trait>;
-//
-// pub type Credential = Arc<dyn credential::Trait>;
-// pub type Response = Arc<dyn response::Trait>;
+    Pin<Box<dyn Send + Sync + Stream<Item = anyhow::Result<Option<ServerUpMessageList>>>>>;
 
 type DynUpMessageHandler = Box<
     dyn 'static
         + Send
         + Sync
-        + for<'a> Fn(&'a Arc<Runtime>, Box<dyn NewUpMessage>) -> anyhow::Result<()>,
+        + for<'a> Fn(&'a Arc<Runtime>, Box<dyn ServerUpMessage>) -> anyhow::Result<()>,
 >;
 
 pub struct UpMessageHandlerRegistry {
@@ -108,7 +58,7 @@ impl Builder for UpMessageHandlerRegistry {
     }
 }
 
-impl<T: NewUpMessage> BuilderFrom<UpMessageHandler<T>> for UpMessageHandlerRegistry {
+impl<T: ServerUpMessage> BuilderFrom<UpMessageHandler<T>> for UpMessageHandlerRegistry {
     fn insert(&mut self, handler: UpMessageHandler<T>) {
         self.handlers.insert(
             TypeId::of::<T>(),
@@ -131,7 +81,27 @@ pub type DownMessageSink =
 pub trait ServerDownMessage: SerializeDyn + Debug + Send + Sync + Any {}
 define_serde_trait!(ServerDownMessage);
 
+pub trait ServerUpMessage: SerializeDyn + Debug + Send + Sync + Any {}
+define_serde_trait!(ServerUpMessage);
+
 #[derive(Serialize, Debug)]
 pub struct ServerDownMessageList {
     pub commands: Vec<Box<dyn ServerDownMessage>>,
+}
+
+pub struct ServerUpMessageList {
+    pub commands: Vec<Box<dyn ServerUpMessage>>,
+}
+
+impl<'de> DeserializeWith<'de> for ServerUpMessageList {
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+        struct V {}
+        impl<'de> Visitor<'de> for V {
+            type Value = ServerUpMessageList;
+            fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+                todo!()
+            }
+        }
+        d.deserialize_struct("ServerUpMessageList", &["commands"], V {})
+    }
 }

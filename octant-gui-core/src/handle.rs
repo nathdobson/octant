@@ -8,19 +8,10 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use octant_object::class::Class;
 
-use crate::TypeTag;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct HandleId(pub usize);
 
-#[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
-pub struct TypedHandle<T: TypeTag>(pub HandleId, pub PhantomData<T>);
-
-impl<T: TypeTag> Debug for TypedHandle<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
 
 pub struct NewTypedHandle<T: ?Sized + Class>(
     HandleId,

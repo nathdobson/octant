@@ -6,7 +6,7 @@
 #![deny(unused_must_use)]
 
 use std::{
-    any::{Any, type_name},
+    any::{type_name, Any},
     collections::HashMap,
     fmt::Formatter,
     marker::{PhantomData, Unsize},
@@ -16,8 +16,8 @@ use std::{
 use catalog::{Builder, BuilderFrom, Registry};
 use serde::{
     de::{DeserializeSeed, Error as _, MapAccess, SeqAccess, Visitor},
-    Deserialize,
-    Deserializer, ser::{Error, SerializeStruct}, Serialize, Serializer,
+    ser::{Error, SerializeStruct},
+    Deserialize, Deserializer, Serialize, Serializer,
 };
 pub use type_map::TypeMap;
 
@@ -143,6 +143,32 @@ where
             }
         }
         d.deserialize_tuple(2, V(ctx, PhantomData))
+    }
+}
+
+impl<'de, T: DeserializeWith<'de>> DeserializeWith<'de> for Option<T> {
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+        struct V<'c, T>(&'c TypeMap, PhantomData<T>);
+        impl<'c, 'de, T: DeserializeWith<'de>> Visitor<'de> for V<'c, T> {
+            type Value = Option<T>;
+
+            fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
+                write!(f, "an option")
+            }
+            fn visit_none<E>(self) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(None)
+            }
+            fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                Ok(Some(T::deserialize_with(self.0, d)?))
+            }
+        }
+        d.deserialize_option(V(ctx, PhantomData))
     }
 }
 

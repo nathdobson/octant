@@ -11,8 +11,7 @@ use safe_once::sync::OnceLock;
 use wasm_bindgen::prelude::*;
 use web_sys::window;
 
-use octant_gui_client::Runtime;
-use octant_gui_core::UpMessageList;
+use octant_gui_client::{ClientUpMessageList, Runtime};
 use octant_serde::TypeMap;
 use wasm_error::{log_error, WasmError};
 
@@ -66,7 +65,7 @@ pub async fn main_impl() -> anyhow::Result<!> {
             return Ok(octant_serde::deserialize(&ctx, x?.as_str()?)?);
         }
     });
-    let tx = Box::new(move |x: UpMessageList| {
+    let tx = Box::new(move |x: ClientUpMessageList| {
         return Ok(tx.send(WebSocketMessage::Text(serde_json::to_string(&x)?))?);
     });
     let runtime = Runtime::new(Box::pin(rx), tx)?;

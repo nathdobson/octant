@@ -1,14 +1,21 @@
+use crate::{
+    authenticator_selection_criteria::AuthenticatorSelectionCriteria,
+    public_key_credential_creation_options::PublicKeyCredentialCreationOptions,
+    public_key_credential_request_options::PublicKeyCredentialRequestOptions,
+    user_verification_requirement::UserVerificationRequirement,
+};
 use base64urlsafedata::Base64UrlSafeData;
 use js_sys::{Array, Object, Reflect, Uint8Array};
 use wasm_bindgen::JsValue;
-
-use octant_gui_core::{
-    AllowCredentials, AllowCredentialsType, AttestationConveyancePreference,
-    AuthenticationExtensionsClientInputs, AuthenticatorAttachment, AuthenticatorSelectionCriteria,
-    AuthenticatorTransport, PubKeyCredParams, PublicKeyCredentialCreationOptions,
-    PublicKeyCredentialRequestOptions, PublicKeyCredentialRpEntity, PublicKeyCredentialUserEntity,
-    UserVerificationRequirement,
-};
+use crate::allow_credentials::AllowCredentials;
+use crate::allow_credentials_type::AllowCredentialsType;
+use crate::attestation_conveyance_preference::AttestationConveyancePreference;
+use crate::authentication_extensions_client_inputs::AuthenticationExtensionsClientInputs;
+use crate::authenticator_attachment::AuthenticatorAttachment;
+use crate::authenticator_transport::AuthenticatorTransport;
+use crate::pub_key_cred_params::PubKeyCredParams;
+use crate::public_key_credential_rp_entity::PublicKeyCredentialRpEntity;
+use crate::public_key_credential_user_entity::PublicKeyCredentialUserEntity;
 
 pub trait Export<T> {
     fn export(&self) -> T;
@@ -176,9 +183,9 @@ impl Export<JsValue> for Vec<AuthenticatorTransport> {
     }
 }
 
-impl Export<JsValue> for AuthenticatorTransport{
+impl Export<JsValue> for AuthenticatorTransport {
     fn export(&self) -> JsValue {
-        match self{
+        match self {
             AuthenticatorTransport::Usb => "usb",
             AuthenticatorTransport::Nfc => "nfc",
             AuthenticatorTransport::Ble => "ble",
@@ -186,7 +193,8 @@ impl Export<JsValue> for AuthenticatorTransport{
             AuthenticatorTransport::Hybrid => "hybrid",
             AuthenticatorTransport::Test => "test",
             AuthenticatorTransport::Unknown => "unknown",
-        }.into()
+        }
+        .into()
     }
 }
 

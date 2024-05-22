@@ -5,25 +5,20 @@ use safe_once::sync::OnceLock;
 use serde::{Deserialize, Serialize};
 
 #[cfg(side = "server")]
-use octant_gui::{
-    runtime::{HasTypedHandle, Runtime},
-    UP_MESSAGE_HANDLER_REGISTRY, UpMessageHandler,
-};
+use octant_gui::{runtime::Runtime, UpMessageHandler, UP_MESSAGE_HANDLER_REGISTRY};
 #[cfg(side = "client")]
-use octant_gui_client::{DOWN_MESSAGE_HANDLER_REGISTRY, DownMessageHandler};
-use octant_gui_core::{
-    define_sys_rpc, DownMessage, FromHandle, NewUpMessage, TypedHandle, UpMessage, UpMessageList,
-};
+use octant_gui_client::{DownMessageHandler, DOWN_MESSAGE_HANDLER_REGISTRY};
+use octant_gui_core::define_sys_rpc;
 use octant_serde::define_serde_impl;
 use wasm_error::WasmError;
 
 use crate::{
+    credential_creation_options::ArcCredentialCreationOptions,
     credential_request_options::ArcCredentialRequestOptions,
     request::ArcRequest,
     request_init::{ArcRequestInit, RequestInit},
+    window::{ArcWindow, Window, WindowValue},
 };
-use crate::credential_creation_options::ArcCredentialCreationOptions;
-use crate::window::{ArcWindow, Window, WindowTag, WindowValue};
 
 #[cfg(side = "server")]
 pub struct Global {
