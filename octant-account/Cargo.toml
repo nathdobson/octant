@@ -4,18 +4,18 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.83"
-url = "2.5.0"
-tokio = "1.37.0"
-log = "0.4.21"
-webauthn-rs = "0.5.0"
-webauthn-rs-proto = "0.5.0"
-octant-gui = {path="../octant-gui"}
-atomic_refcell = "0.1.13"
-octant-server ={path="../octant-server"}
-octant-gui-core = {path="../octant-gui-core"}
-octant-database = {path="../octant-database"}
-base64urlsafedata = "0.5.0"
-parking_lot = "0.12.2"
-uuid = "1.8.0"
+anyhow = {workspace=true}
+url = {workspace=true}
+tokio = {workspace=true}
+log = {workspace=true}
+webauthn-rs = {workspace=true}
+webauthn-rs-proto = {workspace=true}
+octant-gui = {workspace=true}
+atomic_refcell = {workspace=true}
+octant-server = {workspace=true}
+octant-gui-core = {workspace=true}
+octant-database = {workspace=true}
+base64urlsafedata = {workspace=true}
+parking_lot = {workspace=true}
+uuid = {workspace=true}
 octant-web-sys-server = {workspace=true}

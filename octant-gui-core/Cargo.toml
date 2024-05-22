@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-serde = { version = "1.0.201", features = ["derive"] }
-serde_json = "1.0.117"
-base64urlsafedata = "0.5.0"
-octant-serde ={path="../octant-serde"}
+serde = { workspace=true, features = ["derive"] }
+serde_json = {workspace=true}
+base64urlsafedata = {workspace=true}
+octant-serde ={workspace=true}
 paste = {workspace=true}
 octant-object = {workspace=true}
 anyhow = {workspace=true}

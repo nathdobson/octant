@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.5.4", features = ["derive"] }
-tokio = { version = "1.37.0", features = ["rt", "process", "fs", "macros", "rt-multi-thread"] }
-futures = "0.3.30"
-anyhow = "1.0.83"
+clap = { workspace=true, features = ["derive"] }
+tokio = { workspace=true, features = ["rt", "process", "fs", "macros", "rt-multi-thread"] }
+futures = {workspace=true}
+anyhow = {workspace=true}

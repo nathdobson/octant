@@ -4,22 +4,22 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.5.4", features = ["derive"] }
-warp = { version = "0.3.7", features = ["tls"] }
-futures = "0.3.30"
-anyhow = "1.0.83"
-log = "0.4.21"
-octant-gui = { path = "../octant-gui" }
-octant-gui-core = { path = "../octant-gui-core" }
-serde_json = "1.0.117"
-tokio = "1.37.0"
-memo-map = "0.3.2"
-atomic_refcell = "0.1.13"
-url = "2.5.0"
-octant-executor = {path = "../octant-executor"}
-parking_lot = "0.12.2"
-uuid = { version = "1.8.0", features = ["v4"] }
-weak-table = "0.3.2"
-cookie = "0.18.1"
-itertools = "0.12.1"
+clap = { workspace=true, features = ["derive"] }
+warp = { workspace=true, features = ["tls"] }
+futures = {workspace=true}
+anyhow = {workspace=true}
+log = {workspace=true}
+octant-gui = {workspace=true}
+octant-gui-core = {workspace=true}
+serde_json = {workspace=true}
+tokio = {workspace=true}
+memo-map = {workspace=true}
+atomic_refcell = {workspace=true}
+url = {workspace=true}
+octant-executor = {workspace=true}
+parking_lot = {workspace=true}
+uuid = { workspace=true, features = ["v4"] }
+weak-table = {workspace=true}
+cookie = {workspace=true}
+itertools ={workspace=true}
 octant-web-sys-server = {workspace=true}
