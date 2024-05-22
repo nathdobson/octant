@@ -9,7 +9,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm-bindgen = { workspace = true }
-tokio = { workspace = true, features = ["sync"] }
+tokio = { workspace = true, features = ["sync","macros"] }
 web-sys = { workspace = true, features = [
   "CloseEvent",
   "ErrorEvent",
@@ -29,11 +29,10 @@ wasm-bindgen-futures = { workspace = true }
 wasm-logger = { workspace = true }
 console_error_panic_hook = { workspace = true }
 sync_wrapper = { workspace = true }
-octant-gui-client = { workspace = true }
 futures = { workspace = true }
 serde_json = { workspace = true }
 wasm-error = { workspace = true }
-octant-gui-core = { workspace = true }
+octant-runtime-client = { workspace = true }
 octant-web-sys-client = { workspace = true }
 octant-serde = { workspace = true }
 safe-once = { workspace = true }

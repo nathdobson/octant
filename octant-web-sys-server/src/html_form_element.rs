@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use octant_gui_core::define_sys_class;
+use octant_runtime::define_sys_class;
 
 use crate::html_element::HtmlElement;
 

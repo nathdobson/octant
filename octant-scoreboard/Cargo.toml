@@ -8,8 +8,7 @@ octant-server = { workspace = true }
 octant-panic = { workspace = true }
 simple_logger = { workspace = true }
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }
-octant-gui = { workspace = true }
-octant-gui-core = { workspace = true }
+octant-runtime-server = {workspace=true}
 anyhow = { workspace = true }
 atomic_refcell = { workspace = true }
 url = { workspace = true }

@@ -22,17 +22,18 @@ use warp::{
 };
 
 use octant_executor::Pool;
-use octant_gui::{
-    event_loop::EventLoop, sink::BufferedDownMessageSink, Runtime, ServerDownMessageList,
-    ServerUpMessageList,
+use octant_runtime_server::{
+    proto::{DownMessageList, UpMessageList},
+    runtime::Runtime,
 };
-use octant_gui_core::reexports::{octant_serde, octant_serde::TypeMap};
+use octant_serde::TypeMap;
 use octant_web_sys_server::{global::Global, node::ArcNode};
 
-use crate::{cookies::CookieRouter, session::Session};
+use crate::{cookies::CookieRouter, session::Session, sink::BufferedDownMessageSink};
 
 pub mod cookies;
 pub mod session;
+mod sink;
 
 #[derive(Parser, Debug)]
 pub struct OctantServerOptions {
@@ -104,44 +105,52 @@ impl OctantServer {
     pub fn add_handler(&mut self, handler: impl Handler) {
         self.handlers.insert(handler.prefix(), Arc::new(handler));
     }
-    async fn encode(x: ServerDownMessageList) -> anyhow::Result<Message> {
+    async fn encode(x: DownMessageList) -> anyhow::Result<Message> {
         Ok(Message::binary(serde_json::to_vec(&x)?))
     }
-    fn decode(runtime: &Arc<Runtime>, x: Message) -> anyhow::Result<Option<ServerUpMessageList>> {
+    fn decode(runtime: &Arc<Runtime>, x: Message) -> anyhow::Result<Option<UpMessageList>> {
         if x.is_close() {
             Ok(None)
         } else {
             let mut ctx = TypeMap::new();
             ctx.insert::<Arc<Runtime>>(runtime.clone());
-            Ok(octant_serde::deserialize(
+            Ok(Some(octant_serde::deserialize::<UpMessageList>(
                 &ctx,
                 x.to_str().map_err(|_| anyhow!("not text"))?,
-            )?)
+            )?))
         }
     }
     pub async fn run_socket(
         self: Arc<Self>,
         _name: &str,
         tx: SplitSink<WebSocket, Message>,
-        rx: SplitStream<WebSocket>,
+        mut rx: SplitStream<WebSocket>,
     ) -> anyhow::Result<()> {
         let (tx_inner, rx_inner) = mpsc::unbounded_channel();
         let mut sink = BufferedDownMessageSink::new(rx_inner, Box::pin(tx.with(Self::encode)));
         let (spawn, mut pool) = Pool::new(move |cx| sink.poll_flush(cx));
         let runtime = Arc::new(Runtime::new(tx_inner, spawn.clone()));
         let global = Global::new(runtime);
-        let events = Box::pin(rx.map({
-            let runtime = global.runtime().clone();
-            move |x| Self::decode(&runtime, x?)
-        }));
         let session = Arc::new(Session::new(global.clone()));
         let app = Arc::new(OctantApplication {
             server: self,
             session,
         });
-        let mut event_loop = EventLoop::new(global.runtime().clone(), events);
-        spawn.spawn(async move { event_loop.handle_events().await });
-        let d=global.window().document();
+        spawn.spawn({
+            let runtime = global.runtime().clone();
+            async move {
+                while let Some(message) = rx.next().await {
+                    let message = message?;
+                    if let Some(message) = Self::decode(&runtime, message)? {
+                        runtime.run_batch(message)?;
+                    } else {
+                        break;
+                    }
+                }
+                Ok(())
+            }
+        });
+        let d = global.window().document();
         d.append_child(d.create_text_node("Hello"));
         pool.run().await?;
         Ok(())

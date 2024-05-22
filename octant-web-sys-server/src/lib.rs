@@ -7,6 +7,11 @@
 #![feature(hint_must_use)]
 #![allow(unused_variables)]
 
+#[cfg(side="client")]
+extern crate octant_runtime_client as octant_runtime;
+#[cfg(side="server")]
+extern crate octant_runtime_server as octant_runtime;
+
 use std::{marker::Unsize, ops::CoerceUnsized};
 
 pub mod any_value;

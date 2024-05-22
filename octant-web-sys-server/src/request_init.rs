@@ -1,5 +1,4 @@
-use octant_gui_core::define_sys_class;
-
+use octant_runtime::define_sys_class;
 use crate::object::Object;
 
 define_sys_class! {

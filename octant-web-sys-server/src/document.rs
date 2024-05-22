@@ -1,6 +1,7 @@
+use octant_runtime::{define_sys_class, define_sys_rpc};
 use std::sync::Arc;
+use crate::html_div_element::HtmlDivElementValue;
 
-use octant_gui_core::{define_sys_class, define_sys_rpc};
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
 
@@ -45,6 +46,6 @@ impl dyn Document {
 
 define_sys_rpc! {
     fn create_div(_runtime, document: Arc<dyn Document>) -> (HtmlDivElement, ) {
-        Ok((document.native().create_element("div").unwrap().dyn_into().unwrap(), ))
+        Ok((Arc::new(HtmlDivElementValue::new(document.native().create_element("div").unwrap().dyn_into().unwrap())), ))
     }
 }

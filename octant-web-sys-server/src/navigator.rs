@@ -1,6 +1,5 @@
 use std::sync::Arc;
-
-use octant_gui_core::define_sys_class;
+use octant_runtime::define_sys_class;
 
 use crate::{credentials_container::ArcCredentialsContainer, object::Object};
 

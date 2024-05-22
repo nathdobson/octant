@@ -1,5 +1,5 @@
-use octant_gui_core::define_sys_class;
 use std::sync::Arc;
+use octant_runtime::define_sys_class;
 
 use crate::{
     object::Object, public_key_credential_creation_options::PublicKeyCredentialCreationOptions,

@@ -4,15 +4,17 @@
 extern crate octant_web_sys_client;
 
 use std::sync::Arc;
-
 use anyhow::anyhow;
 use futures::StreamExt;
-use safe_once::sync::OnceLock;
+use octant_runtime_client::{
+    proto::{DownMessageList, UpMessageList},
+    runtime::Runtime,
+};
+use tokio::{sync::mpsc::unbounded_channel, try_join};
 use wasm_bindgen::prelude::*;
 use web_sys::window;
-
-use octant_gui_client::{ClientUpMessageList, Runtime};
 use octant_serde::TypeMap;
+
 use wasm_error::{log_error, WasmError};
 
 use crate::websocket::WebSocketMessage;
@@ -54,20 +56,43 @@ pub async fn main_impl() -> anyhow::Result<!> {
     };
     let url = format!("{ws_proto}//{host}/socket/render");
     log::info!("Connecting to {:?}", url);
-    let (tx, rx) = websocket::connect(&url).await?;
-    let runtime_once = Arc::new(OnceLock::<Arc<Runtime>>::new());
-    let rx = rx.map({
-        let runtime_once = runtime_once.clone();
-        move |x| {
-            let mut ctx = TypeMap::new();
-            ctx.insert::<Arc<Runtime>>(runtime_once.try_get().unwrap().clone());
-            return Ok(octant_serde::deserialize(&ctx, x?.as_str()?)?);
+    let (tx, mut rx) = websocket::connect(&url).await?;
+    // let rx = rx.map({
+    //     let runtime_once = runtime_once.clone();
+    //     move |x| {
+    //         let mut ctx = TypeMap::new();
+    //         ctx.insert::<Arc<Runtime>>(runtime_once.try_get().unwrap().clone());
+    //         return Ok(octant_serde::deserialize(&ctx, x?.as_str()?)?);
+    //     }
+    // });
+    // let tx = Box::new(move |x: UpMessageList| {
+    //     return Ok(tx.send(WebSocketMessage::Text(serde_json::to_string(&x)?))?);
+    // });
+    let (tx_send, mut rx_send) = unbounded_channel();
+    let runtime = Runtime::new(tx_send)?;
+    let recv_fut = async {
+        while let Some(next) = rx.next().await {
+            let next = next?;
+            let text = next.as_str()?;
+            let mut ctx=TypeMap::new();
+            ctx.insert::<Arc<Runtime>>(runtime.clone());
+            let message: DownMessageList = octant_serde::deserialize(&ctx, text)?;
+            for message in message.commands{
+                message.run(&runtime)?;
+            }
         }
-    });
-    let tx = Box::new(move |x: ClientUpMessageList| {
-        return Ok(tx.send(WebSocketMessage::Text(serde_json::to_string(&x)?))?);
-    });
-    let runtime = Runtime::new(Box::pin(rx), tx)?;
-    runtime_once.lock().or_init(|| runtime.clone());
-    runtime.run().await?;
+        Err(anyhow!("Websocket terminated"))
+    };
+    let send_fut = async {
+        loop {
+            let mut commands = vec![];
+            if rx_send.recv_many(&mut commands, usize::MAX).await == 0 {
+                break;
+            }
+            let message = UpMessageList { commands };
+            tx.send(WebSocketMessage::Text(serde_json::to_string(&message)?))?;
+        }
+        Ok(())
+    };
+    try_join!(recv_fut, send_fut)?.0
 }

@@ -5,11 +5,8 @@ use std::{
 
 use safe_once::sync::OnceLock;
 use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serializer};
-
-#[cfg(side = "server")]
-#[cfg(side = "client")]
-use octant_gui_client::Runtime;
-use octant_gui_core::{define_sys_class, define_sys_rpc, NewTypedHandle};
+use octant_runtime::{define_sys_class, define_sys_rpc};
+use crate::document::DocumentValue;
 
 use crate::{
     document::{ArcDocument, Document},
@@ -54,6 +51,6 @@ define_sys_rpc! {
 
 define_sys_rpc! {
     fn document(_runtime, window: Arc<dyn Window>) -> (Document, ) {
-        Ok((window.native().document().unwrap(),))
+        Ok((Arc::new(DocumentValue::new(window.native().document().unwrap())),))
     }
 }

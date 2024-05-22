@@ -5,6 +5,18 @@ version = "0.1.0"
 edition = "2021"
 metabuild = ["octant-sys-build"]
 
+[dependencies]
+serde = { workspace=true, features = ["derive"] }
+octant-object = {workspace=true}
+anyhow = {workspace=true}
+catalog = {workspace=true}
+paste = {workspace=true}
+octant-serde = {workspace=true}
+weak-table ={workspace=true}
+atomic_refcell = {workspace=true}
+octant-executor = {workspace=true}
+tokio = {workspace=true, features=["sync"]}
+
 [build-dependencies]
 octant-sys-build = { workspace = true }
 

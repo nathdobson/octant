@@ -5,9 +5,22 @@ version = "0.1.0"
 edition = "2021"
 metabuild = ["octant-sys-build"]
 
+[dependencies]
+serde = { workspace=true, features = ["derive"] }
+octant-object = {workspace=true}
+anyhow={workspace=true}
+catalog = {workspace=true}
+paste = {workspace=true}
+octant-serde = {workspace=true}
+atomic_refcell = {workspace=true}
+tokio = {workspace=true, features=["sync"]}
+safe-once = {workspace=true}
+web-sys = {workspace=true,features=["console"]}
+
 [build-dependencies]
 octant-sys-build = { workspace = true }
 
 [package.metadata.octant-sys-build]
 side = "client"
 shared-name = "octant-runtime"
+

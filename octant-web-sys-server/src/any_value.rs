@@ -1,20 +1,17 @@
-#[cfg(side = "server")]
-use octant_gui::handle::{Handle as CustomPeer, HandleValue};
-#[cfg(side = "client")]
-use octant_gui_client::peer::{Peer as CustomPeer, PeerValue};
-use octant_gui_core::{define_sys_class, HandleId};
+use octant_runtime::define_sys_class;
+use octant_runtime::peer::{Peer, PeerValue};
 
 define_sys_class! {
     class AnyValue;
-    extends CustomPeer;
+    extends Peer;
     wasm wasm_bindgen::JsValue;
 }
 
 #[cfg(side = "client")]
 impl AnyValueValue {
-    pub fn new(handle: HandleId, any_value: wasm_bindgen::JsValue) -> Self {
+    pub fn new(any_value: wasm_bindgen::JsValue) -> Self {
         AnyValueValue {
-            parent: PeerValue::new(handle),
+            parent: PeerValue::new(),
             any_value,
         }
     }
@@ -22,7 +19,7 @@ impl AnyValueValue {
 
 #[cfg(side = "server")]
 impl AnyValueValue {
-    pub fn new(handle: HandleValue) -> Self {
+    pub fn new(handle: PeerValue) -> Self {
         AnyValueValue { parent: handle }
     }
 }

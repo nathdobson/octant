@@ -7,8 +7,7 @@ edition = "2021"
 metabuild = ["octant-sys-build"]
 
 [dependencies]
-octant-gui-core = { workspace = true }
-octant-gui-client = { workspace = true }
+octant-runtime-client = {workspace=true}
 octant-serde = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 anyhow = { workspace = true }
@@ -16,7 +15,38 @@ catalog = { workspace = true }
 wasm-error = { workspace = true }
 log = { workspace = true }
 octant-object = { workspace = true }
-web-sys = { workspace = true, features = ["HtmlDivElement"] }
+web-sys = { workspace = true, features = ["HtmlDivElement",  "Location",
+    "Response",
+    "Request",
+    "RequestInit",
+    "AuthenticatorAssertionResponse",
+    "PublicKeyCredentialRequestOptions",
+    "CredentialRequestOptions",
+    "AuthenticatorAttestationResponse",
+    "Document",
+    "Window",
+    "HtmlElement",
+    "Text",
+    "HtmlFormElement",
+    "InputEvent",
+    "HtmlCollection",
+    "HtmlInputElement",
+    "HtmlAnchorElement",
+    "History",
+    "PopStateEvent",
+    "Navigator",
+    "CredentialsContainer",
+    "CredentialCreationOptions",
+    "PublicKeyCredentialCreationOptions",
+    "PublicKeyCredentialRpEntity",
+    "PublicKeyCredentialUserEntity",
+    "PublicKeyCredential",
+    "AuthenticatorResponse",
+    "AuthenticatorSelectionCriteria",
+    "AttestationConveyancePreference",
+    "AuthenticationExtensionsClientInputs",
+    "AuthenticatorAttachment",
+    "UserVerificationRequirement",] }
 wasm-bindgen = { workspace = true }
 js-sys = { workspace = true }
 safe-once = { workspace = true }

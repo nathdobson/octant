@@ -7,8 +7,7 @@ edition = "2021"
 metabuild = ["octant-sys-build"]
 
 [dependencies]
-octant-gui-core = { workspace = true }
-octant-gui = { workspace = true }
+octant-runtime-server = {workspace=true}
 octant-serde = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 anyhow = { workspace = true }

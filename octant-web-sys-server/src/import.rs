@@ -7,7 +7,6 @@ use crate::{
 };
 use base64urlsafedata::Base64UrlSafeData;
 use js_sys::{ArrayBuffer, Object, Uint8Array};
-use octant_gui_core::Error;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::console;
 
@@ -97,10 +96,10 @@ where
     }
 }
 
-impl Import<Error> for JsValue {
-    fn import(&self) -> Error {
-        Error {
-            content: self.clone().dyn_ref::<Object>().unwrap().to_string().into(),
-        }
-    }
-}
+// impl Import<Error> for JsValue {
+//     fn import(&self) -> Error {
+//         Error {
+//             content: self.clone().dyn_ref::<Object>().unwrap().to_string().into(),
+//         }
+//     }
+// }

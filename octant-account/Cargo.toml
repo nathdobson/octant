@@ -10,10 +10,9 @@ tokio = { workspace = true }
 log = { workspace = true }
 webauthn-rs = { workspace = true }
 webauthn-rs-proto = { workspace = true }
-octant-gui = { workspace = true }
+octant-runtime-server = {workspace=true}
 atomic_refcell = { workspace = true }
 octant-server = { workspace = true }
-octant-gui-core = { workspace = true }
 octant-database = { workspace = true }
 base64urlsafedata = { workspace = true }
 parking_lot = { workspace = true }

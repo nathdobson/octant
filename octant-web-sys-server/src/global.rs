@@ -3,12 +3,11 @@ use std::{hint::must_use, marker::PhantomData, sync::Arc};
 use catalog::register;
 use safe_once::sync::OnceLock;
 use serde::{Deserialize, Serialize};
-#[cfg(side="server")]
-use octant_gui::Runtime;
-
-use octant_gui_core::define_sys_rpc;
+use octant_runtime::define_sys_rpc;
+use octant_runtime::runtime::Runtime;
 use octant_serde::define_serde_impl;
 use wasm_error::WasmError;
+use crate::request_init::RequestInitValue;
 
 use crate::{
     credential_creation_options::ArcCredentialCreationOptions,
@@ -58,12 +57,12 @@ impl Global {
 
 define_sys_rpc! {
     fn window(_ctx) -> (Window, ) {
-        Ok((web_sys::window().unwrap(),))
+        Ok((Arc::new(WindowValue::new(web_sys::window().unwrap())),))
     }
 }
 
 define_sys_rpc! {
     fn new_request_init(_ctx) -> (RequestInit, ) {
-        Ok((web_sys::RequestInit::new(),))
+        Ok((Arc::new(RequestInitValue::new(web_sys::RequestInit::new())),))
     }
 }

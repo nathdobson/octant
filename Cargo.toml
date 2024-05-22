@@ -2,24 +2,24 @@
 resolver = "2"
 
 members = [
-  "octant-build",
-  "octant-client",
-  "octant-gui",
-  "octant-gui-client",
-  "octant-gui-core",
-  "octant-object",
-  "octant-panic",
-  "octant-scoreboard",
-  "octant-server",
-  "wasm-error",
-  "octant-build",
-  "octant-database",
-  "octant-account",
-  "octant-executor",
-  "octant-serde",
-  "octant-web-sys-client",
-  "octant-web-sys-server",
-  "octant-sys-build", "octant-runtime-client", "octant-runtime-server",
+    "octant-build",
+    "octant-client",
+    #  "octant-gui",
+    #  "octant-gui-client",
+    #  "octant-gui-core",
+    "octant-object",
+    "octant-panic",
+    "octant-scoreboard",
+    "octant-server",
+    "wasm-error",
+    "octant-build",
+    "octant-database",
+    "octant-account",
+    "octant-executor",
+    "octant-serde",
+    "octant-web-sys-client",
+    "octant-web-sys-server",
+    "octant-sys-build", "octant-runtime-client", "octant-runtime-server",
 ]
 
 [profile.release]
@@ -33,9 +33,11 @@ webauthn-rs-proto = { git = "https://github.com/nathdobson/webauthn-rs.git" }
 
 [workspace.dependencies]
 catalog = { path = "../catalog/catalog" }
-octant-gui-core = { path = "octant-gui-core" }
-octant-gui = { path = "octant-gui" }
-octant-gui-client = { path = "octant-gui-client" }
+#octant-gui-core = { path = "octant-gui-core" }
+#octant-gui = { path = "octant-gui" }
+#octant-gui-client = { path = "octant-gui-client" }
+octant-runtime-client = {path = "octant-runtime-client"}
+octant-runtime-server = {path = "octant-runtime-server"}
 octant-serde = { path = "octant-serde" }
 wasm-error = { path = "wasm-error" }
 octant-web-sys-server = { path = "octant-web-sys-server" }
