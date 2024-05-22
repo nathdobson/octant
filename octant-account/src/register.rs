@@ -6,11 +6,8 @@ use url::Url;
 use webauthn_rs::prelude::{Passkey, Uuid};
 
 use octant_database::{forest::Forest, tack::Tack, tree::Tree};
-use octant_gui::{
-    builder::{ElementExt, HtmlFormElementExt},
-    event_loop::Page,
-};
-use octant_server::{Handler, session::Session};
+use octant_server::{Handler, Page, session::Session};
+use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
 
 use crate::{
     Account, AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant,

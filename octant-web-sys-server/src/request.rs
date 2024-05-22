@@ -1,12 +1,11 @@
 use octant_gui_core::define_sys_class;
 
-use crate::node::Node;
+use crate::object::Object;
 
 define_sys_class!{
-    class Element;
-    extends Node;
-    wasm web_sys::Element;
+    class Request;
+    extends Object;
+    wasm web_sys::Request;
     new_client _;
     new_server _;
 }
-

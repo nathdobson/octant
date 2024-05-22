@@ -20,6 +20,7 @@ web-sys = {workspace=true, features=["HtmlDivElement"]}
 wasm-bindgen = {workspace=true}
 js-sys = {workspace=true}
 safe-once = {workspace=true}
+base64urlsafedata= {workspace=true}
 
 [build-dependencies]
 octant-sys-build = {workspace=true}

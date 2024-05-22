@@ -1,5 +1,6 @@
 #![feature(future_join)]
 #![deny(unused_must_use)]
+#![allow(unused_variables)]
 
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
@@ -7,21 +8,24 @@ use anyhow::anyhow;
 use clap::Parser;
 use cookie::Cookie;
 use futures::{
-    SinkExt,
     stream::{SplitSink, SplitStream, StreamExt},
+    SinkExt,
 };
 use itertools::Itertools;
 use tokio::{sync::mpsc, try_join};
 use url::Url;
 use uuid::Uuid;
 use warp::{
-    Filter,
-    Reply, ws::{Message, WebSocket},
+    ws::{Message, WebSocket},
+    Filter, Reply,
 };
 
 use octant_executor::Pool;
-use octant_gui::{event_loop::{Application, EventLoop, Page}, Global, Runtime, ServerDownMessageList, sink::BufferedDownMessageSink};
+use octant_gui::{
+    event_loop::EventLoop, sink::BufferedDownMessageSink, Runtime, ServerDownMessageList,
+};
 use octant_gui_core::UpMessageList;
+use octant_web_sys_server::{global::Global, node::ArcNode};
 
 use crate::{cookies::CookieRouter, session::Session};
 
@@ -119,18 +123,15 @@ impl OctantServer {
         let (tx_inner, rx_inner) = mpsc::unbounded_channel();
         let mut sink = BufferedDownMessageSink::new(rx_inner, Box::pin(tx.with(Self::encode)));
         let (spawn, mut pool) = Pool::new(move |cx| sink.poll_flush(cx));
-        let root = Arc::new(Runtime::new(tx_inner, spawn.clone()));
-        let global = Global::new(root);
+        let runtime = Arc::new(Runtime::new(tx_inner, spawn.clone()));
+        let global = Global::new(runtime);
         let events = Box::pin(rx.map(|x| Self::decode(x?)));
         let session = Arc::new(Session::new(global.clone()));
-        let mut event_loop = EventLoop::new(
-            global,
-            events,
-            Arc::new(OctantApplication {
-                server: self,
-                session,
-            }),
-        );
+        let app = Arc::new(OctantApplication {
+            server: self,
+            session,
+        });
+        let mut event_loop = EventLoop::new(global.runtime().clone(), events);
         spawn.spawn(async move { event_loop.handle_events().await });
         pool.run().await?;
         Ok(())
@@ -229,5 +230,31 @@ impl OctantServer {
         };
         try_join!(http, https)?;
         Ok(())
+    }
+}
+
+pub trait Application: 'static + Sync + Send {
+    fn create_page(&self, url: &str, global: Arc<Global>) -> anyhow::Result<Page>;
+}
+
+pub struct Page {
+    global: Arc<Global>,
+    node: ArcNode,
+}
+
+impl Page {
+    pub fn new(global: Arc<Global>, node: ArcNode) -> Page {
+        global.window().document().body().append_child(node.clone());
+        Page { global, node }
+    }
+}
+
+impl Drop for Page {
+    fn drop(&mut self) {
+        self.global
+            .window()
+            .document()
+            .body()
+            .remove_child(self.node.clone());
     }
 }

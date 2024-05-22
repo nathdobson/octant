@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use memo_map::MemoMap;
 
-use octant_gui::Global;
+use octant_web_sys_server::global::Global;
 
 pub struct Session {
     global: Arc<Global>,

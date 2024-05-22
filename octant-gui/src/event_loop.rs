@@ -5,48 +5,19 @@ use futures::StreamExt;
 use octant_gui_core::UpMessage;
 use octant_panic::catch_error;
 
-use crate::{Global, node::ArcNode, UpMessageStream};
+use crate::{Runtime, UpMessageStream};
 
 pub struct EventLoop {
-    global: Arc<Global>,
-    app: Arc<dyn Application>,
+    runtime: Arc<Runtime>,
     events: UpMessageStream,
-    page: Option<Page>,
 }
 
-pub trait Application: 'static + Sync + Send {
-    fn create_page(&self, url: &str, global: Arc<Global>) -> anyhow::Result<Page>;
-}
-
-pub struct Page {
-    global: Arc<Global>,
-    node: ArcNode,
-}
-
-impl Page {
-    pub fn new(global: Arc<Global>, node: ArcNode) -> Page {
-        global.window().document().body().append_child(node.clone());
-        Page { global, node }
-    }
-}
-
-impl Drop for Page {
-    fn drop(&mut self) {
-        self.global
-            .window()
-            .document()
-            .body()
-            .remove_child(self.node.clone());
-    }
-}
 
 impl EventLoop {
-    pub fn new(global: Arc<Global>, events: UpMessageStream, app: Arc<dyn Application>) -> Self {
+    pub fn new(runtime: Arc<Runtime>, events: UpMessageStream) -> Self {
         EventLoop {
-            global,
-            app,
+            runtime,
             events,
-            page: None,
         }
     }
     // pub async fn handle_events(&mut self) -> anyhow::Result<()> {
@@ -75,36 +46,36 @@ impl EventLoop {
         Ok(())
     }
     pub fn handle_event(&mut self, event: UpMessage) -> anyhow::Result<()> {
-        match event {
-            UpMessage::HtmlFormElement(form, message) => {
-                self.global.runtime().handle(form).handle_event(message);
-            }
-            UpMessage::HtmlInputElement(input, message) => {
-                self.global.runtime().handle(input).handle_event(message);
-            }
-            UpMessage::VisitPage(page) => {
-                self.page = None;
-                self.page = Some(self.app.create_page(&page, self.global.clone())?);
-            }
-            UpMessage::Credential(credential, data) => {
-                self.global.runtime().handle(credential).handle_event(data);
-            }
-            UpMessage::Promise(promise, message) => {
-                self.global.runtime().handle(promise).handle_event(message);
-            }
-            // UpMessage::NewUpMessage(message) => {
-            //     let handler = UP_MESSAGE_HANDLER_REGISTRY
-            //         .handlers
-            //         .get(&(&*message as &dyn Any).type_id())
-            //         .ok_or_else(|| anyhow!("Missing handler for {:?}", message))?;
-            //     handler(
-            //         ServerContext {
-            //             runtime: self.global.runtime(),
-            //         },
-            //         message,
-            //     )?;
-            // }
-        }
-        Ok(())
+        todo!()
+        // match event {
+        //     UpMessage::HtmlFormElement(form, message) => {
+        //         self.global.runtime().handle(form).handle_event(message);
+        //     }
+        //     UpMessage::HtmlInputElement(input, message) => {
+        //         self.global.runtime().handle(input).handle_event(message);
+        //     }
+        //     UpMessage::VisitPage(page) => {
+        //         self.page = None;
+        //         self.page = Some(self.app.create_page(&page, self.global.clone())?);
+        //     }
+        //     UpMessage::Credential(credential, data) => {
+        //         self.global.runtime().handle(credential).handle_event(data);
+        //     }
+        //     UpMessage::Promise(promise, message) => {
+        //         self.global.runtime().handle(promise).handle_event(message);
+        //     } // UpMessage::NewUpMessage(message) => {
+        //       //     let handler = UP_MESSAGE_HANDLER_REGISTRY
+        //       //         .handlers
+        //       //         .get(&(&*message as &dyn Any).type_id())
+        //       //         .ok_or_else(|| anyhow!("Missing handler for {:?}", message))?;
+        //       //     handler(
+        //       //         ServerContext {
+        //       //             runtime: self.global.runtime(),
+        //       //         },
+        //       //         message,
+        //       //     )?;
+        //       // }
+        // }
+        // Ok(())
     }
 }

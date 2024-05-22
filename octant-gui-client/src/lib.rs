@@ -29,8 +29,8 @@ use web_sys::{console, Event, HtmlAnchorElement, window};
 use octant_gui_core::{
     FromHandle
     , HandleId, Method, NewTypedHandle, reexports::{
-        octant_serde::{define_serde_trait,  DeserializeWith, SerializeDyn},
-        serde::{ Deserializer, Serialize},
+        octant_serde::{define_serde_trait, DeserializeWith, SerializeDyn},
+        serde::{Deserializer, Serialize},
     }, TypedHandle, TypeTag, UpMessage,
     UpMessageList,
 };

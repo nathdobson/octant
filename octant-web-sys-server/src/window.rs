@@ -14,7 +14,10 @@ use octant_gui_core::{define_sys_class, define_sys_rpc, NewTypedHandle, TypedHan
 use crate::{
     document::{ArcDocument, Document},
     object::Object,
+    request::ArcRequest,
+    response::ArcResponse,
 };
+use crate::navigator::ArcNavigator;
 
 define_sys_class! {
     class Window;
@@ -31,9 +34,14 @@ impl dyn Window {
         alert(self.runtime(), self.clone(), message);
     }
     pub fn document<'a>(self: &'a Arc<Self>) -> &'a ArcDocument {
-        (***self)
-            .document
+        self.document
             .get_or_init(|| document(self.runtime(), self.clone()))
+    }
+    pub fn navigator<'a>(self: &'a Arc<Self>) -> &'a ArcNavigator {
+        todo!();
+    }
+    pub async fn fetch(self: &Arc<Self>, request: &ArcRequest) -> anyhow::Result<ArcResponse> {
+        todo!();
     }
 }
 

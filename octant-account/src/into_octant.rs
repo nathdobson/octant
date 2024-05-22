@@ -1,10 +1,16 @@
-use octant_gui_core::{
-    AllowCredentials, AllowCredentialsType, AttestationConveyancePreference,
-    AuthenticationExtensionsClientInputs, AuthenticatorAttachment, AuthenticatorSelectionCriteria,
-    AuthenticatorTransport, PubKeyCredParams, PublicKeyCredentialCreationOptions,
-    PublicKeyCredentialRequestOptions, PublicKeyCredentialRpEntity, PublicKeyCredentialUserEntity,
-    UserVerificationRequirement,
-};
+use octant_web_sys_server::allow_credentials::AllowCredentials;
+use octant_web_sys_server::allow_credentials_type::AllowCredentialsType;
+use octant_web_sys_server::attestation_conveyance_preference::AttestationConveyancePreference;
+use octant_web_sys_server::authentication_extensions_client_inputs::AuthenticationExtensionsClientInputs;
+use octant_web_sys_server::authenticator_attachment::AuthenticatorAttachment;
+use octant_web_sys_server::authenticator_selection_criteria::AuthenticatorSelectionCriteria;
+use octant_web_sys_server::authenticator_transport::AuthenticatorTransport;
+use octant_web_sys_server::pub_key_cred_params::PubKeyCredParams;
+use octant_web_sys_server::public_key_credential_creation_options::PublicKeyCredentialCreationOptions;
+use octant_web_sys_server::public_key_credential_request_options::PublicKeyCredentialRequestOptions;
+use octant_web_sys_server::public_key_credential_rp_entity::PublicKeyCredentialRpEntity;
+use octant_web_sys_server::public_key_credential_user_entity::PublicKeyCredentialUserEntity;
+use octant_web_sys_server::user_verification_requirement::UserVerificationRequirement;
 
 pub trait IntoOctant<O> {
     fn into_octant(self) -> O;
@@ -161,16 +167,10 @@ impl IntoOctant<AuthenticatorTransport> for webauthn_rs_proto::AuthenticatorTran
             webauthn_rs_proto::AuthenticatorTransport::Usb => AuthenticatorTransport::Usb,
             webauthn_rs_proto::AuthenticatorTransport::Nfc => AuthenticatorTransport::Nfc,
             webauthn_rs_proto::AuthenticatorTransport::Ble => AuthenticatorTransport::Ble,
-            webauthn_rs_proto::AuthenticatorTransport::Internal => {
-                AuthenticatorTransport::Internal
-            }
-            webauthn_rs_proto::AuthenticatorTransport::Hybrid => {
-                AuthenticatorTransport::Hybrid
-            }
+            webauthn_rs_proto::AuthenticatorTransport::Internal => AuthenticatorTransport::Internal,
+            webauthn_rs_proto::AuthenticatorTransport::Hybrid => AuthenticatorTransport::Hybrid,
             webauthn_rs_proto::AuthenticatorTransport::Test => AuthenticatorTransport::Test,
-            webauthn_rs_proto::AuthenticatorTransport::Unknown => {
-                AuthenticatorTransport::Unknown
-            }
+            webauthn_rs_proto::AuthenticatorTransport::Unknown => AuthenticatorTransport::Unknown,
         }
     }
 }

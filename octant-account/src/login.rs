@@ -7,13 +7,13 @@ use uuid::Uuid;
 use webauthn_rs::prelude::Passkey;
 
 use octant_database::{forest::Forest, tree::Tree};
-use octant_gui::{
-    builder::{ElementExt, HtmlFormElementExt},
-    event_loop::Page,
-};
-use octant_server::{cookies::CookieRouter, Handler, session::Session};
+use octant_server::{cookies::CookieRouter, Handler, Page, session::Session};
+use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
 
-use crate::{AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, SESSION_COOKIE, SessionTable, VerifiedLogin};
+use crate::{
+    AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, SESSION_COOKIE,
+    SessionTable, VerifiedLogin,
+};
 
 pub struct LoginHandler {
     pub forest: Arc<RwLock<Forest>>,
@@ -21,7 +21,6 @@ pub struct LoginHandler {
     pub cookie_router: Arc<CookieRouter>,
     pub session_table: Arc<SessionTable>,
 }
-
 
 impl LoginHandler {
     pub async fn do_login(

@@ -228,7 +228,8 @@ macro_rules! define_sys_class {
                 type Builder = $wasm;
                 fn from_handle(handle: $crate::NewTypedHandle<Self>, [< $class:snake >]: Self::Builder) -> [< $class Value >]  {
                     [< $class Value >] {
-                        parent: <dyn $parent as $crate::FromHandle>::from_handle(handle.unsize(), [< $class:snake >].clone().into()),
+                        parent: <dyn $parent as $crate::FromHandle>::from_handle(handle.unsize(), ::std::clone::Clone::clone(&
+                        [< $class:snake >]).into()),
                         [< $class:snake >],
                         $($client_field : ::std::default::Default::default(), )*
                     }
@@ -295,7 +296,7 @@ macro_rules! define_sys_rpc {
     {
         fn $name:ident($runtime:ident $(, $input_name:ident: $input:ty)*) -> ( $( $output:ident, )* ) { $($imp:tt)* }
     } => {
-        $crate::reexports::paste::paste!{
+        $crate::reexports::paste::paste! {
             #[cfg(side = "server")]
             fn $name(
                 runtime: &::std::sync::Arc<::octant_gui::Runtime>
