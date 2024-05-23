@@ -56,7 +56,10 @@ fn test() {
     assert_eq!(r#"2"#, encoded.as_raw().as_str().unwrap());
     let encoded = format.serialize_raw(&encoded).unwrap();
     assert_eq!(
-        r#"{"type":"test::Foo","value":"2"}"#,
+        r#"{
+  "type": "test::Foo",
+  "value": "2"
+}"#,
         encoded.as_str().unwrap()
     );
     let decoded = encoded.deserialize_as::<Encoded<dyn MyTrait>>().unwrap();

@@ -19,7 +19,7 @@ impl Default for Format {
 impl Format {
     pub fn serialize_raw<T: Serialize>(&self, value: &T) -> Result<RawEncoded, Error> {
         match self {
-            Format::Text => Ok(RawEncoded::Text(serde_json::to_string(value)?)),
+            Format::Text => Ok(RawEncoded::Text(serde_json::to_string_pretty(value)?)),
         }
     }
     pub fn serialize<U: ?Sized + SerializeType + SerializeDyn>(

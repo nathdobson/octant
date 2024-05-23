@@ -1,7 +1,8 @@
 use crate::{DeserializeContext, DeserializeWith, Error};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt::{Debug, Formatter};
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum RawEncoded {
     Text(String),
 }
@@ -58,5 +59,13 @@ impl<'de> Deserialize<'de> for RawEncoded {
         D: Deserializer<'de>,
     {
         Ok(RawEncoded::Text(String::deserialize(d)?))
+    }
+}
+
+impl Debug for RawEncoded {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RawEncoded::Text(x) => write!(f, "{}", x),
+        }
     }
 }

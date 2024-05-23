@@ -1,8 +1,11 @@
 use crate::{DeserializeContext, DeserializeWith, Error, RawEncoded, DESERIALIZE_REGISTRY};
 use serde::{Deserialize, Deserializer, Serialize};
-use std::marker::PhantomData;
+use std::{
+    fmt::{Debug, Formatter},
+    marker::PhantomData,
+};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct Encoded<U: ?Sized> {
     #[serde(rename = "type")]
     typ: String,
@@ -36,5 +39,12 @@ impl<'de, U: ?Sized> DeserializeWith<'de> for Encoded<U> {
         d: D,
     ) -> Result<Self, D::Error> {
         Self::deserialize(d)
+    }
+}
+
+impl<U: ?Sized> Debug for Encoded<U> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} ", &self.typ)?;
+        self.value.fmt(f)
     }
 }
