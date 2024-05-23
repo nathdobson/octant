@@ -29,7 +29,7 @@ use octant_runtime_server::{
 use octant_serde::{Format, RawEncoded};
 use octant_web_sys_server::{
     global::Global,
-    node::{ArcNode, Node},
+    node::{ArcNode},
 };
 
 use crate::{cookies::CookieRouter, session::Session, sink::BufferedDownMessageSink};
@@ -158,7 +158,7 @@ impl OctantServer {
             }
         });
         let d = global.window().document();
-        (d.clone() as Arc<dyn Node>).append_child(d.create_text_node(format!("Hello")));
+        (d.body().clone() as ArcNode).append_child(d.create_text_node(format!("Hello")));
         pool.run().await?;
         Ok(())
     }
@@ -270,17 +270,13 @@ pub struct Page {
 
 impl Page {
     pub fn new(global: Arc<Global>, node: ArcNode) -> Page {
-        global.window().document().body().append_child(node.clone());
+        (global.window().document().body().clone() as ArcNode).append_child(node.clone());
         Page { global, node }
     }
 }
 
 impl Drop for Page {
     fn drop(&mut self) {
-        self.global
-            .window()
-            .document()
-            .body()
-            .remove_child(self.node.clone());
+        (self.global.window().document().body().clone() as ArcNode).remove_child(self.node.clone());
     }
 }
