@@ -1,17 +1,16 @@
 //! "Object-oriented" programming in rust.
 //! * ✅ Field inheritance.
-//! * ✅ Method inheritance on value types.
+//! * ✅ Method inheritance.
 //! * ✅ Upcasting coercions (implicitly with trait upcasting).
 //! * ✅ Downcasting (explicitly with the [cast] module).
-//! * ✅ Non-virtual methods.
 //! * ✅ `#[derive]` and other attributes for value types.
 //!
-//! * ❌ Implicit method inheritance on `dyn` types. Methods are still accessible, but the object
-//!     must be explicitly upcast.
 //! * ❌ Virtual methods.
-//! * ❌ Method inheritance.
+//! * ❌ Guaranteed static dispatch.
 //! * ❌ Generics.
-//! * ❌ Subclasses as [subtypes](https://doc.rust-lang.org/reference/subtyping.html). E.g. `Vec<Subclass>` is not implicitly coercible to `Vec<Superclass>`.
+//! * ❌ Subclasses as [subtypes](https://doc.rust-lang.org/reference/subtyping.html). E.g.
+//!   `Vec<Box<Subclass>>` is not implicitly coercible to `Vec<Box<Superclass>>` because the
+//!   vtable pointer would need to be modified on each box.
 //!
 //! ```
 //! #![feature(trait_upcasting)]
@@ -21,33 +20,29 @@
 //!
 //! define_class! {
 //!     pub class Animal extends Base {
-//!         num_legs: usize,
+//!         field num_legs: usize;
+//!         fn num_toes(&self) -> usize {
+//!             self.animal().num_legs * 5
+//!         }
+//!         fn is_dog(&self) -> bool{
+//!             (self as &dyn Any).is::<DogValue>()
+//!         }
 //!     }
 //! }
 //!
 //! define_class! {
 //!     pub class Dog extends Animal {
-//!         name: String,
+//!         field name: String;
 //!     }
 //! }
 //!
 //! impl AnimalValue {
+//!     // Constructors return value types so that subclasses can call constructors.
 //!     pub fn new(num_legs: usize) -> Self {
 //!         AnimalValue {
 //!             parent: BaseValue::new(),
 //!             num_legs
 //!         }
-//!     }
-//!     fn num_toes(&self) -> usize {
-//!         self.num_legs * 5
-//!     }
-//! }
-//!
-//! impl dyn Animal {
-//!     // This method must be implemented on `&dyn Animal` instead of `&AnimalValue`, because
-//!     // `&AnimalValue` doesn't know if it's a field inside a `DogValue`.
-//!     fn is_dog(&self) -> bool{
-//!         (self as &dyn Any).is::<DogValue>()
 //!     }
 //! }
 //!
@@ -61,31 +56,13 @@
 //! }
 //!
 //! let dog: Box<dyn Dog> = Box::new(DogValue::new("otto".to_string()));
-//! // Methods on `dyn Animal` are not inherited, but can be accessed through explicit upcasts.
-//! assert!((&*dog as &dyn Animal).is_dog());
-//! // Methods on `AnimalValue` are inherited.
+//! // Methods are inherited
 //! assert_eq!(dog.num_toes(), 20);
 //! // Fields are inherited.
 //! assert_eq!(dog.num_legs, 4);
 //! // Upcast coercions are implicit.
 //! let dog: Box<dyn Animal> = dog;
 //! ```
-//! # `impl FooValue {}` vs `impl dyn Foo {}`
-//! Methods can be added to objects of the class `Foo` in two ways:
-//! ## `impl FooValue {}`
-//!  *  Used for constructors and other functions without a `self` parameter.
-//!  *  Methods using `self` are not inherited.
-//!  *  Methods using `&self` and `&mut self` are inherited.
-//!  *  Methods using `self: Box<Self>`, `self: Rc<Self>`, or `self: Arc<Self>` are not inherited,
-//!     so they're probably wrong. This prevents cloning of the pointer to this object.
-//!  *  Methods cannot determine which subclass is being used.
-//!  *  Methods cannot perform downcasts.
-//!  *  Methods cannot access fields of subclasses.
-//! ## `impl dyn Foo {}`
-//!  *  All methods are inherited, but the caller must explicitly upcast to `dyn Foo`.
-//!  *  Methods using `self` would require [unsized_locals](https://doc.rust-lang.org/unstable-book/language-features/unsized-locals.html), so are not recommended.
-//!  *  Methods using `&self` and `&mut self` offer nothing over `impl FooValue {}`, so they are probably wrong.
-//!  *  Methods using `self: Box<Self>`, `self: Rc<Self>`, or `self: Arc<Self>` may perform downcasts and may clone self.
 //! # `implements`
 //! A class `Foo` may declare that it <i>implements</i> an object-safe trait `Baz`, which makes
 //! `Baz` a [supertrait](https://doc.rust-lang.org/rust-by-example/trait/supertraits.html) of
@@ -101,12 +78,12 @@
 //! impl<T: Send + Sync + Debug> SendSyncDebug for T{}
 //! define_class! {
 //!     pub class Animal extends Base implements SendSyncDebug {
-//!         num_legs: usize,
+//!         field num_legs: usize;
 //!     }
 //! }
 //! define_class! {
 //!     pub class Dog extends Animal {
-//!         name: String,
+//!         field name: String;
 //!     }
 //! }
 //! impl AnimalValue {
@@ -125,7 +102,7 @@
 //!         }
 //!     }
 //! }
-//! let dog: Box<dyn Animal> = Box::new(DogValue::new("otto".to_string()));
+//! let dog: Box<dyn Debug> = Box::new(DogValue::new("otto".to_string()));
 //! assert_eq!(&format!("{:?}",dog), r#"Dog { num_legs: 4, name: "otto" }"#);
 //! ```
 
@@ -176,7 +153,7 @@ pub mod reexports {
 /// # struct Field;
 /// define_class! {
 ///     pub class Foo extends Bar implements Baz {
-///         field: Field,
+///         field field: Field;
 ///     }
 /// }
 /// # impl Baz for FooValue {}
@@ -198,7 +175,7 @@ pub mod reexports {
 ///
 /// impl Foo for FooValue {}
 /// impl Bar for FooValue {}
-/// // and one `impl T for FooValue` for each ancestor
+/// // and one `impl T for FooValue` for each ancestor `T`
 ///
 /// // Make the fields of FooValue available to dyn Foo,
 /// impl Deref for dyn Foo {
@@ -222,7 +199,16 @@ macro_rules! define_class {
     {
         $(#[$metas:meta])?
         pub class $class:tt extends $parent:tt $(implements $interface:path)? {
-            $($field:ident : $type:ty),* $(,)?
+            $( field $field:ident : $type:ty;)*
+            $(
+                fn $method:ident(
+                    $(&$self_ref:ident)?
+                    $(&mut $self_mut:ident)?
+                    $($self:ident: $self_type:ty)?
+                    $(, $param:ident : $param_ty:ty )*
+                )
+                $(-> $return_type:ty)? $body:block
+            )*
         }
     } => {
         $crate::reexports::paste::paste!{
@@ -249,6 +235,14 @@ macro_rules! define_class {
             pub trait $class: $parent $(+ $interface)? {
                 fn [< $class:snake >](&self) -> &[< $class Value >];
                 fn [< $class:snake _mut >](&mut self) -> &mut [< $class Value >];
+                $(
+                    fn $method(
+                        $(&$self_ref)?
+                        $(&mut $self_mut)?
+                        $($self: $self_type)?
+                        $(, $param : $param_ty )*
+                    ) $(-> $return_type)?;
+                )*
             }
             pub type [< Arc $class >] = ::std::sync::Arc<dyn $class>;
             impl $crate::class::Class for dyn $class{
@@ -275,6 +269,15 @@ macro_rules! define_class {
                 fn [< $class:snake _mut >](&mut self) -> &mut [< $class Value >]{
                     self.deref_mut_ranked()
                 }
+                $(
+                    fn $method(
+                        $(&$self_ref)?
+                        $(&mut $self_mut)?
+                        $($self: $self_type)?
+                        $(, $param : $param_ty )*
+                    ) $(-> $return_type)?
+                    $body
+                )*
             }
 
             impl ::std::ops::Deref for dyn $class {

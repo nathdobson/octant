@@ -1,3 +1,4 @@
+use octant_reffed::ArcRef;
 use octant_runtime::{define_sys_class, define_sys_rpc};
 use std::sync::Arc;
 
@@ -9,15 +10,13 @@ define_sys_class! {
     wasm web_sys::Node;
     new_client _;
     new_server _;
-}
-
-#[cfg(side = "server")]
-impl dyn Node {
-    pub fn append_child(self: &Arc<Self>, e: ArcNode) {
-        append_child(self.runtime(), self.clone(), e);
-    }
-    pub fn remove_child(self: &Arc<Self>, e: ArcNode) {
-        todo!()
+    server_fn {
+        fn append_child(self: ArcRef<Self>, e:ArcNode){
+            append_child(self.runtime(), self.arc(), e);
+        }
+        fn remove_child(self: ArcRef<Self>, e:ArcNode){
+            todo!();
+        }
     }
 }
 

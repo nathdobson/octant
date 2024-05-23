@@ -2,7 +2,7 @@
 #![deny(unused_must_use)]
 #![allow(unused_variables)]
 #![feature(trait_upcasting)]
-
+use octant_reffed::Reffed;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
 use anyhow::anyhow;
@@ -27,10 +27,7 @@ use octant_runtime_server::{
     runtime::Runtime,
 };
 use octant_serde::{Format, RawEncoded};
-use octant_web_sys_server::{
-    global::Global,
-    node::{ArcNode},
-};
+use octant_web_sys_server::{global::Global, node::ArcNode};
 
 use crate::{cookies::CookieRouter, session::Session, sink::BufferedDownMessageSink};
 
@@ -158,7 +155,9 @@ impl OctantServer {
             }
         });
         let d = global.window().document();
-        (d.body().clone() as ArcNode).append_child(d.create_text_node(format!("Hello")));
+        d.body()
+            .reffed()
+            .append_child(d.create_text_node(format!("Hello")));
         pool.run().await?;
         Ok(())
     }
@@ -270,13 +269,13 @@ pub struct Page {
 
 impl Page {
     pub fn new(global: Arc<Global>, node: ArcNode) -> Page {
-        (global.window().document().body().clone() as ArcNode).append_child(node.clone());
+        global.window().document().body().reffed().append_child(node.clone());
         Page { global, node }
     }
 }
 
 impl Drop for Page {
     fn drop(&mut self) {
-        (self.global.window().document().body().clone() as ArcNode).remove_child(self.node.clone());
+        self.global.window().document().body().reffed().remove_child(self.node.clone());
     }
 }

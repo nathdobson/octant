@@ -12,7 +12,7 @@ use safe_once::{
 };
 define_class! {
     pub class Peer extends Base implements Debug {
-        handle: OnceCell<RawHandle>,
+        field handle: OnceCell<RawHandle>;
     }
 }
 

@@ -13,8 +13,11 @@ impl<T> SendSyncDebug for T where T: Send + Sync + Debug {}
 
 define_class! {
     pub class Peer extends Base implements SendSyncDebug{
-        runtime: Arc<Runtime>,
-        handle: RawHandle,
+        field runtime: Arc<Runtime>;
+        field handle: RawHandle;
+        fn runtime(self: &Self) -> &Arc<Runtime> {
+            &self.peer().runtime
+        }
     }
 }
 
@@ -29,9 +32,9 @@ impl PeerValue {
     pub fn raw_handle(&self) -> RawHandle {
         self.handle
     }
-    pub fn runtime(&self) -> &Arc<Runtime> {
-        &self.runtime
-    }
+    // pub fn runtime(&self) -> &Arc<Runtime> {
+    //     &self.runtime
+    // }
 }
 
 impl dyn Peer {

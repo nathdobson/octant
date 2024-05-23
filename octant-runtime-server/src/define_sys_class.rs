@@ -8,13 +8,14 @@ macro_rules! define_sys_class {
         $(new_server $new_server_dummy:tt;)?
         $(client_field $client_field:ident : $client_field_type:ty ;)*
         $(server_field $server_field:ident : $server_field_type:ty ;)*
+        $( server_fn{$($server_fn:tt)*} )*
     } => {
         $crate::reexports::paste::paste! {
             #[cfg(side = "client")]
             $crate::reexports::octant_object::define_class! {
                 pub class $class extends $parent implements ::std::fmt::Debug{
-                    [< $class:snake >]: $wasm,
-                    $($client_field : $client_field_type, )*
+                    field [< $class:snake >]: $wasm;
+                    $(field $client_field : $client_field_type;)*
                 }
             }
 
@@ -40,7 +41,8 @@ macro_rules! define_sys_class {
             #[cfg(side = "server")]
             $crate::reexports::octant_object::define_class! {
                 pub class $class extends $parent {
-                    $($server_field : $server_field_type, )*
+                    $(field $server_field : $server_field_type; )*
+                    $($($server_fn)*)*
                 }
             }
             #[cfg(any($(all() ${ignore($new_server_dummy)} )?))]

@@ -6,6 +6,7 @@
 #![feature(unsize)]
 #![feature(hint_must_use)]
 #![allow(unused_variables)]
+#![feature(arbitrary_self_types)]
 
 #[cfg(side="client")]
 extern crate octant_runtime_client as octant_runtime;

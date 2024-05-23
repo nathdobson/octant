@@ -1,18 +1,23 @@
 #![allow(unused_variables, dead_code)]
 #![feature(trait_alias)]
 #![feature(trait_upcasting)]
+#![feature(coerce_unsized)]
+#![feature(unsize)]
+#![feature(dispatch_from_dyn)]
+#![feature(arbitrary_self_types)]
 
-use std::{any::Any, rc::Rc};
+use std::rc::Rc;
 
 use octant_object::{base, base::Base, cast::downcast_object, define_class};
-
-trait Parent = Send + Sync + Any;
 
 trait SendSync = Send + Sync;
 
 define_class! {
     pub class A extends Base implements SendSync {
-        x: u32,
+        field x: u32;
+        fn get_x(self:&Self) -> &u32{
+            &self.a().x
+        }
     }
 }
 
@@ -27,7 +32,7 @@ impl AValue {
 
 define_class! {
     pub class B extends A {
-        y: u32,
+        field y: u32;
     }
 }
 impl BValue {
@@ -41,7 +46,7 @@ impl BValue {
 
 define_class! {
     pub class C extends B{
-        z:u32,
+        field z:u32;
     }
 }
 
@@ -56,7 +61,7 @@ impl CValue {
 
 define_class! {
     pub class D extends C {
-        w:u32,
+        field w:u32;
     }
 }
 

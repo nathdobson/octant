@@ -1,5 +1,6 @@
 use std::marker::Unsize;
 use std::sync::Arc;
+use octant_reffed::Reffed;
 
 use crate::{
     element::Element,
@@ -15,9 +16,9 @@ pub trait ElementExt {
     fn attr(self, name: &str, value: &str) -> Self;
 }
 
-impl<T: ?Sized + Unsize<dyn Node>> NodeExt for Arc<T> {
+impl<T: ?Sized + Node> NodeExt for Arc<T> {
     fn child(self, child: ArcNode) -> Self {
-        (self.clone() as Arc<dyn Node>).append_child(child);
+        self.reffed().append_child(child);
         self
     }
 }
