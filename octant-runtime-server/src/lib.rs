@@ -8,7 +8,7 @@ use crate::{
     runtime::Runtime,
 };
 use octant_object::class::Class;
-use octant_serde::TypeMap;
+use octant_serde::DeserializeContext;
 use serde::{de::Error, Deserialize, Deserializer};
 use std::{
     fmt::{Display, Formatter},
@@ -40,12 +40,10 @@ pub mod peer;
 pub mod proto;
 
 pub fn deserialize_object_with<'de, T: ?Sized + Class, D: Deserializer<'de>>(
-    ctx: &TypeMap,
+    ctx: &DeserializeContext,
     d: D,
 ) -> Result<Arc<T>, D::Error> {
-    let runtime = ctx
-        .get::<Arc<Runtime>>()
-        .ok_or_else(|| D::Error::custom("missing runtime in context"))?;
+    let runtime = ctx.get::<Arc<Runtime>>().map_err(|e| D::Error::custom(e))?;
     let handle = TypedHandle::<T>::deserialize(d)?;
     runtime.lookup(handle).map_err(D::Error::custom)
 }

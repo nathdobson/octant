@@ -1,28 +1,24 @@
 #![allow(unused_variables)]
+#![feature(trait_upcasting)]
 
-use std::fmt::Debug;
+use std::{any::Any, fmt::Debug};
 
 use serde::{Deserialize, Deserializer, Serialize};
-use type_map::TypeMap;
 
 use octant_serde::{
-    define_serde_impl, define_serde_trait, deserialize, serialize, DeserializeWith, SerializeDyn,
+    define_serde_impl, DeserializeContext, DeserializeWith, Encoded, Format, SerializeDyn,
 };
 
-trait MyTrait: Debug + SerializeDyn {}
-
-#[no_implicit_prelude]
-mod a {
-    use crate::define_serde_trait;
-
-    define_serde_trait!(crate::MyTrait);
-}
+trait MyTrait: Debug + SerializeDyn + Any {}
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Foo(u32);
 
 impl<'de> DeserializeWith<'de> for Foo {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<Self, D::Error> {
         Foo::deserialize(d)
     }
 }
@@ -40,7 +36,10 @@ impl MyTrait for Foo {}
 struct Bar(String);
 
 impl<'de> DeserializeWith<'de> for Bar {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<Self, D::Error> {
         Bar::deserialize(d)
     }
 }
@@ -51,9 +50,19 @@ impl MyTrait for Bar {}
 
 #[test]
 fn test() {
+    let format = Format::default();
     let start: Box<dyn MyTrait> = Box::new(Foo(2));
-    let encoded: String = serialize(&start).unwrap();
-    assert_eq!(r#"{"type":"test::Foo","value":2}"#, encoded);
-    let end: Box<dyn MyTrait> = deserialize(&TypeMap::new(), &encoded).unwrap();
-    assert_eq!(r#"Foo(2)"#, format!("{:?}", end));
+    let encoded = format.serialize(&*start).unwrap();
+    assert_eq!(r#"2"#, encoded.as_raw().as_str().unwrap());
+    let encoded = format.serialize_raw(&encoded).unwrap();
+    assert_eq!(
+        r#"{"type":"test::Foo","value":"2"}"#,
+        encoded.as_str().unwrap()
+    );
+    let decoded = encoded.deserialize_as::<Encoded<dyn MyTrait>>().unwrap();
+    assert_eq!(r#"2"#, decoded.as_raw().as_str().unwrap());
+    let ctx = DeserializeContext::new();
+    let decoded = decoded.deserialize_with(&ctx).unwrap();
+    let decoded: Box<Foo> = Box::<dyn Any>::downcast(decoded as Box<dyn Any>).unwrap();
+    assert_eq!(decoded.0, 2);
 }

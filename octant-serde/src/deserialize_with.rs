@@ -1,11 +1,54 @@
-use crate::{DeserializeWith, DeserializeWithSeed};
-use serde::{de::{SeqAccess, Visitor}, Deserialize, Deserializer};
-use std::{fmt::Formatter, marker::PhantomData};
-use serde::de::Error;
-use type_map::TypeMap;
+use serde::{
+    de::{DeserializeSeed, Error, SeqAccess, Visitor},
+    Deserialize, Deserializer,
+};
+use std::{fmt::Formatter, marker::PhantomData, sync::Arc};
+use crate::DeserializeContext;
+
+
+pub trait DeserializeWith<'de>: Sized {
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error>;
+}
+
+pub trait DeserializeArcWith<'de> {
+    fn deserialize_arc_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<Arc<Self>, D::Error>;
+}
+
+impl<'de, T: ?Sized> DeserializeWith<'de> for Arc<T>
+where
+    T: DeserializeArcWith<'de>,
+{
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Arc<T>, D::Error> {
+        T::deserialize_arc_with(ctx, d)
+    }
+}
+
+pub struct DeserializeWithSeed<'c, O>(&'c DeserializeContext, PhantomData<O>);
+
+impl<'c, T> DeserializeWithSeed<'c, T> {
+    pub fn new(c: &'c DeserializeContext) -> Self {
+        DeserializeWithSeed(c, PhantomData)
+    }
+}
+
+impl<'c, 'de, T> DeserializeSeed<'de> for DeserializeWithSeed<'c, T>
+where
+    T: DeserializeWith<'de>,
+{
+    type Value = T;
+    fn deserialize<D>(self, d: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        T::deserialize_with(self.0, d)
+    }
+}
 
 impl<'de> DeserializeWith<'de> for () {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error> {
         <()>::deserialize(d)
     }
 }
@@ -14,8 +57,8 @@ impl<'de, T1> DeserializeWith<'de> for (T1,)
 where
     T1: DeserializeWith<'de>,
 {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<(T1,), D::Error> {
-        struct V<'c, T1>(&'c TypeMap, PhantomData<T1>);
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<(T1,), D::Error> {
+        struct V<'c, T1>(&'c DeserializeContext, PhantomData<T1>);
         impl<'c, 'de, T1: DeserializeWith<'de>> Visitor<'de> for V<'c, T1> {
             type Value = (T1,);
             fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
@@ -39,8 +82,8 @@ where
     T1: DeserializeWith<'de>,
     T2: DeserializeWith<'de>,
 {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<(T1, T2), D::Error> {
-        struct V<'c, T1, T2>(&'c TypeMap, PhantomData<(T1, T2)>);
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<(T1, T2), D::Error> {
+        struct V<'c, T1, T2>(&'c DeserializeContext, PhantomData<(T1, T2)>);
         impl<'c, 'de, T1: DeserializeWith<'de>, T2: DeserializeWith<'de>> Visitor<'de> for V<'c, T1, T2> {
             type Value = (T1, T2);
             fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
@@ -63,8 +106,8 @@ where
 }
 
 impl<'de, T: DeserializeWith<'de>> DeserializeWith<'de> for Option<T> {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
-        struct V<'c, T>(&'c TypeMap, PhantomData<T>);
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error> {
+        struct V<'c, T>(&'c DeserializeContext, PhantomData<T>);
         impl<'c, 'de, T: DeserializeWith<'de>> Visitor<'de> for V<'c, T> {
             type Value = Option<T>;
 
@@ -89,9 +132,9 @@ impl<'de, T: DeserializeWith<'de>> DeserializeWith<'de> for Option<T> {
 }
 
 impl<'de, T: DeserializeWith<'de>> DeserializeWith<'de> for Vec<T> {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error> {
         struct V<'c, T> {
-            ctx: &'c TypeMap,
+            ctx: &'c DeserializeContext,
             phantom: PhantomData<T>,
         }
         impl<'c, 'de, T: DeserializeWith<'de>> Visitor<'de> for V<'c, T> {
@@ -121,7 +164,7 @@ impl<'de, T: DeserializeWith<'de>> DeserializeWith<'de> for Vec<T> {
 }
 
 impl<'de> DeserializeWith<'de> for String {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error> {
         Self::deserialize(d)
     }
 }

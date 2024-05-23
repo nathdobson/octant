@@ -1,9 +1,9 @@
 use crate::runtime::Runtime;
 use octant_serde::{
-    define_serde_trait, DeserializeWith, DeserializeWithSeed, SerializeDyn, TypeMap,
+    DeserializeContext, DeserializeWith, DeserializeWithSeed, Encoded, SerializeDyn,
 };
 use serde::{
-    de::{MapAccess, Visitor},
+    de::{Error, MapAccess, Visitor},
     Deserialize, Deserializer, Serialize,
 };
 use std::{
@@ -11,7 +11,6 @@ use std::{
     fmt::{Debug, Formatter},
     sync::Arc,
 };
-use serde::de::Error;
 
 #[cfg(side = "client")]
 pub trait DownMessage: SerializeDyn + Debug + Any {
@@ -21,8 +20,6 @@ pub trait DownMessage: SerializeDyn + Debug + Any {
 #[cfg(side = "server")]
 pub trait DownMessage: SerializeDyn + Debug + Send + Sync + Any {}
 
-define_serde_trait!(DownMessage);
-
 #[cfg(side = "client")]
 pub trait UpMessage: SerializeDyn + Debug + Any {}
 
@@ -31,22 +28,23 @@ pub trait UpMessage: SerializeDyn + Debug + Send + Sync + Any {
     fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()>;
 }
 
-define_serde_trait!(UpMessage);
-
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct UpMessageList {
-    pub commands: Vec<Box<dyn UpMessage>>,
+    pub commands: Vec<Encoded<dyn UpMessage>>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DownMessageList {
-    pub commands: Vec<Box<dyn DownMessage>>,
+    pub commands: Vec<Encoded<dyn DownMessage>>,
 }
 
 impl<'de> DeserializeWith<'de> for DownMessageList {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<Self, D::Error> {
         struct V<'c> {
-            ctx: &'c TypeMap,
+            ctx: &'c DeserializeContext,
         }
         impl<'c, 'de> Visitor<'de> for V<'c> {
             type Value = DownMessageList;
@@ -67,7 +65,7 @@ impl<'de> DeserializeWith<'de> for DownMessageList {
                     .ok_or_else(|| A::Error::custom("missing commands"))?
                 {
                     Field::Commands => map.next_value_seed(DeserializeWithSeed::<
-                        Vec<Box<dyn DownMessage>>,
+                        Vec<Encoded<dyn DownMessage>>,
                     >::new(self.ctx))?,
                 };
                 Ok(DownMessageList { commands })
@@ -78,7 +76,10 @@ impl<'de> DeserializeWith<'de> for DownMessageList {
 }
 
 impl<'de> DeserializeWith<'de> for UpMessageList {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<Self, D::Error> {
         struct V {}
         impl<'de> Visitor<'de> for V {
             type Value = UpMessageList;

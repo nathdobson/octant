@@ -67,7 +67,7 @@ macro_rules! define_sys_class {
                 fn deserialize_arc_with<
                     D: $crate::reexports::serde::Deserializer<'de>
                 >(
-                    ctx: &$crate::reexports::octant_serde::TypeMap,
+                    ctx: &$crate::reexports::octant_serde::DeserializeContext,
                     d: D
                 ) -> ::std::result::Result<::std::sync::Arc<Self>, D::Error>{
                     $crate::deserialize_object_with(ctx, d)

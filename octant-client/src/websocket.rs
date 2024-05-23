@@ -1,5 +1,5 @@
 use core::mem;
-use std::{pin::Pin, str, str::Utf8Error, sync::Arc, task::Poll};
+use std::{pin::Pin, str, sync::Arc, task::Poll};
 
 use anyhow::{anyhow, Context};
 use futures::Stream;
@@ -41,15 +41,15 @@ impl Drop for WebSocketStream {
         }
     }
 }
-
-impl WebSocketMessage {
-    pub fn as_str(&self) -> Result<&str, Utf8Error> {
-        match self {
-            WebSocketMessage::Text(x) => Ok(x),
-            WebSocketMessage::Binary(x) => str::from_utf8(x),
-        }
-    }
-}
+//
+// impl WebSocketMessage {
+//     pub fn as_str(&self) -> Result<&str, Utf8Error> {
+//         match self {
+//             WebSocketMessage::Text(x) => Ok(x),
+//             WebSocketMessage::Binary(x) => str::from_utf8(x),
+//         }
+//     }
+// }
 
 impl WebSocketStream {
     pub fn send(&self, message: WebSocketMessage) -> anyhow::Result<()> {

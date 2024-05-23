@@ -1,7 +1,7 @@
 use futures::{Sink, SinkExt};
 use octant_runtime_server::proto::{DownMessage, DownMessageList};
+use octant_serde::Format;
 use std::{
-    mem,
     pin::Pin,
     task::{Context, Poll},
 };
@@ -31,9 +31,12 @@ impl BufferedDownMessageSink {
         let mut pending = false;
         if !self.buffer.is_empty() {
             if let Poll::Ready(()) = self.sink.poll_ready_unpin(cx)? {
-                let down = DownMessageList {
-                    commands: mem::replace(&mut self.buffer, vec![]),
-                };
+                let commands = self
+                    .buffer
+                    .drain(..)
+                    .map(|x| Format::default().serialize(&*x))
+                    .collect::<anyhow::Result<Vec<_>>>()?;
+                let down = DownMessageList { commands };
                 log::info!("Sending {:#?}", down);
                 self.sink.start_send_unpin(down)?;
             } else {

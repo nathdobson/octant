@@ -3,17 +3,17 @@
 
 extern crate octant_web_sys_client;
 
-use std::sync::Arc;
 use anyhow::anyhow;
 use futures::StreamExt;
 use octant_runtime_client::{
     proto::{DownMessageList, UpMessageList},
     runtime::Runtime,
 };
+use octant_serde::{DeserializeContext, Format, RawEncoded};
+use std::sync::Arc;
 use tokio::{sync::mpsc::unbounded_channel, try_join};
 use wasm_bindgen::prelude::*;
 use web_sys::window;
-use octant_serde::TypeMap;
 
 use wasm_error::{log_error, WasmError};
 
@@ -73,11 +73,15 @@ pub async fn main_impl() -> anyhow::Result<!> {
     let recv_fut = async {
         while let Some(next) = rx.next().await {
             let next = next?;
-            let text = next.as_str()?;
-            let mut ctx=TypeMap::new();
+            let encoded = match next {
+                WebSocketMessage::Text(text) => RawEncoded::Text(text),
+                WebSocketMessage::Binary(_) => todo!(),
+            };
+            let message: DownMessageList = encoded.deserialize_as::<DownMessageList>()?;
+            let mut ctx = DeserializeContext::new();
             ctx.insert::<Arc<Runtime>>(runtime.clone());
-            let message: DownMessageList = octant_serde::deserialize(&ctx, text)?;
-            for message in message.commands{
+            for message in message.commands {
+                let message = message.deserialize_with(&ctx)?;
                 message.run(&runtime)?;
             }
         }
@@ -89,6 +93,10 @@ pub async fn main_impl() -> anyhow::Result<!> {
             if rx_send.recv_many(&mut commands, usize::MAX).await == 0 {
                 break;
             }
+            let commands = commands
+                .iter()
+                .map(|x| Format::default().serialize(&**x))
+                .collect::<anyhow::Result<Vec<_>>>()?;
             let message = UpMessageList { commands };
             tx.send(WebSocketMessage::Text(serde_json::to_string(&message)?))?;
         }

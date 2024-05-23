@@ -6,6 +6,7 @@ use crate::{
 };
 use atomic_refcell::AtomicRefCell;
 use octant_object::{cast::downcast_object, class::Class};
+use octant_serde::DeserializeContext;
 use std::{collections::HashMap, marker::Unsize, sync::Arc};
 use tokio::sync::mpsc::UnboundedSender;
 use web_sys::console;
@@ -59,8 +60,11 @@ impl Runtime {
         self.state.borrow_mut().handles.remove(&handle);
     }
     pub async fn run_batch(self: &Arc<Self>, messages: DownMessageList) -> anyhow::Result<()> {
+        let mut ctx = DeserializeContext::new();
+        ctx.insert::<Arc<Runtime>>(self.clone());
         for message in messages.commands {
             console::info_1(&format!("{:?}", message).into());
+            let message = message.deserialize_with(&ctx)?;
             self.run_message(message).await?;
         }
         Ok(())

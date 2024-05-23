@@ -8,3 +8,4 @@ serde_json = { workspace = true }
 catalog = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 type-map = { workspace = true }
+anyhow = {workspace=true}

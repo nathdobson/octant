@@ -26,9 +26,11 @@ use octant_runtime_server::{
     proto::{DownMessageList, UpMessageList},
     runtime::Runtime,
 };
-use octant_serde::TypeMap;
-use octant_web_sys_server::{global::Global, node::ArcNode};
-use octant_web_sys_server::node::Node;
+use octant_serde::{Format, RawEncoded};
+use octant_web_sys_server::{
+    global::Global,
+    node::{ArcNode, Node},
+};
 
 use crate::{cookies::CookieRouter, session::Session, sink::BufferedDownMessageSink};
 
@@ -107,18 +109,22 @@ impl OctantServer {
         self.handlers.insert(handler.prefix(), Arc::new(handler));
     }
     async fn encode(x: DownMessageList) -> anyhow::Result<Message> {
-        Ok(Message::binary(serde_json::to_vec(&x)?))
+        match Format::default().serialize_raw(&x)? {
+            RawEncoded::Text(x) => Ok(Message::text(x)),
+        }
     }
     fn decode(runtime: &Arc<Runtime>, x: Message) -> anyhow::Result<Option<UpMessageList>> {
         if x.is_close() {
             Ok(None)
+        } else if x.is_text() {
+            Ok(Some(
+                RawEncoded::Text(x.to_str().unwrap().to_string())
+                    .deserialize_as::<UpMessageList>()?,
+            ))
+        } else if x.is_binary() {
+            todo!();
         } else {
-            let mut ctx = TypeMap::new();
-            ctx.insert::<Arc<Runtime>>(runtime.clone());
-            Ok(Some(octant_serde::deserialize::<UpMessageList>(
-                &ctx,
-                x.to_str().map_err(|_| anyhow!("not text"))?,
-            )?))
+            Ok(None)
         }
     }
     pub async fn run_socket(

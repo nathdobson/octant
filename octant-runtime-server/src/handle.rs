@@ -1,5 +1,5 @@
 use octant_object::class::Class;
-use octant_serde::{DeserializeWith, TypeMap};
+use octant_serde::{DeserializeContext, DeserializeWith};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     any::type_name,
@@ -75,13 +75,13 @@ impl<T: ?Sized + Class> Debug for TypedHandle<T> {
 }
 
 impl<'de> DeserializeWith<'de> for RawHandle {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error> {
         Self::deserialize(d)
     }
 }
 
 impl<'de, T: ?Sized + Class> DeserializeWith<'de> for TypedHandle<T> {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &TypeMap, d: D) -> Result<Self, D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error> {
         Self::deserialize(d)
     }
 }
