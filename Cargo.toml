@@ -4,9 +4,6 @@ resolver = "2"
 members = [
     "octant-build",
     "octant-client",
-    #  "octant-gui",
-    #  "octant-gui-client",
-    #  "octant-gui-core",
     "octant-reffed",
     "octant-object",
     "octant-panic",
@@ -38,9 +35,6 @@ webauthn-rs-proto = { git = "https://github.com/nathdobson/webauthn-rs.git" }
 [workspace.dependencies]
 catalog = { path = "../catalog/catalog" }
 octant-reffed = {path = "octant-reffed"}
-#octant-gui-core = { path = "octant-gui-core" }
-#octant-gui = { path = "octant-gui" }
-#octant-gui-client = { path = "octant-gui-client" }
 octant-runtime-client = {path = "octant-runtime-client"}
 octant-runtime-server = {path = "octant-runtime-server"}
 octant-serde = { path = "octant-serde" }
