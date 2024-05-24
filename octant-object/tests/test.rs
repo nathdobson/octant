@@ -35,6 +35,7 @@ define_class! {
         field y: u32;
     }
 }
+
 impl BValue {
     pub fn new(x: u32, y: u32) -> BValue {
         BValue {

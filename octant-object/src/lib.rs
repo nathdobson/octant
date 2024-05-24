@@ -4,10 +4,10 @@
 //! * ✅ Upcasting coercions (implicitly with trait upcasting).
 //! * ✅ Downcasting (explicitly with the [cast] module).
 //! * ✅ `#[derive]` and other attributes for value types.
+//! * ✅ Generics and where bounds.
 //!
 //! * ❌ Virtual methods.
 //! * ❌ Guaranteed static dispatch.
-//! * ❌ Generics.
 //! * ❌ Subclasses as [subtypes](https://doc.rust-lang.org/reference/subtyping.html). E.g.
 //!   `Vec<Box<Subclass>>` is not implicitly coercible to `Vec<Box<Superclass>>` because the
 //!   vtable pointer would need to be modified on each box.
@@ -198,7 +198,10 @@ pub mod reexports {
 macro_rules! define_class {
     {
         $(#[$metas:meta])?
-        pub class $class:tt extends $parent:tt $(implements $interface:path)? {
+        pub class $class:tt $(<$($generics:ident),*>)?
+            extends $parent:tt $(< $($parent_generics:ty),* >)?
+            $(implements $interface:path)?
+            $(where [$($where:tt)*])? {
             $( field $field_vis:vis $field:ident : $type:ty;)*
             $(
                 fn $method:ident
@@ -219,18 +222,18 @@ macro_rules! define_class {
     } => {
         $crate::reexports::paste::paste!{
             $(#[$metas])?
-            pub struct [< $class Value >] {
-                parent: <dyn $parent as $crate::class::Class>::Value,
+            pub struct [< $class Value >] $(< $($generics:'static),*>)? $(where $($where)*)?{
+                parent: <dyn $parent $(< $($parent_generics),*>)? as $crate::class::Class>::Value,
                 $($field_vis $field : $type,)*
             }
-            impl ::std::fmt::Debug for [< $class Value >] {
+            impl $(< $($generics:'static + ::std::fmt::Debug),*>)? ::std::fmt::Debug for [< $class Value >] $(< $($generics),*>)? $(where $($where)*)? {
                 fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                     let mut f = f.debug_struct(::std::stringify!($class));
                     $crate::class::DebugClass::fmt_class(self, &mut f);
                     f.finish()
                 }
             }
-            impl $crate::class::DebugClass for [< $class Value >] {
+            impl $(< $($generics:'static + ::std::fmt::Debug),*>)? $crate::class::DebugClass for [< $class Value >] $(< $($generics),*>)? $(where $($where)*)? {
                 fn fmt_class(&self, f: &mut ::std::fmt::DebugStruct) {
                     $crate::class::DebugClass::fmt_class(&self.parent, f);
                     $(
@@ -238,9 +241,9 @@ macro_rules! define_class {
                     )*
                 }
             }
-            pub trait $class: $parent $(+ $interface)? {
-                fn [< $class:snake >](&self) -> &[< $class Value >];
-                fn [< $class:snake _mut >](&mut self) -> &mut [< $class Value >];
+            pub trait $class $(< $($generics:'static),*>)? : $parent $(< $($parent_generics),*>)? $(+ $interface)? $(where $($where)*)? {
+                fn [< $class:snake >](&self) -> &[< $class Value >] $(< $($generics),*>)?;
+                fn [< $class:snake _mut >](&mut self) -> &mut [< $class Value >] $(< $($generics),*>)?;
                 $(
                     fn $method $(<$($lifetime),*>)?(
                         $(&$self_ref)?
@@ -250,29 +253,30 @@ macro_rules! define_class {
                     ) $(-> $return_type)?;
                 )*
             }
-            pub type [< Arc $class >] = ::std::sync::Arc<dyn $class>;
-            impl $crate::class::Class for dyn $class{
-                type Value = [< $class Value >];
+            pub type [< Arc $class >] $(< $($generics),*>)? = ::std::sync::Arc<dyn $class $(< $($generics),*>)?>;
+            impl $(< $($generics:'static),*>)? $crate::class::Class for dyn $class $(< $($generics),*>)? $(where $($where)*)? {
+                type Value = [< $class Value >] $(< $($generics),*>)?;
             }
-            impl $crate::class::ClassValue for [< $class Value >]{
-                type Dyn = dyn $class;
+            impl $(< $($generics:'static),*>)? $crate::class::ClassValue for [< $class Value >] $(< $($generics),*>)? $(where $($where)*)?{
+                type Dyn = dyn $class $(< $($generics),*>)?;
             }
-            impl $crate::class::Subclass for dyn $class {
-                type Parent = dyn $parent;
+            impl $(< $($generics:'static),*>)? $crate::class::Subclass for dyn $class $(< $($generics),*>)? $(where $($where)*)?{
+                type Parent = dyn $parent $(< $($parent_generics),*>)?;
             }
-            impl $crate::class::Ranked for [< $class Value >]{
-                type Rank = $crate::class::Succ<<<dyn $parent as $crate::class::Class>::Value as $crate::class::Ranked>::Rank>;
+            impl $(< $($generics:'static),*>)? $crate::class::Ranked for [< $class Value >]$(< $($generics),*>)? $(where $($where)*)? {
+                type Rank = $crate::class::Succ<<<dyn $parent $(< $($parent_generics),*>)? as $crate::class::Class>::Value as $crate::class::Ranked>::Rank>;
             }
-            impl<T> $class for T where
-                T: $parent,
+            impl<T $(, $($generics:'static)*)?> $class $(< $($generics),*>)? for T where
+                T: $parent $(< $($parent_generics),*>)?,
                 $(T: $interface,)?
                 T: $crate::class::Ranked,
-                T: $crate::class::DerefRanked<T::Rank, <[< $class Value >] as $crate::class::Ranked>::Rank, TargetRanked = [< $class Value >]>,
+                T: $crate::class::DerefRanked<T::Rank, <[< $class Value >] $(< $($generics),*>)? as $crate::class::Ranked>::Rank, TargetRanked = [< $class Value >] $(< $($generics),*>)?>,
+                $( $($where)*)?
             {
-                fn [< $class:snake >](&self) -> &[< $class Value >]{
+                fn [< $class:snake >](&self) -> &[< $class Value >] $(< $($generics),*>)? {
                     self.deref_ranked()
                 }
-                fn [< $class:snake _mut >](&mut self) -> &mut [< $class Value >]{
+                fn [< $class:snake _mut >](&mut self) -> &mut [< $class Value >] $(< $($generics),*>)?{
                     self.deref_mut_ranked()
                 }
                 $(
@@ -286,26 +290,26 @@ macro_rules! define_class {
                 )*
             }
 
-            impl ::std::ops::Deref for dyn $class {
-                type Target = [< $class Value >];
+            impl $(< $($generics:'static),*>)? ::std::ops::Deref for dyn $class $(< $($generics),*>)? $(where $($where)*)? {
+                type Target = [< $class Value >] $(< $($generics),*>)?;
                 fn deref(&self) -> &Self::Target {
-                    $class::[< $class:snake >](self)
+                    $class$(::< $($generics),*>)?::[< $class:snake >](self)
                 }
             }
 
-            impl ::std::ops::DerefMut for dyn $class {
+            impl $(< $($generics:'static),*>)? ::std::ops::DerefMut for dyn $class $(< $($generics),*>)? $(where $($where)*)? {
                 fn deref_mut(&mut self) -> &mut Self::Target {
-                    $class::[< $class:snake _mut >](self)
+                    $class$(::< $($generics),*>)?::[< $class:snake _mut >](self)
                 }
             }
 
-            impl ::std::ops::Deref for [< $class Value >] {
-                type Target = <dyn $parent as $crate::class::Class>::Value;
+            impl $(< $($generics:'static),*>)? ::std::ops::Deref for [< $class Value >] $(< $($generics),*>)? $(where $($where)*)? {
+                type Target = <dyn $parent $(< $($parent_generics),*>)? as $crate::class::Class>::Value;
                 fn deref(&self) -> &Self::Target {
                     &self.parent
                 }
             }
-            impl ::std::ops::DerefMut for [< $class Value >] {
+            impl $(< $($generics:'static),*>)? ::std::ops::DerefMut for [< $class Value >] $(< $($generics),*>)? $(where $($where)*)? {
                 fn deref_mut(&mut self) -> &mut Self::Target {
                     &mut self.parent
                 }
