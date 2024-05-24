@@ -12,12 +12,11 @@ use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serialize
 
 use crate::{
     document::{ArcDocument, Document},
-    navigator::ArcNavigator,
+    navigator::{ArcNavigator, Navigator},
     object::Object,
     request::ArcRequest,
     response::ArcResponse,
 };
-use crate::navigator::Navigator;
 
 define_sys_class! {
     class Window;
@@ -50,7 +49,7 @@ define_sys_rpc! {
 }
 
 define_sys_rpc! {
-    fn document(_runtime, window: Arc<dyn Window>) -> (Document, ) {
-        Ok((Arc::new(DocumentValue::new(window.native().document().unwrap())),))
+    fn document(_runtime, window: Arc<dyn Window>) -> ArcDocument {
+        Ok(Arc::new(DocumentValue::new(window.native().document().unwrap())))
     }
 }

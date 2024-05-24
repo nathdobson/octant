@@ -35,12 +35,6 @@ macro_rules! define_sys_class {
                 }
             }
 
-            impl dyn $class {
-                fn typed_handle(&self) -> $crate::handle::TypedHandle<dyn $class> {
-                    $crate::handle::TypedHandle::new(self.raw_handle())
-                }
-            }
-
             #[cfg(side="client")]
             impl [< $class Value >] {
                 $(
@@ -59,10 +53,10 @@ macro_rules! define_sys_class {
             }
             #[cfg(any($(all() ${ignore($new_server_dummy)} )?))]
             #[cfg(side = "server")]
-            impl [< $class Value >] {
-                pub fn new(handle: $crate::peer::PeerValue) -> Self {
+            impl From<$crate::peer::PeerValue> for [< $class Value >] {
+                fn from(handle: $crate::peer::PeerValue) -> Self {
                     [< $class Value >] {
-                        parent: <dyn $parent as $crate::reexports::octant_object::class::Class>::Value::new(handle),
+                        parent: <dyn $parent as $crate::reexports::octant_object::class::Class>::Value::from(handle),
                         $($server_field : ::std::default::Default::default(), )*
                     }
                 }

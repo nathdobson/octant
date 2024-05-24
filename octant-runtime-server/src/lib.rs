@@ -39,6 +39,7 @@ mod delete;
 pub mod peer;
 pub mod proto;
 pub mod completable;
+pub mod return_value;
 
 pub fn deserialize_object_with<'de, T: ?Sized + Class, D: Deserializer<'de>>(
     ctx: &DeserializeContext,

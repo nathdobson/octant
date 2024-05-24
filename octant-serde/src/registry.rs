@@ -117,7 +117,7 @@ macro_rules! define_serde_impl {
 macro_rules! derive_deserialize_with_for_struct {
     {
         struct $struct:ident {
-            $($field:ident: $type:ty, )*
+            $($field:ident: $type:ty ),* $(,)?
         }
     } => {
         impl<'de> $crate::DeserializeWith<'de> for $struct {

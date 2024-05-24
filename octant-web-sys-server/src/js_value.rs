@@ -7,8 +7,8 @@ define_sys_class! {
 }
 
 #[cfg(side = "server")]
-impl JsValueValue {
-    pub fn new(handle: PeerValue) -> Self {
+impl From<PeerValue> for JsValueValue {
+    fn from(handle: PeerValue) -> Self {
         JsValueValue { parent: handle }
     }
 }

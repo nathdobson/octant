@@ -1,14 +1,13 @@
 use std::{hint::must_use, marker::PhantomData, sync::Arc};
 
+use crate::request_init::RequestInitValue;
 use catalog::register;
+use octant_reffed::{ArcRef, Reffed};
+use octant_runtime::{define_sys_rpc, runtime::Runtime};
+use octant_serde::define_serde_impl;
 use safe_once::sync::OnceLock;
 use serde::{Deserialize, Serialize};
-use octant_reffed::{ArcRef, Reffed};
-use octant_runtime::define_sys_rpc;
-use octant_runtime::runtime::Runtime;
-use octant_serde::define_serde_impl;
 use wasm_error::WasmError;
-use crate::request_init::RequestInitValue;
 
 use crate::{
     credential_creation_options::ArcCredentialCreationOptions,
@@ -57,13 +56,13 @@ impl Global {
 }
 
 define_sys_rpc! {
-    fn window(_ctx) -> (Window, ) {
-        Ok((Arc::new(WindowValue::new(web_sys::window().unwrap())),))
+    fn window(_ctx) -> ArcWindow {
+        Ok(Arc::new(WindowValue::new(web_sys::window().unwrap())))
     }
 }
 
 define_sys_rpc! {
-    fn new_request_init(_ctx) -> (RequestInit, ) {
-        Ok((Arc::new(RequestInitValue::new(web_sys::RequestInit::new())),))
+    fn new_request_init(_ctx) -> ArcRequestInit {
+        Ok(Arc::new(RequestInitValue::new(web_sys::RequestInit::new())))
     }
 }

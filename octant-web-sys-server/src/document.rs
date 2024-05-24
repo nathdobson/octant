@@ -12,6 +12,7 @@ use octant_runtime::{
     handle::TypedHandle,
     peer::{Peer, PeerValue},
     proto::{DownMessage, UpMessage},
+    return_value::AsTypedHandle,
     runtime::Runtime,
 };
 use octant_serde::{define_serde_impl, derive_deserialize_with_for_struct};
@@ -68,20 +69,20 @@ impl dyn Document {
 }
 
 define_sys_rpc! {
-    fn create_div(_runtime, document: Arc<dyn Document>) -> (HtmlDivElement, ) {
-        Ok((Arc::new(HtmlDivElementValue::new(document.native().create_element("div").unwrap().dyn_into().unwrap())), ))
+    fn create_div(_runtime, document: Arc<dyn Document>) -> ArcHtmlDivElement {
+        Ok(Arc::new(HtmlDivElementValue::new(document.native().create_element("div").unwrap().dyn_into().unwrap())))
     }
 }
 
 define_sys_rpc! {
-    fn create_text_node(_runtime, document: Arc<dyn Document>, text: String) -> (Text, ) {
-        Ok((Arc::new(TextValue::new(document.native().create_text_node(&text).dyn_into().unwrap())), ))
+    fn create_text_node(_runtime, document: Arc<dyn Document>, text: String) -> ArcText {
+        Ok(Arc::new(TextValue::new(document.native().create_text_node(&text).dyn_into().unwrap())))
     }
 }
 
 define_sys_rpc! {
-    fn body(_runtime, document: Arc<dyn Document>) -> (HtmlElement, ) {
-        Ok((Arc::new(HtmlElementValue::new(document.native().body().unwrap())), ))
+    fn body(_runtime, document: Arc<dyn Document>) -> ArcHtmlElement {
+        Ok(Arc::new(HtmlElementValue::new(document.native().body().unwrap()) ))
     }
 }
 

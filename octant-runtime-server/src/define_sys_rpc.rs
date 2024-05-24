@@ -1,50 +1,32 @@
 #[macro_export]
 macro_rules! define_sys_rpc {
     {
-        $vis:vis fn $name:ident($runtime:ident $(, $input_name:ident: $input:ty)*) -> ( $( $output:ident, )* ) { $($imp:tt)* }
+        $vis:vis fn $name:ident($runtime:ident $(, $input_name:ident: $input:ty)*) -> $output:ty { $($imp:tt)* }
     } => {
         $crate::reexports::paste::paste! {
             #[cfg(side = "server")]
             $vis fn $name(
                 runtime: &::std::sync::Arc<$crate::runtime::Runtime>
                 $(, $input_name: $input)*
-            ) -> (
-                $(
-                    ::std::sync::Arc<dyn $output>
-                ),*
-            ) {
-                $(
-                    let [< output_ ${index()} >] = ::std::sync::Arc::new(<dyn $output as $crate::reexports::octant_object::class::Class>::Value::new(runtime.add_uninit()));
-                )*
+            ) -> $output {
+                let (output, down) = <$output as $crate::return_value::ImmediateReturn>::immediate_new(runtime);
                 runtime.send(Box::<[< $name:camel Request >]>::new([< $name:camel Request >] {
                     $($input_name,)*
-                    $(
-                        ${ignore($output)}
-                        [< output_ ${index()} >]: $crate::handle::TypedHandle::new(
-                            [< output_ ${index()} >].raw_handle()
-                        ),
-                    )*
+                    down
                 }));
-                ( $(
-                    ${ignore($output)}
-                    [< output_ ${index()} >]
-                ),* )
+                output
             }
 
             #[derive($crate::reexports::serde::Serialize,Debug)]
             pub struct [< $name:camel Request >] {
                 $($input_name: $input,)*
-                $(
-                    [< output_ ${index()} >]: $crate::handle::TypedHandle<dyn $output>,
-                )*
+                down: <$output as $crate::return_value::ImmediateReturn>::Down
             }
 
             $crate::reexports::octant_serde::derive_deserialize_with_for_struct!{
                 struct [< $name:camel Request >] {
                     $($input_name: $input,)*
-                    $(
-                        [< output_ ${index()} >]: $crate::handle::TypedHandle<dyn $output>,
-                    )*
+                    down: <$output as $crate::return_value::ImmediateReturn>::Down
                 }
             }
 
@@ -54,10 +36,7 @@ macro_rules! define_sys_rpc {
             impl $crate::proto::DownMessage for [< $name:camel Request >] {
                 fn run(self:Box<Self>, runtime:&::std::sync::Arc<$crate::runtime::Runtime>) -> $crate::reexports::anyhow::Result<()>{
                     let output=[<impl_ $name>](runtime $(, self.$input_name)*)?;
-                    $(
-                        ${ignore($output)}
-                        runtime.add(self.[< output_ ${index()} >], output.${index()});
-                    )*
+                    $crate::return_value::ImmediateReturn::immediate_return(output, runtime, self.down);
                     Ok(())
                 }
             }
@@ -71,11 +50,8 @@ macro_rules! define_sys_rpc {
             fn [<impl_ $name>](
                 $runtime: &::std::sync::Arc<$crate::runtime::Runtime>,
                 $($input_name: $input,)*
-            ) -> $crate::reexports::anyhow::Result<
-                ($(
-                    ::std::sync::Arc<dyn $output>,
-                )*)
-            >{
+            ) -> $crate::reexports::anyhow::Result<$output>
+            {
                 $($imp)*
             }
         }
