@@ -17,7 +17,7 @@ members = [
     "octant-serde",
     "octant-web-sys-client",
     "octant-web-sys-server",
-    "octant-sys-build", "octant-runtime-client", "octant-runtime-server",
+    "octant-sys-build", "octant-runtime-client", "octant-runtime-server", "octant-serde-derive",
 ]
 
 [profile.release]
@@ -87,3 +87,7 @@ itertools = "0.13.0"
 memo-map = "0.3.2"
 warp = "0.3.7"
 sendable = "0.6.1"
+proc-macro2 = "1.0.83"
+octant-serde-derive = {path= "octant-serde-derive"}
+syn ="2.0.66"
+quote = "1.0.36"

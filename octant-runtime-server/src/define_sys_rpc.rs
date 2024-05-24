@@ -17,17 +17,10 @@ macro_rules! define_sys_rpc {
                 output
             }
 
-            #[derive($crate::reexports::serde::Serialize,Debug)]
+            #[derive($crate::reexports::serde::Serialize,Debug,$crate::reexports::octant_serde::DeserializeWith)]
             pub struct [< $name:camel Request >] {
                 $($input_name: $input,)*
                 down: <$output as $crate::return_value::ImmediateReturn>::Down
-            }
-
-            $crate::reexports::octant_serde::derive_deserialize_with_for_struct!{
-                struct [< $name:camel Request >] {
-                    $($input_name: $input,)*
-                    down: <$output as $crate::return_value::ImmediateReturn>::Down
-                }
             }
 
             #[cfg(side="client")]

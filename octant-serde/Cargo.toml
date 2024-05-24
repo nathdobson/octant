@@ -9,3 +9,4 @@ catalog = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 type-map = { workspace = true }
 anyhow = {workspace=true}
+octant-serde-derive = {workspace=true}

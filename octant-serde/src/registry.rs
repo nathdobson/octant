@@ -112,48 +112,48 @@ macro_rules! define_serde_impl {
         };
     };
 }
-
-#[macro_export]
-macro_rules! derive_deserialize_with_for_struct {
-    {
-        struct $struct:ident {
-            $($field:ident: $type:ty ),* $(,)?
-        }
-    } => {
-        impl<'de> $crate::DeserializeWith<'de> for $struct {
-            fn deserialize_with<D:$crate::reexports::serde::Deserializer<'de>>(ctx:&$crate::DeserializeContext,d:D)->::std::result::Result<Self, D::Error>{
-                #[allow(non_camel_case_types)]
-                #[derive($crate::reexports::serde::Deserialize)]
-                enum Field{
-                    $( $field ),*
-                }
-                struct V<'c>{ctx:&'c $crate::DeserializeContext}
-                impl<'c,'de> $crate::reexports::serde::de::Visitor<'de> for V<'c>{
-                    type Value = $struct;
-                    fn expecting(&self, f:&mut ::std::fmt::Formatter)->::std::fmt::Result{
-                        write!(f,::std::stringify!($struct))
-                    }
-                    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: $crate::reexports::serde::de::MapAccess<'de> {
-                        $( let mut $field: Option<$type> = None; )*
-                        while let Some(field) = map.next_key::<Field>()? {
-                            match field {
-                                $(
-                                    Field::$field => {
-                                        $field = Some(map.next_value_seed($crate::DeserializeWithSeed::<$type>::new(self.ctx))?);
-                                    }
-                                )*
-                            }
-                        }
-                        $(
-                            let $field = $field.ok_or_else(||
-                                <A::Error as $crate::reexports::serde::de::Error>::custom(format_args!("Missing field {}",std::stringify!($field)))
-                            )?;
-                        )*
-                        Ok($struct {$($field,)*})
-                    }
-                }
-                d.deserialize_struct(::std::stringify!($struct),&[$(::std::stringify!($field)),*],V{ctx})
-            }
-        }
-    }
-}
+//
+// #[macro_export]
+// macro_rules! derive_deserialize_with_for_struct {
+//     {
+//         struct $struct:ident {
+//             $($field:ident: $type:ty ),* $(,)?
+//         }
+//     } => {
+//         impl<'de> $crate::DeserializeWith<'de> for $struct {
+//             fn deserialize_with<D:$crate::reexports::serde::Deserializer<'de>>(ctx:&$crate::DeserializeContext,d:D)->::std::result::Result<Self, D::Error>{
+//                 #[allow(non_camel_case_types)]
+//                 #[derive($crate::reexports::serde::Deserialize)]
+//                 enum Field{
+//                     $( $field ),*
+//                 }
+//                 struct V<'c>{ctx:&'c $crate::DeserializeContext}
+//                 impl<'c,'de> $crate::reexports::serde::de::Visitor<'de> for V<'c>{
+//                     type Value = $struct;
+//                     fn expecting(&self, f:&mut ::std::fmt::Formatter)->::std::fmt::Result{
+//                         write!(f,::std::stringify!($struct))
+//                     }
+//                     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: $crate::reexports::serde::de::MapAccess<'de> {
+//                         $( let mut $field: Option<$type> = None; )*
+//                         while let Some(field) = map.next_key::<Field>()? {
+//                             match field {
+//                                 $(
+//                                     Field::$field => {
+//                                         $field = Some(map.next_value_seed($crate::DeserializeWithSeed::<$type>::new(self.ctx))?);
+//                                     }
+//                                 )*
+//                             }
+//                         }
+//                         $(
+//                             let $field = $field.ok_or_else(||
+//                                 <A::Error as $crate::reexports::serde::de::Error>::custom(format_args!("Missing field {}",std::stringify!($field)))
+//                             )?;
+//                         )*
+//                         Ok($struct {$($field,)*})
+//                     }
+//                 }
+//                 d.deserialize_struct(::std::stringify!($struct),&[$(::std::stringify!($field)),*],V{ctx})
+//             }
+//         }
+//     }
+// }

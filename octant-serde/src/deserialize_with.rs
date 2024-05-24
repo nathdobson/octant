@@ -1,13 +1,15 @@
+use crate::DeserializeContext;
 use serde::{
     de::{DeserializeSeed, Error, SeqAccess, Visitor},
     Deserialize, Deserializer,
 };
 use std::{fmt::Formatter, marker::PhantomData, sync::Arc};
-use crate::DeserializeContext;
-
 
 pub trait DeserializeWith<'de>: Sized {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error>;
+    fn deserialize_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<Self, D::Error>;
 }
 
 pub trait DeserializeArcWith<'de> {
@@ -21,7 +23,10 @@ impl<'de, T: ?Sized> DeserializeWith<'de> for Arc<T>
 where
     T: DeserializeArcWith<'de>,
 {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Arc<T>, D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<Arc<T>, D::Error> {
         T::deserialize_arc_with(ctx, d)
     }
 }
@@ -48,7 +53,10 @@ where
 }
 
 impl<'de> DeserializeWith<'de> for () {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<Self, D::Error> {
         <()>::deserialize(d)
     }
 }
@@ -57,7 +65,10 @@ impl<'de, T1> DeserializeWith<'de> for (T1,)
 where
     T1: DeserializeWith<'de>,
 {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<(T1,), D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<(T1,), D::Error> {
         struct V<'c, T1>(&'c DeserializeContext, PhantomData<T1>);
         impl<'c, 'de, T1: DeserializeWith<'de>> Visitor<'de> for V<'c, T1> {
             type Value = (T1,);
@@ -82,7 +93,10 @@ where
     T1: DeserializeWith<'de>,
     T2: DeserializeWith<'de>,
 {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<(T1, T2), D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<(T1, T2), D::Error> {
         struct V<'c, T1, T2>(&'c DeserializeContext, PhantomData<(T1, T2)>);
         impl<'c, 'de, T1: DeserializeWith<'de>, T2: DeserializeWith<'de>> Visitor<'de> for V<'c, T1, T2> {
             type Value = (T1, T2);
@@ -106,7 +120,10 @@ where
 }
 
 impl<'de, T: DeserializeWith<'de>> DeserializeWith<'de> for Option<T> {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<Self, D::Error> {
         struct V<'c, T>(&'c DeserializeContext, PhantomData<T>);
         impl<'c, 'de, T: DeserializeWith<'de>> Visitor<'de> for V<'c, T> {
             type Value = Option<T>;
@@ -132,7 +149,10 @@ impl<'de, T: DeserializeWith<'de>> DeserializeWith<'de> for Option<T> {
 }
 
 impl<'de, T: DeserializeWith<'de>> DeserializeWith<'de> for Vec<T> {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error> {
+    fn deserialize_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<Self, D::Error> {
         struct V<'c, T> {
             ctx: &'c DeserializeContext,
             phantom: PhantomData<T>,
@@ -163,8 +183,25 @@ impl<'de, T: DeserializeWith<'de>> DeserializeWith<'de> for Vec<T> {
     }
 }
 
-impl<'de> DeserializeWith<'de> for String {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error> {
-        Self::deserialize(d)
-    }
+macro_rules! derive_deserialize_with {
+    {$($type:ty;)*} => {
+        $(
+            impl<'de> DeserializeWith<'de> for $type {
+                fn deserialize_with<D: Deserializer<'de>>(
+                    ctx: &DeserializeContext,
+                    d: D,
+                ) -> Result<Self, D::Error> {
+                    <$type>::deserialize(d)
+                }
+            }
+        )*
+    };
+}
+
+derive_deserialize_with!{
+    bool;
+    u8;u16;u32;u64;u128;
+    i8;i16;i32;i64;i128;
+    f32; f64;
+    String;
 }

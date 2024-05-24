@@ -15,7 +15,7 @@ use octant_runtime::{
     return_value::AsTypedHandle,
     runtime::Runtime,
 };
-use octant_serde::{define_serde_impl, derive_deserialize_with_for_struct};
+use octant_serde::{define_serde_impl, DeserializeWith};
 use safe_once::sync::OnceLock;
 use serde::Serialize;
 use std::sync::Arc;
@@ -103,30 +103,16 @@ impl LocationPromiseValue {
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, DeserializeWith)]
 pub struct LocationRequest {
     document: ArcDocument,
     promise: TypedHandle<dyn LocationPromise>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, DeserializeWith)]
 pub struct LocationResponse {
     promise: Arc<dyn LocationPromise>,
     location: String,
-}
-
-derive_deserialize_with_for_struct! {
-    struct LocationRequest {
-        document: ArcDocument,
-        promise: TypedHandle<dyn LocationPromise>,
-    }
-}
-
-derive_deserialize_with_for_struct! {
-    struct LocationResponse {
-        promise: Arc<dyn LocationPromise>,
-        location: String,
-    }
 }
 
 define_serde_impl!(LocationRequest: DownMessage);

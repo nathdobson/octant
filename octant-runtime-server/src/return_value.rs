@@ -56,8 +56,6 @@ impl<T: ?Sized + Class + Unsize<dyn Peer>> ImmediateReturn for Arc<T>
     }
 }
 
-
-
 impl ImmediateReturn for () {
     type Down = ();
     #[cfg(side = "server")]
