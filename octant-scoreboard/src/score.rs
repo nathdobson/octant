@@ -81,9 +81,9 @@ impl Handler for ScoreHandler {
 
     fn handle(self: Arc<Self>, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
         let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());
-        global.window().alert(format!("hi"));
+        global.window().alert(format!("{}", url));
         let d = global.window().document().create_div();
-        todo!();
+        Ok(Page::new(global, d))
 
         // let d = session.global().window().document();
         // let page = d.create_element("div");

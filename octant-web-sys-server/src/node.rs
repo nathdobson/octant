@@ -15,7 +15,7 @@ define_sys_class! {
             append_child(self.runtime(), self.arc(), e);
         }
         fn remove_child(self: ArcRef<Self>, e:ArcNode){
-            todo!();
+            remove_child(self.runtime(), self.arc(), e);
         }
     }
 }
@@ -23,6 +23,13 @@ define_sys_class! {
 define_sys_rpc! {
     fn append_child(_runtime, this: ArcNode, add:ArcNode) -> () {
         this.native().append_child(add.native()).unwrap();
+        Ok(())
+    }
+}
+
+define_sys_rpc! {
+    fn remove_child(_runtime, this: ArcNode, add:ArcNode) -> () {
+        this.native().remove_child(add.native()).unwrap();
         Ok(())
     }
 }

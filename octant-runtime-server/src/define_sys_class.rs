@@ -3,7 +3,7 @@ macro_rules! define_sys_class {
     {
         class $class:ident;
         extends $parent:path;
-        wasm $wasm:path;
+        $(wasm $wasm:path;)?
         $(new_client $new_client_dummy:tt;)?
         $(new_server $new_server_dummy:tt;)?
         $(client_field $client_field:ident : $client_field_type:ty ;)*
@@ -14,7 +14,7 @@ macro_rules! define_sys_class {
             #[cfg(side = "client")]
             $crate::reexports::octant_object::define_class! {
                 pub class $class extends $parent implements ::std::fmt::Debug{
-                    field [< $class:snake >]: $wasm;
+                    $( field [< $class:snake >]: $wasm; )?
                     $(field $client_field : $client_field_type;)*
                 }
             }
@@ -22,20 +22,32 @@ macro_rules! define_sys_class {
             #[cfg(any($(all() ${ignore($new_client_dummy)} )?))]
             #[cfg(side = "client")]
             impl [< $class Value >] {
-                pub fn new([< $class:snake >]: $wasm) -> [< $class Value >]  {
+                pub fn new(
+                    $( [< $class:snake >]: $wasm )?
+                ) -> [< $class Value >]  {
                     [< $class Value >] {
-                        parent: <dyn $parent as $crate::reexports::octant_object::class::Class>::Value::new(::std::clone::Clone::clone(&[< $class:snake >]).into()),
-                        [< $class:snake >],
+                        parent: <dyn $parent as $crate::reexports::octant_object::class::Class>::Value::new(
+                            $( ${ignore($wasm)} ::std::clone::Clone::clone(&[< $class:snake >]).into() )?
+                        ),
+                        $( ${ignore($wasm)} [< $class:snake >], )?
                         $($client_field : ::std::default::Default::default(), )*
                     }
                 }
             }
 
+            impl dyn $class {
+                fn typed_handle(&self) -> $crate::handle::TypedHandle<dyn $class> {
+                    $crate::handle::TypedHandle::new(self.raw_handle())
+                }
+            }
+
             #[cfg(side="client")]
             impl [< $class Value >] {
-                pub fn native(&self) -> &$wasm{
-                    &self.[< $class:snake >]
-                }
+                $(
+                    pub fn native(&self) -> &$wasm{
+                        &self.[< $class:snake >]
+                    }
+                )?
             }
 
             #[cfg(side = "server")]

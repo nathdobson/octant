@@ -24,9 +24,9 @@ impl<'a, T: ?Sized> Reffed for &'a Rc<T> {
 }
 
 impl<'a, T: ?Sized> Deref for RcRef<'a, T> {
-    type Target = T;
+    type Target = &'a T;
     fn deref(&self) -> &Self::Target {
-        self.0
+        &self.0
     }
 }
 

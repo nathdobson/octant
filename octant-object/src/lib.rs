@@ -199,9 +199,15 @@ macro_rules! define_class {
     {
         $(#[$metas:meta])?
         pub class $class:tt extends $parent:tt $(implements $interface:path)? {
-            $( field $field:ident : $type:ty;)*
+            $( field $field_vis:vis $field:ident : $type:ty;)*
             $(
-                fn $method:ident(
+                fn $method:ident
+                $(<
+                    $(
+                    $lifetime:lifetime
+                    ),*
+                >)?
+                (
                     $(&$self_ref:ident)?
                     $(&mut $self_mut:ident)?
                     $($self:ident: $self_type:ty)?
@@ -215,7 +221,7 @@ macro_rules! define_class {
             $(#[$metas])?
             pub struct [< $class Value >] {
                 parent: <dyn $parent as $crate::class::Class>::Value,
-                $($field : $type,)*
+                $($field_vis $field : $type,)*
             }
             impl ::std::fmt::Debug for [< $class Value >] {
                 fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
@@ -236,7 +242,7 @@ macro_rules! define_class {
                 fn [< $class:snake >](&self) -> &[< $class Value >];
                 fn [< $class:snake _mut >](&mut self) -> &mut [< $class Value >];
                 $(
-                    fn $method(
+                    fn $method $(<$($lifetime),*>)?(
                         $(&$self_ref)?
                         $(&mut $self_mut)?
                         $($self: $self_type)?
@@ -270,7 +276,7 @@ macro_rules! define_class {
                     self.deref_mut_ranked()
                 }
                 $(
-                    fn $method(
+                    fn $method $(<$($lifetime),*>)?(
                         $(&$self_ref)?
                         $(&mut $self_mut)?
                         $($self: $self_type)?

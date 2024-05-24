@@ -1,13 +1,21 @@
-use crate::{delete::delete_rpc, handle::{RawHandle, TypedHandle}, LookupError, peer::{Peer, PeerValue}, proto::{DownMessage, UpMessageList}};
+use crate::{
+    delete::delete_rpc,
+    handle::{RawHandle, TypedHandle},
+    peer::{Peer, PeerValue},
+    proto::{DownMessage, UpMessageList},
+    LookupError,
+};
 use atomic_refcell::AtomicRefCell;
 use octant_executor::Spawn;
 use octant_object::{cast::downcast_object, class::Class};
+use octant_serde::DeserializeContext;
 use std::{
     fmt::{Debug, Formatter},
     sync::{Arc, Weak},
 };
 use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
+use crate::proto::UpMessage;
 
 struct State {
     next_handle: u64,
@@ -65,7 +73,17 @@ impl Runtime {
         delete_rpc(self, handle);
     }
     pub fn run_batch(self: &Arc<Self>, batch: UpMessageList) -> anyhow::Result<()> {
-        todo!();
+        let mut ctx = DeserializeContext::new();
+        ctx.insert::<Arc<Runtime>>(self.clone());
+        for message in batch.commands {
+            log::info!("Running up message{:?}", message);
+            let message = message.deserialize_with(&ctx)?;
+            self.run_message(message)?;
+        }
+        Ok(())
+    }
+    pub fn run_message(self: &Arc<Self>, message: Box<dyn UpMessage>) -> anyhow::Result<()> {
+        message.run(self)
     }
     pub fn lookup<T: ?Sized + Class>(
         self: &Arc<Self>,

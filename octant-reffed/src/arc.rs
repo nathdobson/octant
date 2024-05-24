@@ -26,9 +26,9 @@ impl<'a, T: ?Sized> Reffed for &'a Arc<T> {
 }
 
 impl<'a, T: ?Sized> Deref for ArcRef<'a, T> {
-    type Target = T;
+    type Target = &'a T;
     fn deref(&self) -> &Self::Target {
-        self.0
+        &self.0
     }
 }
 

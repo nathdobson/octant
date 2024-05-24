@@ -18,3 +18,4 @@ base64urlsafedata = { workspace = true }
 parking_lot = { workspace = true }
 uuid = { workspace = true }
 octant-web-sys-server = { workspace = true }
+octant-reffed = {workspace=true}

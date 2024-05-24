@@ -52,6 +52,8 @@ js-sys = { workspace = true }
 safe-once = { workspace = true }
 base64urlsafedata = { workspace = true }
 octant-reffed = {workspace = true}
+futures = { workspace=true}
+wasm-bindgen-futures = {workspace=true}
 
 [build-dependencies]
 octant-sys-build = { workspace = true }

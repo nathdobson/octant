@@ -16,6 +16,7 @@ atomic_refcell = {workspace=true}
 tokio = {workspace=true, features=["sync"]}
 safe-once = {workspace=true}
 web-sys = {workspace=true,features=["console"]}
+parking_lot = {workspace=true}
 
 [build-dependencies]
 octant-sys-build = { workspace = true }

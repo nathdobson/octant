@@ -38,6 +38,7 @@ mod delete;
 #[cfg_attr(side = "server", path = "server_peer.rs")]
 pub mod peer;
 pub mod proto;
+pub mod completable;
 
 pub fn deserialize_object_with<'de, T: ?Sized + Class, D: Deserializer<'de>>(
     ctx: &DeserializeContext,

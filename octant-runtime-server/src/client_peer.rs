@@ -41,9 +41,3 @@ impl dyn Peer {
         TypedHandle::new(self.raw_handle())
     }
 }
-
-impl Drop for PeerValue {
-    fn drop(&mut self) {
-        todo!()
-    }
-}

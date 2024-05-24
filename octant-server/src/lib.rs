@@ -2,8 +2,11 @@
 #![deny(unused_must_use)]
 #![allow(unused_variables)]
 #![feature(trait_upcasting)]
+#![feature(never_type)]
+
 use octant_reffed::Reffed;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
+use std::future::pending;
 
 use anyhow::anyhow;
 use clap::Parser;
@@ -71,7 +74,7 @@ struct OctantApplication {
     session: Arc<Session>,
 }
 
-impl Application for OctantApplication {
+impl OctantApplication {
     fn create_page(&self, url: &str, _global: Arc<Global>) -> anyhow::Result<Page> {
         let url = Url::parse(url)?;
         let prefix = url
@@ -154,11 +157,19 @@ impl OctantServer {
                 Ok(())
             }
         });
-        let d = global.window().document();
-        d.body()
-            .reffed()
-            .append_child(d.create_text_node(format!("Hello")));
+        spawn.spawn({
+            let global = global.clone();
+            async move {
+                let url = global.window().document().reffed().location().await;
+                log::info!("url = {}", url);
+                let page = app.create_page(&url, global)?;
+                pending::<!>().await;
+                Ok(())
+            }
+        });
+        log::info!("Running pool");
         pool.run().await?;
+        log::info!("Done running pool");
         Ok(())
     }
     pub async fn run(self) -> anyhow::Result<()> {
@@ -269,13 +280,23 @@ pub struct Page {
 
 impl Page {
     pub fn new(global: Arc<Global>, node: ArcNode) -> Page {
-        global.window().document().body().reffed().append_child(node.clone());
+        global
+            .window()
+            .document()
+            .body()
+            .reffed()
+            .append_child(node.clone());
         Page { global, node }
     }
 }
 
 impl Drop for Page {
     fn drop(&mut self) {
-        self.global.window().document().body().reffed().remove_child(self.node.clone());
+        self.global
+            .window()
+            .document()
+            .body()
+            .reffed()
+            .remove_child(self.node.clone());
     }
 }

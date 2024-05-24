@@ -3,6 +3,7 @@ use std::{hint::must_use, marker::PhantomData, sync::Arc};
 use catalog::register;
 use safe_once::sync::OnceLock;
 use serde::{Deserialize, Serialize};
+use octant_reffed::{ArcRef, Reffed};
 use octant_runtime::define_sys_rpc;
 use octant_runtime::runtime::Runtime;
 use octant_serde::define_serde_impl;
@@ -38,8 +39,8 @@ impl Global {
 
 #[cfg(side = "server")]
 impl Global {
-    pub fn window(&self) -> &ArcWindow {
-        self.window.get_or_init(|| window(&self.runtime))
+    pub fn window(&self) -> ArcRef<dyn Window> {
+        self.window.get_or_init(|| window(&self.runtime)).reffed()
     }
     pub fn new_request_init(&self) -> ArcRequestInit {
         new_request_init(&self.runtime)

@@ -1,12 +1,14 @@
+use futures::future::BoxFuture;
 use std::{
     mem::{ManuallyDrop, MaybeUninit},
     sync::Arc,
 };
 
+use crate::document::DocumentValue;
+use octant_reffed::ArcRef;
+use octant_runtime::{define_sys_class, define_sys_rpc};
 use safe_once::sync::OnceLock;
 use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serializer};
-use octant_runtime::{define_sys_class, define_sys_rpc};
-use crate::document::DocumentValue;
 
 use crate::{
     document::{ArcDocument, Document},
@@ -15,6 +17,7 @@ use crate::{
     request::ArcRequest,
     response::ArcResponse,
 };
+use crate::navigator::Navigator;
 
 define_sys_class! {
     class Window;
@@ -23,22 +26,19 @@ define_sys_class! {
     new_client _;
     new_server _;
     server_field document : OnceLock<ArcDocument>;
-}
-
-#[cfg(side = "server")]
-impl dyn Window {
-    pub fn alert(self: &Arc<Self>, message: String) {
-        alert(self.runtime(), self.clone(), message);
-    }
-    pub fn document<'a>(self: &'a Arc<Self>) -> &'a ArcDocument {
-        self.document
-            .get_or_init(|| document(self.runtime(), self.clone()))
-    }
-    pub fn navigator<'a>(self: &'a Arc<Self>) -> &'a ArcNavigator {
-        todo!();
-    }
-    pub async fn fetch(self: &Arc<Self>, request: &ArcRequest) -> anyhow::Result<ArcResponse> {
-        todo!();
+    server_fn {
+        fn document<'a>(self: ArcRef<'a, Self>) -> &'a ArcDocument {
+            self.window().document.get_or_init(|| document(self.runtime(), self.arc()))
+        }
+        fn fetch<'a>(self: ArcRef<'a,Self>, request: &ArcRequest) -> BoxFuture<anyhow::Result<ArcResponse>> {
+            todo!();
+        }
+        fn navigator<'a>(self: ArcRef<'a, Self>) -> ArcRef<'a, dyn Navigator> {
+            todo!();
+        }
+        fn alert(self: ArcRef<Self>, message: String) {
+            alert(self.runtime(), self.arc(), message);
+        }
     }
 }
 

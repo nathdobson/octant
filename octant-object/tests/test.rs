@@ -15,7 +15,7 @@ trait SendSync = Send + Sync;
 define_class! {
     pub class A extends Base implements SendSync {
         field x: u32;
-        fn get_x(self:&Self) -> &u32{
+        fn get_x<'a>(self:&'a Self) -> &'a u32{
             &self.a().x
         }
     }
