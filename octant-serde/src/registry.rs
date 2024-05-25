@@ -97,19 +97,21 @@ pub static DESERIALIZE_REGISTRY: Registry<DeserializeRegistry> = Registry::new()
 
 #[macro_export]
 macro_rules! define_serde_impl {
-    ($type:ty: $trait:path) => {
-        const _: () = {
-            #[$crate::reexports::catalog::register($crate::DESERIALIZE_REGISTRY, lazy = true, crate=$crate::reexports::catalog)]
-            static IMP: $crate::DeserializeImp<dyn $trait, $type> = $crate::DeserializeImp::new(
-                option_env!("OCTANT_SERDE_SHARED_NAME").unwrap_or(env!("CARGO_CRATE_NAME")),
-                ::std::any::type_name::<$type>()
-            );
-            impl $crate::SerializeType for $type {
-                fn serialize_type(&self) -> &'static str {
-                    IMP.name
+    ($type:ident: $trait:path) => {
+        $crate::reexports::paste::paste! {
+            const _: () = {
+                #[$crate::reexports::catalog::register($crate::DESERIALIZE_REGISTRY, lazy = true, crate=$crate::reexports::catalog)]
+                static [< IMP_ $type:snake:upper >]: $crate::DeserializeImp<dyn $trait, $type> = $crate::DeserializeImp::new(
+                    option_env!("OCTANT_SERDE_SHARED_NAME").unwrap_or(env!("CARGO_CRATE_NAME")),
+                    ::std::any::type_name::<$type>()
+                );
+                impl $crate::SerializeType for $type {
+                    fn serialize_type(&self) -> &'static str {
+                        [< IMP_ $type:snake:upper >].name
+                    }
                 }
-            }
-        };
+            };
+        }
     };
 }
 //

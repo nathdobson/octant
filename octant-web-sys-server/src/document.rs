@@ -53,20 +53,6 @@ impl dyn Document {
     pub fn create_element(self: ArcRef<Self>, tag: &str) -> ArcElement {
         todo!()
     }
-    pub fn body<'a>(self: ArcRef<'a, Self>) -> &'a ArcHtmlElement {
-        self.body.get_or_init(|| body(self.runtime(), self.arc()))
-    }
-    pub fn location<'a>(self: ArcRef<'a, Self>) -> OctantFuture<String> {
-        location(self.runtime(), self.arc())
-    }
-}
-
-define_sys_rpc! {
-    impl Document {
-        pub fn create_input_element(self:_, _runtime:_) -> ArcHtmlInputElement {
-            Ok(Arc::new(HtmlInputElementValue::new(self.native().create_element("input").unwrap().dyn_into().unwrap())))
-        }
-    }
 }
 
 define_sys_rpc! {
@@ -74,27 +60,20 @@ define_sys_rpc! {
         pub fn create_div(self:_, _runtime:_) -> ArcHtmlDivElement {
             Ok(Arc::new(HtmlDivElementValue::new(self.native().create_element("div").unwrap().dyn_into().unwrap())))
         }
-    }
-}
-
-define_sys_rpc! {
-    impl Document {
         pub fn create_text_node(self:_, _runtime:_, text: String) -> ArcText {
             Ok(Arc::new(TextValue::new(self.native().create_text_node(&text).dyn_into().unwrap())))
         }
-    }
-}
-
-define_sys_rpc! {
-    fn body(_runtime:_, document: Arc<dyn Document>) -> ArcHtmlElement {
-        Ok(Arc::new(HtmlElementValue::new(document.native().body().unwrap()) ))
-    }
-}
-
-define_sys_rpc! {
-    fn location(runtime:_, document: Arc<dyn Document>) -> OctantFuture<String> {
-        Ok(OctantFuture::<String>::spawn(runtime, async move{
-            document.native().location().unwrap().href().clone().unwrap()
-        }))
+        pub fn create_input_element(self:_, _runtime:_) -> ArcHtmlInputElement {
+            Ok(Arc::new(HtmlInputElementValue::new(self.native().create_element("input").unwrap().dyn_into().unwrap())))
+        }
+        pub fn body(self:_, _runtime:_) -> ArcHtmlElement {
+            Ok(Arc::new(HtmlElementValue::new(self.native().body().unwrap()) ))
+        }
+        pub fn location(self:_, runtime:_) -> OctantFuture<String> {
+            let this=self.arc();
+            Ok(OctantFuture::<String>::spawn(&runtime, async move{
+                this.native().location().unwrap().href().clone().unwrap()
+            }))
+        }
     }
 }

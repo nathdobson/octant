@@ -22,6 +22,7 @@ pub use registry::*;
 pub mod reexports {
     pub use catalog;
     pub use serde;
+    pub use paste;
 }
 
 pub use octant_serde_derive::DeserializeWith;
