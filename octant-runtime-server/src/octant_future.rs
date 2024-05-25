@@ -2,12 +2,15 @@ use crate::peer::Peer;
 #[cfg(side = "client")]
 use crate::peer::PeerValue;
 use octant_object::define_class;
-use std::{fmt::Debug, marker::PhantomData, sync::Arc};
+use std::{fmt::Debug, future::Future, marker::PhantomData, sync::Arc};
 
 #[cfg(side = "server")]
 use anyhow::anyhow;
-#[cfg(side = "client")]
-use std::future::Future;
+#[cfg(side = "server")]
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 #[cfg(side = "server")]
 use crate::immediate_return::AsTypedHandle;
@@ -42,10 +45,12 @@ define_class! {
 #[cfg(side = "server")]
 pub struct OctantFuture<T: FutureReturn> {
     parent: ArcAbstractOctantFuture,
-    retain: T::Retain,
+    retain: Option<T::Retain>,
     receiver: oneshot::Receiver<RawEncoded>,
     phantom: PhantomData<T>,
 }
+
+impl<T: FutureReturn> Unpin for OctantFuture<T> {}
 
 #[cfg(side = "client")]
 pub struct OctantFuture<T: FutureReturn> {
@@ -105,16 +110,17 @@ impl<T: Debug + FutureReturn> OctantFuture<T> {
 }
 
 #[cfg(side = "server")]
-impl<T: Sync + Send + Debug + FutureReturn> OctantFuture<T> {
-    pub async fn recv(self) -> anyhow::Result<T> {
-        let up = self
-            .receiver
-            .await
-            .map_err(|e| anyhow!("Receive failed {:?}", e))?;
-        let mut ctx = DeserializeContext::new();
-        ctx.insert::<Arc<Runtime>>(self.parent.runtime().clone());
-        let up = up.deserialize_as_with::<T::Up>(&ctx)?;
-        Ok(T::future_return(self.parent.runtime(), self.retain, up))
+impl<T: FutureReturn> Future for OctantFuture<T> {
+    type Output = anyhow::Result<T>;
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if let Poll::Ready(up) = Pin::new(&mut (*self).receiver).poll(cx)? {
+            let mut ctx = DeserializeContext::new();
+            ctx.insert::<Arc<Runtime>>(self.parent.runtime().clone());
+            let up = up.deserialize_as_with::<T::Up>(&ctx)?;
+            let retain = self.retain.take().unwrap();
+            return Poll::Ready(Ok(T::future_return(self.parent.runtime(), retain, up)));
+        }
+        Poll::Pending
     }
 }
 
@@ -152,7 +158,7 @@ impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
         (
             OctantFuture {
                 parent: peer,
-                retain,
+                retain: Some(retain),
                 receiver: rx,
                 phantom: PhantomData,
             },
@@ -166,26 +172,3 @@ impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
         runtime.add(down.0, self.parent)
     }
 }
-
-//
-// define_serde_impl!(LocationRequest: DownMessage);
-// impl DownMessage for LocationRequest {
-//     #[cfg(side = "client")]
-//     fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()> {
-//         log::info!("Received request");
-//         let promise: ArcLocationPromise = Arc::new(LocationPromiseValue::new());
-//         runtime.add(self.promise, promise.clone());
-//         spawn_local({
-//             let runtime = runtime.clone();
-//             async move {
-//                 log::info!("Sending response");
-//                 runtime.send(Box::<LocationResponse>::new(LocationResponse {
-//                     promise,
-//                     location: location_impl(&runtime, self.document).await,
-//                 }));
-//             }
-//         });
-//         Ok(())
-//     }
-// }
-//

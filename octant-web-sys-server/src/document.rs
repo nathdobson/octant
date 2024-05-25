@@ -65,11 +65,8 @@ impl dyn Document {
     pub fn body<'a>(self: &'a Arc<Self>) -> &'a ArcHtmlElement {
         self.body.get_or_init(|| body(self.runtime(), self.clone()))
     }
-    pub fn location<'a>(self: ArcRef<'a, Self>) -> impl 'a + Send + Future<Output = String> {
-        async move {
-            let fut = location(self.runtime(), self.arc()).recv();
-            fut.await.unwrap()
-        }
+    pub fn location<'a>(self: ArcRef<'a, Self>) -> OctantFuture<String> {
+        location(self.runtime(), self.arc())
     }
 }
 
