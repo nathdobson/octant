@@ -11,3 +11,4 @@ type-map = { workspace = true }
 anyhow = {workspace=true}
 octant-serde-derive = {workspace=true}
 paste = {workspace=true}
+octant-reffed = {workspace=true}

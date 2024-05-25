@@ -208,15 +208,15 @@ fn downcast_object_impl<T1: Unsize<dyn Any> + ?Sized + CastValue, T2: 'static + 
 pub fn downcast_object<P1, P2: 'static>(ptr: P1) -> Result<P2, P1>
 where
     P1: IsSmartPointer,
-    P1::Target: CastValue + Unsize<dyn Any>,
+    P1::SmartTarget: CastValue + Unsize<dyn Any>,
     P2: IsSmartPointer<Kind = P1::Kind>,
-    <P1 as Deref>::Target: Pointee<Metadata = DynMetadata<<P1 as Deref>::Target>>,
+    <P1 as IsSmartPointer>::SmartTarget: Pointee<Metadata = DynMetadata<<P1 as IsSmartPointer>::SmartTarget>>,
 {
     let ptr = SmartPointer::new(ptr);
-    match downcast_object_impl::<P1::Target, P2::Target>(ptr) {
+    match downcast_object_impl::<P1::SmartTarget, P2::SmartTarget>(ptr) {
         Ok(ptr) => Ok(ptr.into_smart_pointer().ok().unwrap()),
         Err(ptr) => {
-            match downcast_object_impl::<dyn Base, P1::Target>(ptr) {
+            match downcast_object_impl::<dyn Base, P1::SmartTarget>(ptr) {
                 Ok(ptr) => Err(ptr.into_smart_pointer().ok().unwrap()),
                 Err(ptr) => {
                     mem::forget(ptr);

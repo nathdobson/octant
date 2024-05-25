@@ -2,7 +2,7 @@ use std::{hint::must_use, marker::PhantomData, sync::Arc};
 
 use crate::request_init::RequestInitValue;
 use catalog::register;
-use octant_reffed::{ArcRef, Reffed};
+use octant_reffed::{Arc2, ArcRef};
 use octant_runtime::{define_sys_rpc, runtime::Runtime};
 use octant_serde::define_serde_impl;
 use safe_once::sync::OnceLock;
@@ -38,8 +38,8 @@ impl Global {
 
 #[cfg(side = "server")]
 impl Global {
-    pub fn window(&self) -> ArcRef<dyn Window> {
-        self.window.get_or_init(|| window(&self.runtime)).reffed()
+    pub fn window(&self) -> &ArcRef<dyn Window> {
+        self.window.get_or_init(|| window(&self.runtime))
     }
     pub fn new_request_init(&self) -> ArcRequestInit {
         new_request_init(&self.runtime)
@@ -57,12 +57,12 @@ impl Global {
 
 define_sys_rpc! {
     fn window(_runtime:_) -> ArcWindow {
-        Ok(Arc::new(WindowValue::new(web_sys::window().unwrap())))
+        Ok(Arc2::new(WindowValue::new(web_sys::window().unwrap())))
     }
 }
 
 define_sys_rpc! {
     fn new_request_init(_runtime:_) -> ArcRequestInit {
-        Ok(Arc::new(RequestInitValue::new(web_sys::RequestInit::new())))
+        Ok(Arc2::new(RequestInitValue::new(web_sys::RequestInit::new())))
     }
 }

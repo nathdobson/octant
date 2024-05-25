@@ -10,8 +10,3 @@ mod arc;
 mod test;
 
 pub use arc::*;
-
-pub trait Reffed {
-    type ReffedTarget: ?Sized;
-    fn reffed(self) -> Self::ReffedTarget;
-}

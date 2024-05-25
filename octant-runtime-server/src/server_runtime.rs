@@ -15,11 +15,12 @@ use std::{
 };
 use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
+use octant_reffed::{Arc2, Weak2};
 use crate::proto::UpMessage;
 
 struct State {
     next_handle: u64,
-    handles: WeakValueHashMap<RawHandle, Weak<dyn Peer>>,
+    handles: WeakValueHashMap<RawHandle, Weak2<dyn Peer>>,
 }
 
 pub struct Runtime {
@@ -51,9 +52,9 @@ impl Runtime {
     pub fn spawner(&self) -> &Arc<Spawn> {
         &self.spawn
     }
-    pub fn add<T: Peer>(&self, value: T) -> Arc<T> {
+    pub fn add<T: Peer>(&self, value: T) -> Arc2<T> {
         let handle = ((&value) as &dyn Peer).raw_handle();
-        let result = Arc::new(value);
+        let result = Arc2::new(value);
         self.state
             .borrow_mut()
             .handles
@@ -88,7 +89,7 @@ impl Runtime {
     pub fn lookup<T: ?Sized + Class>(
         self: &Arc<Self>,
         handle: TypedHandle<T>,
-    ) -> Result<Arc<T>, LookupError> {
+    ) -> Result<Arc2<T>, LookupError> {
         Ok(downcast_object(
             self.state
                 .borrow()

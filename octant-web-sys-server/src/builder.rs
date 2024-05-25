@@ -1,6 +1,6 @@
 use std::marker::Unsize;
 use std::sync::Arc;
-use octant_reffed::Reffed;
+use octant_reffed::Arc2;
 
 use crate::{
     element::Element,
@@ -16,16 +16,16 @@ pub trait ElementExt {
     fn attr(self, name: &str, value: &str) -> Self;
 }
 
-impl<T: ?Sized + Node> NodeExt for Arc<T> {
+impl<T: ?Sized + Node> NodeExt for Arc2<T> {
     fn child(self, child: ArcNode) -> Self {
-        self.reffed().append_child(child);
+        self.append_child(child);
         self
     }
 }
 
-impl<T: ?Sized + Unsize<dyn Element>> ElementExt for Arc<T> {
+impl<T: ?Sized + Element> ElementExt for Arc2<T> {
     fn attr(self, name: &str, value: &str) -> Self {
-        (self.clone() as Arc<dyn Element>).set_attribute(name, value);
+        self.set_attribute(name, value);
         self
     }
 }
@@ -34,7 +34,7 @@ pub trait HtmlFormElementExt {
     fn handler(self, handler: impl 'static + Send + Sync + Fn()) -> Self;
 }
 
-impl<T: ?Sized + HtmlFormElement> HtmlFormElementExt for Arc<T> {
+impl<T: ?Sized + HtmlFormElement> HtmlFormElementExt for Arc2<T> {
     fn handler(self, handler: impl 'static + Send + Sync + Fn()) -> Self {
         self.html_form_element().set_handler(handler);
         self

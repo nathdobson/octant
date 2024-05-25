@@ -10,6 +10,7 @@ use octant_serde::DeserializeContext;
 use std::{collections::HashMap, marker::Unsize, sync::Arc};
 use tokio::sync::mpsc::UnboundedSender;
 use web_sys::console;
+use octant_reffed::Arc2;
 
 struct State {
     handles: HashMap<RawHandle, ArcPeer>,
@@ -34,9 +35,9 @@ impl Runtime {
     pub fn add<T: ?Sized + Class + Unsize<dyn Peer>>(
         self: &Arc<Self>,
         assign: TypedHandle<T>,
-        value: Arc<T>,
+        value: Arc2<T>,
     ) {
-        let value = value as Arc<dyn Peer>;
+        let value = value as Arc2<dyn Peer>;
         value.set_handle(assign.raw());
         assert!(self
             .state
@@ -45,7 +46,7 @@ impl Runtime {
             .insert(assign.raw(), value)
             .is_none());
     }
-    pub fn lookup<T: ?Sized + Class>(&self, handle: TypedHandle<T>) -> Result<Arc<T>, LookupError> {
+    pub fn lookup<T: ?Sized + Class>(&self, handle: TypedHandle<T>) -> Result<Arc2<T>, LookupError> {
         Ok(downcast_object(
             self.state
                 .borrow()

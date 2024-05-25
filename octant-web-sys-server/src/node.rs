@@ -11,10 +11,10 @@ define_sys_class! {
     new_client _;
     new_server _;
     server_fn {
-        fn append_child(self: ArcRef<Self>, e:ArcNode){
+        fn append_child(self: &ArcRef<Self>, e:ArcNode){
             append_child(self.runtime(), self.arc(), e);
         }
-        fn remove_child(self: ArcRef<Self>, e:ArcNode){
+        fn remove_child(self: &ArcRef<Self>, e:ArcNode){
             remove_child(self.runtime(), self.arc(), e);
         }
     }

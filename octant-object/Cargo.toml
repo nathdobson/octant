@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 paste = { workspace = true }
+octant-reffed=  {workspace=true}

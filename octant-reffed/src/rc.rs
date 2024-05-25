@@ -1,40 +1,84 @@
-use crate::Reffed;
-use std::{
-    marker::{PhantomData, Unsize},
-    ops::{CoerceUnsized, Deref, DispatchFromDyn},
-    rc::Rc,
-};
+use std::{marker::PhantomData, ops::Deref};
+use std::fmt::{Debug, Formatter};
+use std::marker::Unsize;
+use std::ops::{CoerceUnsized, DispatchFromDyn};
+use std::rc::Rc;
+use serde::{Serialize, Serializer};
+use crate::Arc2;
 
-pub struct RcRef<'a, T: ?Sized>(&'a T, PhantomData<*const ()>);
+#[repr(transparent)]
+pub struct RcRef<T: ?Sized> {
+    phantom: PhantomData<*const ()>,
+    inner: T,
+}
 
-impl<'a, T> RcRef<'a, T> {
-    pub fn rc(&self) -> Rc<T> {
+pub struct Rc2<T: ?Sized> {
+    rc: Rc<RcRef<T>>,
+}
+
+impl<T: ?Sized> RcRef<T> {
+    pub fn rc(&self) -> Rc2<T> {
         unsafe {
-            Rc::increment_strong_count(self.0);
-            Rc::from_raw(self.0)
+            Rc::<Self>::increment_strong_count(self);
+            Rc2 {
+                rc: Rc::<Self>::from_raw(self),
+            }
         }
     }
 }
 
-impl<'a, T: ?Sized> Reffed for &'a Rc<T> {
-    type ReffedTarget = RcRef<'a, T>;
-    fn reffed(self) -> Self::ReffedTarget {
-        RcRef(&*self, PhantomData)
-    }
-}
-
-impl<'a, T: ?Sized> Deref for RcRef<'a, T> {
-    type Target = &'a T;
+impl<T: ?Sized> Deref for RcRef<T> {
+    type Target = T;
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.inner
     }
 }
 
-impl<'a, 'b, T: ?Sized, U: ?Sized> CoerceUnsized<RcRef<'a, U>> for RcRef<'b, T>
-where
-    'b: 'a,
-    T: Unsize<U>,
-{
+impl<T: ?Sized> Deref for Rc2<T> {
+    type Target = RcRef<T>;
+    fn deref(&self) -> &Self::Target {
+        &*self.rc
+    }
 }
 
-impl<'a, T: ?Sized, U: ?Sized> DispatchFromDyn<RcRef<'a, U>> for RcRef<'a, T> where T: Unsize<U> {}
+impl<T: ?Sized> Rc2<T> {
+    pub fn new(x: T) -> Self
+    where
+        T: Sized,
+    {
+        Rc2 {
+            rc: Rc::new(RcRef {
+                phantom: PhantomData,
+                inner: x,
+            }),
+        }
+    }
+}
+
+impl<T: ?Sized + Serialize> Serialize for Rc2<T> {
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+    {
+        self.inner.serialize(s)
+    }
+}
+
+impl<T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<Rc2<U>> for Rc2<T> {}
+
+impl<T: ?Sized + Unsize<U>, U: ?Sized> DispatchFromDyn<Rc2<U>> for Rc2<T> {}
+
+impl<T: ?Sized> Clone for Rc2<T> {
+    fn clone(&self) -> Self {
+        Rc2 {
+            rc: self.rc.clone(),
+        }
+    }
+}
+
+impl<T: ?Sized + Debug> Debug for Rc2<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.rc.fmt(f)
+    }
+}
+

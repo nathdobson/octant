@@ -5,6 +5,7 @@ use octant_object::class::Class;
 use octant_serde::DeserializeWith;
 use serde::Serialize;
 use std::{fmt::Debug, marker::Unsize, sync::Arc};
+use octant_reffed::Arc2;
 
 pub trait FutureReturn: 'static {
     type Down: 'static + Serialize + for<'de> DeserializeWith<'de> + Send + Sync + Debug;
@@ -20,7 +21,7 @@ pub trait FutureReturn: 'static {
 }
 
 #[cfg(side = "server")]
-impl<T: ?Sized + Class + Unsize<dyn Peer> + Send + Sync + Debug> FutureReturn for Arc<T>
+impl<T: ?Sized + Class + Unsize<dyn Peer> + Send + Sync + Debug> FutureReturn for Arc2<T>
 where
     T::Value: Peer + From<PeerValue> + Unsize<T>,
 {
@@ -36,7 +37,7 @@ where
 }
 
 #[cfg(side = "client")]
-impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Arc<T>
+impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Arc2<T>
 where
     T::Value: Peer + Unsize<T>,
 {

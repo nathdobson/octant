@@ -78,7 +78,7 @@ macro_rules! define_sys_class {
                 >(
                     ctx: &$crate::reexports::octant_serde::DeserializeContext,
                     d: D
-                ) -> ::std::result::Result<::std::sync::Arc<Self>, D::Error>{
+                ) -> ::std::result::Result<$crate::reexports::octant_reffed::Arc2<Self>, D::Error>{
                     $crate::deserialize_object_with(ctx, d)
                 }
             }

@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use octant_reffed::{Arc2, ArcRef};
 use octant_runtime::define_sys_class;
 
 use crate::{
@@ -11,11 +12,9 @@ define_sys_class! {
     wasm web_sys::CredentialRequestOptions;
     new_client _;
     new_server _;
-}
-
-#[cfg(side = "server")]
-impl dyn CredentialCreationOptions {
-    pub fn public_key(self: &Arc<Self>, options: PublicKeyCredentialCreationOptions) {
-        todo!();
+    server_fn {
+        fn public_key(self: &ArcRef<Self>, options: PublicKeyCredentialCreationOptions) {
+            todo!();
+        }
     }
 }

@@ -121,6 +121,7 @@ pub mod class;
 #[doc(hidden)]
 pub mod reexports {
     pub use paste;
+    pub use octant_reffed;
 }
 
 /// Create a new class.
@@ -245,7 +246,7 @@ macro_rules! define_class {
                     ) $(-> $return_type)?;
                 )*
             }
-            pub type [< Arc $class >] $(< $($generics),*>)? = ::std::sync::Arc<dyn $class $(< $($generics),*>)?>;
+            pub type [< Arc $class >] $(< $($generics),*>)? = $crate::reexports::octant_reffed::Arc2<dyn $class $(< $($generics),*>)?>;
             impl $(< $($generics:'static),*>)? $crate::class::Class for dyn $class $(< $($generics),*>)? $(where $($where)*)? {
                 type Value = [< $class Value >] $(< $($generics),*>)?;
             }

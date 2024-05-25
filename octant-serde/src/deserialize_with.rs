@@ -4,6 +4,7 @@ use serde::{
     Deserialize, Deserializer,
 };
 use std::{fmt::Formatter, marker::PhantomData, sync::Arc};
+use octant_reffed::Arc2;
 
 pub trait DeserializeWith<'de>: Sized {
     fn deserialize_with<D: Deserializer<'de>>(
@@ -16,17 +17,17 @@ pub trait DeserializeArcWith<'de> {
     fn deserialize_arc_with<D: Deserializer<'de>>(
         ctx: &DeserializeContext,
         d: D,
-    ) -> Result<Arc<Self>, D::Error>;
+    ) -> Result<Arc2<Self>, D::Error>;
 }
 
-impl<'de, T: ?Sized> DeserializeWith<'de> for Arc<T>
+impl<'de, T: ?Sized> DeserializeWith<'de> for Arc2<T>
 where
     T: DeserializeArcWith<'de>,
 {
     fn deserialize_with<D: Deserializer<'de>>(
         ctx: &DeserializeContext,
         d: D,
-    ) -> Result<Arc<T>, D::Error> {
+    ) -> Result<Arc2<T>, D::Error> {
         T::deserialize_arc_with(ctx, d)
     }
 }

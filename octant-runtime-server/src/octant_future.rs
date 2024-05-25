@@ -28,6 +28,7 @@ use parking_lot::Mutex;
 use serde::{Deserializer, Serialize, Serializer};
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
+use octant_reffed::Arc2;
 
 #[cfg(side = "server")]
 define_class! {
@@ -83,7 +84,7 @@ impl UpMessage for FutureResponse {
 #[cfg(side = "client")]
 impl<T: Debug + FutureReturn> OctantFuture<T> {
     pub fn spawn<F: 'static + Future<Output = T>>(runtime: &Arc<Runtime>, f: F) -> Self {
-        let parent = Arc::new(AbstractOctantFutureValue {
+        let parent = Arc2::new(AbstractOctantFutureValue {
             parent: PeerValue::new(),
         });
         let down = Arc::new(Mutex::new(None));
@@ -137,7 +138,7 @@ impl<'de> DeserializeArcWith<'de> for dyn AbstractOctantFuture {
     fn deserialize_arc_with<D: Deserializer<'de>>(
         ctx: &DeserializeContext,
         d: D,
-    ) -> Result<Arc<Self>, D::Error> {
+    ) -> Result<Arc2<Self>, D::Error> {
         deserialize_object_with(ctx, d)
     }
 }
@@ -149,7 +150,7 @@ impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
     fn immediate_new(runtime: &Arc<Runtime>) -> (Self, Self::Down) {
         let (retain, down) = T::future_new(runtime);
         let (tx, rx) = oneshot::channel();
-        let peer: Arc<dyn AbstractOctantFuture> =
+        let peer: Arc2<dyn AbstractOctantFuture> =
             runtime.add::<AbstractOctantFutureValue>(AbstractOctantFutureValue {
                 parent: runtime.add_uninit(),
                 sender: Mutex::new(Some(tx)),

@@ -14,6 +14,7 @@
 //!
 //! Destructors are currently unimplemented, so callers must invoke `into_smart_pointer` instead of dropping a `SmartPointer`.
 
+use octant_reffed::Arc2;
 use std::{
     any::{Any, TypeId},
     fmt::{Debug, Formatter},
@@ -30,12 +31,13 @@ use crate::cast::repr::{HasRepr, IsRepr, PtrRepr};
 /// Indicates that a type is convertible to and from a raw pointer (e.g. `Box`, `Arc`, and `Rc`).
 ///
 /// There is `unsafe` code relying on the correctness of this trait, so implementations are `unsafe`.
-pub unsafe trait IsSmartPointer: Deref {
+pub unsafe trait IsSmartPointer {
+    type SmartTarget: ?Sized;
     type Kind: Any;
     /// Convert `this` into a raw pointer and grant ownership to the caller. To avoid memory leaks,
     /// the caller should eventually pass the pointer to `trusted_from_raw`. The raw pointer must be
     /// safe to dereference (before it is passed to `trusted_from_raw`).
-    fn trusted_into_raw(this: Self) -> *const Self::Target;
+    fn trusted_into_raw(this: Self) -> *const Self::SmartTarget;
     /// Convert a raw pointer returned by `trusted_into_raw` back into `Self`.
     /// Callers must ensure that:
     /// * `trusted_from_raw` is called at most once for any call to `trusted_into_raw`.
@@ -44,36 +46,53 @@ pub unsafe trait IsSmartPointer: Deref {
     ///     * The pointer metadata for trait objects must be valid for the referenced object.
     ///     * The pointer metadata for slices must be the same.
     /// * `Self::Kind` must be the same for the call to `trusted_into_raw` and `trusted_from_raw`.
-    unsafe fn trusted_from_raw(ptr: *const Self::Target) -> Self;
+    unsafe fn trusted_from_raw(ptr: *const Self::SmartTarget) -> Self;
 }
 
 unsafe impl<T: ?Sized> IsSmartPointer for Box<T> {
+    type SmartTarget = T;
     type Kind = Box<()>;
-    unsafe fn trusted_from_raw(ptr: *const Self::Target) -> Self {
-        Box::from_raw(ptr as *mut Self::Target)
-    }
-    fn trusted_into_raw(this: Self) -> *const Self::Target {
+    fn trusted_into_raw(this: Self) -> *const Self::SmartTarget {
         Box::into_raw(this)
+    }
+
+    unsafe fn trusted_from_raw(ptr: *const Self::SmartTarget) -> Self {
+        Box::from_raw(ptr as *mut Self::SmartTarget)
     }
 }
 
 unsafe impl<T: ?Sized> IsSmartPointer for Arc<T> {
+    type SmartTarget = T;
     type Kind = Arc<()>;
-    unsafe fn trusted_from_raw(ptr: *const Self::Target) -> Self {
-        Arc::from_raw(ptr as *mut Self::Target)
-    }
-    fn trusted_into_raw(this: Self) -> *const Self::Target {
+    fn trusted_into_raw(this: Self) -> *const Self::SmartTarget {
         Arc::into_raw(this)
+    }
+    unsafe fn trusted_from_raw(ptr: *const Self::SmartTarget) -> Self {
+        Arc::from_raw(ptr as *mut Self::SmartTarget)
+    }
+}
+
+unsafe impl<T: ?Sized> IsSmartPointer for Arc2<T> {
+    type SmartTarget = T;
+    type Kind = Arc2<()>;
+    fn trusted_into_raw(this: Self) -> *const Self::SmartTarget {
+        Arc2::into_raw(this)
+    }
+
+    unsafe fn trusted_from_raw(ptr: *const Self::SmartTarget) -> Self {
+        Arc2::from_raw(ptr as *mut Self::SmartTarget)
     }
 }
 
 unsafe impl<T: ?Sized> IsSmartPointer for Rc<T> {
+    type SmartTarget = T;
     type Kind = Rc<()>;
-    unsafe fn trusted_from_raw(ptr: *const Self::Target) -> Self {
-        Rc::from_raw(ptr as *mut Self::Target)
-    }
-    fn trusted_into_raw(this: Self) -> *const Self::Target {
+    fn trusted_into_raw(this: Self) -> *const Self::SmartTarget {
         Rc::into_raw(this)
+    }
+
+    unsafe fn trusted_from_raw(ptr: *const Self::SmartTarget) -> Self {
+        Rc::from_raw(ptr as *mut Self::SmartTarget)
     }
 }
 
@@ -103,7 +122,7 @@ impl<T: ?Sized> SmartPointer<T> {
     /// # p2.into_smart_pointer::<Rc<i32>>();
     /// # p3.into_smart_pointer::<Arc<i32>>();
     /// ```
-    pub fn new<P: IsSmartPointer<Target = T>>(ptr: P) -> Self {
+    pub fn new<P: IsSmartPointer<SmartTarget = T>>(ptr: P) -> Self {
         SmartPointer {
             kind: TypeId::of::<P::Kind>(),
             ptr: P::trusted_into_raw(ptr),
@@ -124,7 +143,7 @@ impl<T: ?Sized> SmartPointer<T> {
     /// let ptr: Rc<i32> = ptr.into_smart_pointer().ok().unwrap();
     /// assert_eq!(*ptr, 42);
     /// ```
-    pub fn into_smart_pointer<P: IsSmartPointer<Target = T>>(self) -> Result<P, Self> {
+    pub fn into_smart_pointer<P: IsSmartPointer<SmartTarget = T>>(self) -> Result<P, Self> {
         unsafe {
             if self.kind == TypeId::of::<P::Kind>() {
                 let (_, ptr) = self.into_raw();

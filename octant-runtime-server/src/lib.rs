@@ -16,6 +16,7 @@ use std::{
     fmt::{Display, Formatter},
     sync::Arc,
 };
+use octant_reffed::Arc2;
 
 pub mod define_sys_class;
 pub mod define_sys_rpc;
@@ -48,7 +49,7 @@ pub mod future_return;
 pub fn deserialize_object_with<'de, T: ?Sized + Class, D: Deserializer<'de>>(
     ctx: &DeserializeContext,
     d: D,
-) -> Result<Arc<T>, D::Error> {
+) -> Result<Arc2<T>, D::Error> {
     let runtime = ctx.get::<Arc<Runtime>>().map_err(|e| D::Error::custom(e))?;
     let handle = TypedHandle::<T>::deserialize(d)?;
     runtime.lookup(handle).map_err(D::Error::custom)
