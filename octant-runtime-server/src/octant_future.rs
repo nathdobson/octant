@@ -28,7 +28,7 @@ use parking_lot::Mutex;
 use serde::{Deserializer, Serialize, Serializer};
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
-use octant_reffed::Arc2;
+use octant_reffed::arc::Arc2;
 
 #[cfg(side = "server")]
 define_class! {

@@ -7,7 +7,7 @@ use octant_object::class::Class;
 use octant_serde::DeserializeWith;
 use serde::Serialize;
 use std::{marker::Unsize, sync::Arc};
-use octant_reffed::Arc2;
+use octant_reffed::arc::Arc2;
 #[cfg(side="server")]
 use crate::peer::PeerValue;
 

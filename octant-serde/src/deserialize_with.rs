@@ -1,10 +1,10 @@
 use crate::DeserializeContext;
+use octant_reffed::arc::Arc2;
 use serde::{
     de::{DeserializeSeed, Error, SeqAccess, Visitor},
     Deserialize, Deserializer,
 };
-use std::{fmt::Formatter, marker::PhantomData, sync::Arc};
-use octant_reffed::Arc2;
+use std::{fmt::Formatter, marker::PhantomData};
 
 pub trait DeserializeWith<'de>: Sized {
     fn deserialize_with<D: Deserializer<'de>>(
@@ -199,7 +199,7 @@ macro_rules! derive_deserialize_with {
     };
 }
 
-derive_deserialize_with!{
+derive_deserialize_with! {
     bool;
     u8;u16;u32;u64;u128;
     i8;i16;i32;i64;i128;

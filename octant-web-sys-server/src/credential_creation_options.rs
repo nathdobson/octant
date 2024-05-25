@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use octant_reffed::{Arc2, ArcRef};
+use octant_reffed::arc::{Arc2, ArcRef};
 use octant_runtime::define_sys_class;
 
 use crate::{

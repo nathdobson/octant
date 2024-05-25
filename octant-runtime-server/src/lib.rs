@@ -16,7 +16,7 @@ use std::{
     fmt::{Display, Formatter},
     sync::Arc,
 };
-use octant_reffed::Arc2;
+use octant_reffed::arc::Arc2;
 
 pub mod define_sys_class;
 pub mod define_sys_rpc;

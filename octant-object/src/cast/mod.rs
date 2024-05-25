@@ -51,7 +51,6 @@ use std::{
     any::Any,
     marker::Unsize,
     mem,
-    ops::Deref,
     ptr::{DynMetadata, Pointee},
     rc::Rc,
     sync::Arc,

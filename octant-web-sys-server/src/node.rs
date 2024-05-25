@@ -1,4 +1,4 @@
-use octant_reffed::ArcRef;
+use octant_reffed::arc::ArcRef;
 use octant_runtime::{define_sys_class, define_sys_rpc};
 use std::sync::Arc;
 

@@ -1,6 +1,6 @@
 use std::marker::Unsize;
 use std::sync::Arc;
-use octant_reffed::Arc2;
+use octant_reffed::arc::Arc2;
 
 use crate::{
     element::Element,

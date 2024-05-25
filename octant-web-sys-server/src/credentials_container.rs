@@ -3,7 +3,7 @@ use crate::{
     credential_request_options::ArcCredentialRequestOptions,
 };
 use std::sync::Arc;
-use octant_reffed::Arc2;
+use octant_reffed::arc::Arc2;
 use octant_runtime::define_sys_class;
 
 use crate::object::Object;

@@ -1,6 +1,6 @@
 use octant_runtime::define_sys_class;
 use std::sync::Arc;
-use octant_reffed::ArcRef;
+use octant_reffed::arc::ArcRef;
 
 use crate::node::Node;
 

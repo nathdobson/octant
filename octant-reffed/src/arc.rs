@@ -142,6 +142,6 @@ impl<T: ?Sized + Eq + Hash> WeakKey for Weak2<T> {
     where
         F: FnOnce(&Self::Key) -> R,
     {
-        todo!()
+        f(&*view)
     }
 }

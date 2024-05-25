@@ -2,7 +2,7 @@ use std::{hint::must_use, marker::PhantomData, sync::Arc};
 
 use crate::request_init::RequestInitValue;
 use catalog::register;
-use octant_reffed::{Arc2, ArcRef};
+use octant_reffed::arc::{Arc2, ArcRef};
 use octant_runtime::{define_sys_rpc, runtime::Runtime};
 use octant_serde::define_serde_impl;
 use safe_once::sync::OnceLock;

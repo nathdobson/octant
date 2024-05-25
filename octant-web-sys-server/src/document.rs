@@ -5,7 +5,7 @@ use crate::{
     text::{Text, TextValue},
 };
 use octant_object::define_class;
-use octant_reffed::{Arc2, ArcRef};
+use octant_reffed::arc::{Arc2, ArcRef};
 use octant_runtime::octant_future::OctantFuture;
 use octant_runtime::{
     // octant_future::Completable,

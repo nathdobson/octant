@@ -1,4 +1,5 @@
-use crate::{Arc2, ArcRef, Rc2, RcRef};
+use crate::arc::{Arc2, ArcRef};
+use crate::rc::{Rc2, RcRef};
 
 #[test]
 fn test_arc() {

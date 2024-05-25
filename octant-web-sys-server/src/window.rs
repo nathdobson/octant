@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::document::DocumentValue;
-use octant_reffed::{Arc2, ArcRef};
+use octant_reffed::arc::{Arc2, ArcRef};
 use octant_runtime::{define_sys_class, define_sys_rpc};
 use safe_once::sync::OnceLock;
 use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serializer};

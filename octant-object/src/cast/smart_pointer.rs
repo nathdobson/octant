@@ -14,7 +14,7 @@
 //!
 //! Destructors are currently unimplemented, so callers must invoke `into_smart_pointer` instead of dropping a `SmartPointer`.
 
-use octant_reffed::Arc2;
+use octant_reffed::arc::Arc2;
 use std::{
     any::{Any, TypeId},
     fmt::{Debug, Formatter},

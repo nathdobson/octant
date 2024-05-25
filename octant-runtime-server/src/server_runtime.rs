@@ -2,21 +2,20 @@ use crate::{
     delete::delete_rpc,
     handle::{RawHandle, TypedHandle},
     peer::{Peer, PeerValue},
-    proto::{DownMessage, UpMessageList},
+    proto::{DownMessage, UpMessage, UpMessageList},
     LookupError,
 };
 use atomic_refcell::AtomicRefCell;
 use octant_executor::Spawn;
 use octant_object::{cast::downcast_object, class::Class};
+use octant_reffed::arc::{Arc2, Weak2};
 use octant_serde::DeserializeContext;
 use std::{
     fmt::{Debug, Formatter},
-    sync::{Arc, Weak},
+    sync::Arc,
 };
 use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
-use octant_reffed::{Arc2, Weak2};
-use crate::proto::UpMessage;
 
 struct State {
     next_handle: u64,

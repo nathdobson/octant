@@ -5,7 +5,7 @@ use octant_object::class::Class;
 use octant_serde::DeserializeWith;
 use serde::Serialize;
 use std::{fmt::Debug, marker::Unsize, sync::Arc};
-use octant_reffed::Arc2;
+use octant_reffed::arc::Arc2;
 
 pub trait FutureReturn: 'static {
     type Down: 'static + Serialize + for<'de> DeserializeWith<'de> + Send + Sync + Debug;

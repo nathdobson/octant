@@ -10,7 +10,7 @@ use octant_serde::DeserializeContext;
 use std::{collections::HashMap, marker::Unsize, sync::Arc};
 use tokio::sync::mpsc::UnboundedSender;
 use web_sys::console;
-use octant_reffed::Arc2;
+use octant_reffed::arc::Arc2;
 
 struct State {
     handles: HashMap<RawHandle, ArcPeer>,
