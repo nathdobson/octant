@@ -4,7 +4,6 @@
 #![feature(trait_upcasting)]
 #![feature(never_type)]
 
-use octant_reffed::Reffed;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use std::future::pending;
 
@@ -284,7 +283,6 @@ impl Page {
             .window()
             .document()
             .body()
-            .reffed()
             .append_child(node.clone());
         Page { global, node }
     }
@@ -296,7 +294,6 @@ impl Drop for Page {
             .window()
             .document()
             .body()
-            .reffed()
             .remove_child(self.node.clone());
     }
 }

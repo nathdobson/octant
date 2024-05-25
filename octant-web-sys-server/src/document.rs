@@ -35,6 +35,8 @@ use crate::{
     node::{ArcNode, Node},
     text::ArcText,
 };
+use crate::element::ElementValue;
+use crate::html_form_element::HtmlFormElementValue;
 
 define_sys_class! {
     class Document;
@@ -43,37 +45,55 @@ define_sys_class! {
     new_client _;
     new_server _;
     server_field body: OnceLock<ArcHtmlElement>;
-}
-
-#[cfg(side = "server")]
-impl dyn Document {
-    pub fn create_form_element(self: ArcRef<Self>) -> ArcHtmlFormElement {
-        todo!()
-    }
-    pub fn create_element(self: ArcRef<Self>, tag: &str) -> ArcElement {
-        todo!()
+    server_fn {
+        fn create_div(self: ArcRef<Self>) -> ArcHtmlDivElement{
+            create_div(self.runtime(), self.arc())
+        }
+        fn create_form_element(self: ArcRef<Self>) -> ArcHtmlFormElement {
+            create_form_element(self.runtime(), self.arc())
+        }
+        fn create_element(self: ArcRef<Self>, tag: &str) -> ArcElement {
+            create_element(self.runtime(), self.arc(), tag.to_string())
+        }
+        fn create_text_node(self: ArcRef<Self>, text: String) -> ArcText{
+            create_text_node(self.runtime(),self.arc(),text)
+        }
+        fn create_input_element(self: ArcRef<Self>) -> ArcHtmlInputElement{
+            create_input_element(self.runtime(), self.arc())
+        }
+        fn location(self: ArcRef<Self>) -> OctantFuture<String>{
+            location(self.runtime(), self.arc())
+        }
+        fn body<'a>(self: ArcRef<'a, Self>) -> ArcRef<'a,dyn HtmlElement>{
+            self.document().body.get_or_init(||{
+                body(self.runtime(),self.arc())
+            }).reffed()
+        }
     }
 }
 
 define_sys_rpc! {
-    impl Document {
-        pub fn create_div(self:_, _runtime:_) -> ArcHtmlDivElement {
-            Ok(Arc::new(HtmlDivElementValue::new(self.native().create_element("div").unwrap().dyn_into().unwrap())))
-        }
-        pub fn create_text_node(self:_, _runtime:_, text: String) -> ArcText {
-            Ok(Arc::new(TextValue::new(self.native().create_text_node(&text).dyn_into().unwrap())))
-        }
-        pub fn create_input_element(self:_, _runtime:_) -> ArcHtmlInputElement {
-            Ok(Arc::new(HtmlInputElementValue::new(self.native().create_element("input").unwrap().dyn_into().unwrap())))
-        }
-        pub fn body(self:_, _runtime:_) -> ArcHtmlElement {
-            Ok(Arc::new(HtmlElementValue::new(self.native().body().unwrap()) ))
-        }
-        pub fn location(self:_, runtime:_) -> OctantFuture<String> {
-            let this=self.arc();
-            Ok(OctantFuture::<String>::spawn(&runtime, async move{
-                this.native().location().unwrap().href().clone().unwrap()
-            }))
-        }
+    pub fn create_div(_runtime:_, doc:Arc<dyn Document>) -> ArcHtmlDivElement {
+        Ok(Arc::new(HtmlDivElementValue::new(doc.native().create_element("div").unwrap().dyn_into().unwrap())))
+    }
+    pub fn create_text_node(_runtime:_, doc:Arc<dyn Document>, text: String) -> ArcText {
+        Ok(Arc::new(TextValue::new(doc.native().create_text_node(&text).dyn_into().unwrap())))
+    }
+    pub fn create_input_element(_runtime:_, doc:Arc<dyn Document>) -> ArcHtmlInputElement {
+        Ok(Arc::new(HtmlInputElementValue::new(doc.native().create_element("input").unwrap().dyn_into().unwrap())))
+    }
+    pub fn create_element(_runtime:_, doc:Arc<dyn Document>, tag: String) -> ArcElement {
+        Ok(Arc::new(ElementValue::new(doc.native().create_element("input").unwrap())))
+    }
+    pub fn create_form_element(_runtime:_, doc:Arc<dyn Document>) -> ArcHtmlFormElement {
+        Ok(Arc::new(HtmlFormElementValue::new(doc.native().create_element("form").unwrap().dyn_into().unwrap())))
+    }
+    pub fn body(_runtime:_, doc:Arc<dyn Document>) -> ArcHtmlElement {
+        Ok(Arc::new(HtmlElementValue::new(doc.native().body().unwrap()) ))
+    }
+    pub fn location(runtime:_, doc:Arc<dyn Document>) -> OctantFuture<String> {
+        Ok(OctantFuture::<String>::spawn(&runtime, async move{
+            doc.native().location().unwrap().href().clone().unwrap()
+        }))
     }
 }
