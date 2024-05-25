@@ -9,6 +9,14 @@ pub struct ArcRef<'a, T: ?Sized>(&'a T);
 unsafe impl<'a, T: ?Sized> Send for ArcRef<'a, T> where T: Sync + Send {}
 unsafe impl<'a, T: ?Sized> Sync for ArcRef<'a, T> where T: Sync + Send {}
 
+impl<'a, T: ?Sized> Clone for ArcRef<'a, T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<'a, T: ?Sized> Copy for ArcRef<'a, T> {}
+
 impl<'a, T: ?Sized> ArcRef<'a, T> {
     pub fn arc(&self) -> Arc<T> {
         unsafe {

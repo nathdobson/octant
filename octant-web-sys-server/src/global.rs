@@ -56,13 +56,13 @@ impl Global {
 }
 
 define_sys_rpc! {
-    fn window(_ctx) -> ArcWindow {
+    fn window(_runtime:_) -> ArcWindow {
         Ok(Arc::new(WindowValue::new(web_sys::window().unwrap())))
     }
 }
 
 define_sys_rpc! {
-    fn new_request_init(_ctx) -> ArcRequestInit {
+    fn new_request_init(_runtime:_) -> ArcRequestInit {
         Ok(Arc::new(RequestInitValue::new(web_sys::RequestInit::new())))
     }
 }

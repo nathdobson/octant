@@ -31,7 +31,7 @@ use crate::{
     element::ArcElement,
     html_div_element::{ArcHtmlDivElement, HtmlDivElement},
     html_form_element::ArcHtmlFormElement,
-    html_input_element::ArcHtmlInputElement,
+    html_input_element::{ArcHtmlInputElement, HtmlInputElementValue},
     node::{ArcNode, Node},
     text::ArcText,
 };
@@ -47,23 +47,14 @@ define_sys_class! {
 
 #[cfg(side = "server")]
 impl dyn Document {
-    pub fn create_div(self: &Arc<Self>) -> ArcHtmlDivElement {
-        create_div(self.runtime(), self.clone())
-    }
-    pub fn create_text_node(self: &Arc<Self>, content: String) -> ArcText {
-        create_text_node(self.runtime(), self.clone(), content)
-    }
-    pub fn create_input_element(self: &Arc<Self>) -> ArcHtmlInputElement {
+    pub fn create_form_element(self: ArcRef<Self>) -> ArcHtmlFormElement {
         todo!()
     }
-    pub fn create_form_element(self: &Arc<Self>) -> ArcHtmlFormElement {
+    pub fn create_element(self: ArcRef<Self>, tag: &str) -> ArcElement {
         todo!()
     }
-    pub fn create_element(self: &Arc<Self>, tag: &str) -> ArcElement {
-        todo!()
-    }
-    pub fn body<'a>(self: &'a Arc<Self>) -> &'a ArcHtmlElement {
-        self.body.get_or_init(|| body(self.runtime(), self.clone()))
+    pub fn body<'a>(self: ArcRef<'a, Self>) -> &'a ArcHtmlElement {
+        self.body.get_or_init(|| body(self.runtime(), self.arc()))
     }
     pub fn location<'a>(self: ArcRef<'a, Self>) -> OctantFuture<String> {
         location(self.runtime(), self.arc())
@@ -71,103 +62,39 @@ impl dyn Document {
 }
 
 define_sys_rpc! {
-    fn create_div(_runtime, document: Arc<dyn Document>) -> ArcHtmlDivElement {
-        Ok(Arc::new(HtmlDivElementValue::new(document.native().create_element("div").unwrap().dyn_into().unwrap())))
+    impl Document {
+        pub fn create_input_element(self:_, _runtime:_) -> ArcHtmlInputElement {
+            Ok(Arc::new(HtmlInputElementValue::new(self.native().create_element("input").unwrap().dyn_into().unwrap())))
+        }
     }
 }
 
 define_sys_rpc! {
-    fn create_text_node(_runtime, document: Arc<dyn Document>, text: String) -> ArcText {
-        Ok(Arc::new(TextValue::new(document.native().create_text_node(&text).dyn_into().unwrap())))
+    impl Document {
+        pub fn create_div(self:_, _runtime:_) -> ArcHtmlDivElement {
+            Ok(Arc::new(HtmlDivElementValue::new(self.native().create_element("div").unwrap().dyn_into().unwrap())))
+        }
     }
 }
 
 define_sys_rpc! {
-    fn body(_runtime, document: Arc<dyn Document>) -> ArcHtmlElement {
+    impl Document {
+        pub fn create_text_node(self:_, _runtime:_, text: String) -> ArcText {
+            Ok(Arc::new(TextValue::new(self.native().create_text_node(&text).dyn_into().unwrap())))
+        }
+    }
+}
+
+define_sys_rpc! {
+    fn body(_runtime:_, document: Arc<dyn Document>) -> ArcHtmlElement {
         Ok(Arc::new(HtmlElementValue::new(document.native().body().unwrap()) ))
     }
 }
 
 define_sys_rpc! {
-    fn location(runtime, document: Arc<dyn Document>) -> OctantFuture<String> {
+    fn location(runtime:_, document: Arc<dyn Document>) -> OctantFuture<String> {
         Ok(OctantFuture::<String>::spawn(runtime, async move{
             document.native().location().unwrap().href().clone().unwrap()
         }))
     }
 }
-
-// define_sys_class! {
-//     class LocationPromise;
-//     extends Peer;
-//     new_client _;
-//     server_field response: Completable<String>;
-// }
-//
-// #[cfg(side = "server")]
-// impl LocationPromiseValue {
-//     pub fn new(parent: PeerValue) -> Self {
-//         LocationPromiseValue {
-//             parent,
-//             response: Completable::new(),
-//         }
-//     }
-// }
-//
-// #[derive(Serialize, Debug, DeserializeWith)]
-// pub struct LocationRequest {
-//     document: ArcDocument,
-//     promise: TypedHandle<dyn LocationPromise>,
-// }
-//
-// #[derive(Serialize, Debug, DeserializeWith)]
-// pub struct LocationResponse {
-//     promise: Arc<dyn LocationPromise>,
-//     location: String,
-// }
-//
-// define_serde_impl!(LocationRequest: DownMessage);
-// impl DownMessage for LocationRequest {
-//     #[cfg(side = "client")]
-//     fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()> {
-//         log::info!("Received request");
-//         let promise: ArcLocationPromise = Arc::new(LocationPromiseValue::new());
-//         runtime.add(self.promise, promise.clone());
-//         spawn_local({
-//             let runtime = runtime.clone();
-//             async move {
-//                 log::info!("Sending response");
-//                 runtime.send(Box::<LocationResponse>::new(LocationResponse {
-//                     promise,
-//                     location: location_impl(&runtime, self.document).await,
-//                 }));
-//             }
-//         });
-//         Ok(())
-//     }
-// }
-//
-// define_serde_impl!(LocationResponse: UpMessage);
-// impl UpMessage for LocationResponse {
-//     #[cfg(side = "server")]
-//     fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()> {
-//         self.promise.response.send(self.location);
-//         Ok(())
-//     }
-// }
-//
-// #[cfg(side = "server")]
-// async fn location(runtime: &Arc<Runtime>, document: ArcDocument) -> String {
-//     let promise: ArcLocationPromise = runtime.add(LocationPromiseValue::new(runtime.add_uninit()));
-//     log::info!("Sending request");
-//     runtime.send(Box::<LocationRequest>::new(LocationRequest {
-//         document,
-//         promise: promise.typed_handle(),
-//     }));
-//     let response = promise.response.recv().await;
-//     response
-// }
-//
-// #[cfg(side = "client")]
-// async fn location_impl(runtime: &Arc<Runtime>, document: Arc<dyn Document>) -> String {
-//     document.native().location().unwrap().href().unwrap()
-// }

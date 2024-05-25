@@ -21,14 +21,14 @@ define_sys_class! {
 }
 
 define_sys_rpc! {
-    fn append_child(_runtime, this: ArcNode, add:ArcNode) -> () {
+    fn append_child(_runtime:_, this: ArcNode, add:ArcNode) -> () {
         this.native().append_child(add.native()).unwrap();
         Ok(())
     }
 }
 
 define_sys_rpc! {
-    fn remove_child(_runtime, this: ArcNode, add:ArcNode) -> () {
+    fn remove_child(_runtime:_, this: ArcNode, add:ArcNode) -> () {
         this.native().remove_child(add.native()).unwrap();
         Ok(())
     }

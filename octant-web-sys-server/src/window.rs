@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::document::DocumentValue;
-use octant_reffed::ArcRef;
+use octant_reffed::{ArcRef, Reffed};
 use octant_runtime::{define_sys_class, define_sys_rpc};
 use safe_once::sync::OnceLock;
 use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serializer};
@@ -26,8 +26,8 @@ define_sys_class! {
     new_server _;
     server_field document : OnceLock<ArcDocument>;
     server_fn {
-        fn document<'a>(self: ArcRef<'a, Self>) -> &'a ArcDocument {
-            self.window().document.get_or_init(|| document(self.runtime(), self.arc()))
+        fn document<'a>(self: ArcRef<'a, Self>) -> ArcRef<'a, dyn Document> {
+            self.window().document.get_or_init(|| document(self.runtime(), self.arc())).reffed()
         }
         fn fetch<'a>(self: ArcRef<'a,Self>, request: &ArcRequest) -> BoxFuture<anyhow::Result<ArcResponse>> {
             todo!();
@@ -42,14 +42,14 @@ define_sys_class! {
 }
 
 define_sys_rpc! {
-    fn alert(_runtime, window: Arc<dyn Window>, message: String) -> () {
+    fn alert(_runtime:_, window: Arc<dyn Window>, message: String) -> () {
         window.native().alert_with_message(&message).unwrap();
         Ok(())
     }
 }
 
 define_sys_rpc! {
-    fn document(_runtime, window: Arc<dyn Window>) -> ArcDocument {
+    fn document(_runtime:_, window: Arc<dyn Window>) -> ArcDocument {
         Ok(Arc::new(DocumentValue::new(window.native().document().unwrap())))
     }
 }

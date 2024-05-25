@@ -29,6 +29,7 @@ pub mod reexports {
 
     pub use octant_object;
     pub use octant_serde;
+    pub use octant_reffed;
 }
 
 #[cfg_attr(side = "client", path = "client_runtime.rs")]

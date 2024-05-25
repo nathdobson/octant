@@ -51,6 +51,7 @@ macro_rules! define_sys_class {
                     $($($server_fn)*)*
                 }
             }
+
             #[cfg(any($(all() ${ignore($new_server_dummy)} )?))]
             #[cfg(side = "server")]
             impl From<$crate::peer::PeerValue> for [< $class Value >] {

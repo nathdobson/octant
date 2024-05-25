@@ -210,12 +210,7 @@ macro_rules! define_class {
                     $lifetime:lifetime
                     ),*
                 >)?
-                (
-                    $(&$self_ref:ident)?
-                    $(&mut $self_mut:ident)?
-                    $($self:ident: $self_type:ty)?
-                    $(, $param:ident : $param_ty:ty )*
-                )
+                ($($params:tt)*)
                 $(-> $return_type:ty)? $body:block
             )*
         }
@@ -246,10 +241,7 @@ macro_rules! define_class {
                 fn [< $class:snake _mut >](&mut self) -> &mut [< $class Value >] $(< $($generics),*>)?;
                 $(
                     fn $method $(<$($lifetime),*>)?(
-                        $(&$self_ref)?
-                        $(&mut $self_mut)?
-                        $($self: $self_type)?
-                        $(, $param : $param_ty )*
+                        $( $params )*
                     ) $(-> $return_type)?;
                 )*
             }
@@ -281,10 +273,7 @@ macro_rules! define_class {
                 }
                 $(
                     fn $method $(<$($lifetime),*>)?(
-                        $(&$self_ref)?
-                        $(&mut $self_mut)?
-                        $($self: $self_type)?
-                        $(, $param : $param_ty )*
+                        $($params)*
                     ) $(-> $return_type)?
                     $body
                 )*
