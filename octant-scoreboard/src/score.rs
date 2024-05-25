@@ -56,9 +56,12 @@ impl ScoreHandler {
             .handler({
                 let this = self.clone();
                 let session = session.clone();
-                move || {
-                    this.handle_form(&session, &*input.input_value()).unwrap();
-                }
+                session.global().new_event_listener({
+                    let session = session.clone();
+                    move || {
+                        this.handle_form(&session, &*input.input_value()).unwrap();
+                    }
+                })
             });
         for guess in &*self.guesses.lock() {
             page = page.child(

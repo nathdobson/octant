@@ -7,6 +7,7 @@
 #![feature(hint_must_use)]
 #![allow(unused_variables)]
 #![feature(arbitrary_self_types)]
+#![feature(trait_alias)]
 
 #[cfg(side="client")]
 extern crate octant_runtime_client as octant_runtime;
@@ -62,3 +63,4 @@ pub mod response;
 pub mod text;
 pub mod user_verification_requirement;
 pub mod window;
+mod event_listener;

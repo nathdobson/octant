@@ -1,9 +1,9 @@
-use std::marker::Unsize;
-use std::sync::Arc;
 use octant_reffed::arc::Arc2;
+use std::{marker::Unsize, sync::Arc};
 
 use crate::{
     element::Element,
+    event_listener::{ArcEventListener, EventListener},
     html_form_element::HtmlFormElement,
     node::{ArcNode, Node},
 };
@@ -31,12 +31,12 @@ impl<T: ?Sized + Element> ElementExt for Arc2<T> {
 }
 
 pub trait HtmlFormElementExt {
-    fn handler(self, handler: impl 'static + Send + Sync + Fn()) -> Self;
+    fn handler(self, listener: ArcEventListener) -> Self;
 }
 
 impl<T: ?Sized + HtmlFormElement> HtmlFormElementExt for Arc2<T> {
-    fn handler(self, handler: impl 'static + Send + Sync + Fn()) -> Self {
-        self.html_form_element().set_handler(handler);
+    fn handler(self, listener: ArcEventListener) -> Self {
+        self.set_listener(listener);
         self
     }
 }

@@ -96,7 +96,7 @@ impl Handler for LoginHandler {
                     .attr("type", "submit")
                     .attr("value", "Login"),
             )
-            .handler({
+            .handler(session.global().new_event_listener({
                 let session = session.clone();
                 move || {
                     let url = url.clone();
@@ -109,7 +109,7 @@ impl Handler for LoginHandler {
                             .await
                     });
                 }
-            });
+            }));
         let page = d.create_element("div").child(text).child(form);
         Ok(Page::new(session.global().clone(), page))
     }

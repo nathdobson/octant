@@ -1,4 +1,4 @@
-use std::{hint::must_use, marker::PhantomData, sync::Arc};
+use std::{any::Any, hint::must_use, marker::PhantomData, sync::Arc};
 
 use crate::request_init::RequestInitValue;
 use catalog::register;
@@ -12,6 +12,7 @@ use wasm_error::WasmError;
 use crate::{
     credential_creation_options::ArcCredentialCreationOptions,
     credential_request_options::ArcCredentialRequestOptions,
+    event_listener::{ArcEventListener, EventListenerValue},
     request::ArcRequest,
     request_init::{ArcRequestInit, RequestInit},
     window::{ArcWindow, Window, WindowValue},
@@ -53,6 +54,14 @@ impl Global {
     pub fn new_credential_creation_options(&self) -> ArcCredentialCreationOptions {
         todo!();
     }
+    pub fn new_event_listener(
+        &self,
+        handler: impl 'static + Sync + Send + Any + Fn(),
+    ) -> ArcEventListener {
+        let listener = new_event_listener(self.runtime());
+        listener.set_handler(handler);
+        listener
+    }
 }
 
 define_sys_rpc! {
@@ -64,5 +73,11 @@ define_sys_rpc! {
 define_sys_rpc! {
     fn new_request_init(_runtime:_) -> ArcRequestInit {
         Ok(Arc2::new(RequestInitValue::new(web_sys::RequestInit::new())))
+    }
+}
+
+define_sys_rpc! {
+    fn new_event_listener(_runtime:_) -> ArcEventListener {
+        Ok(Arc2::new(EventListenerValue::new()))
     }
 }

@@ -94,23 +94,26 @@ impl Handler for RegisterHandler {
                 let session = session.clone();
                 let email = email.clone();
                 let name = name.clone();
-                move || {
-                    let this = self.clone();
+                session.global().new_event_listener({
                     let session = session.clone();
-                    let url = url.clone();
-                    let email = email.clone();
-                    let name = name.clone();
-                    let spawner = session.global().runtime().spawner().clone();
-                    spawner.spawn(async move {
-                        this.do_register(
-                            session.clone(),
-                            &url,
-                            (*email.input_value()).clone(),
-                            (*name.input_value()).clone(),
-                        )
-                        .await
-                    });
-                }
+                    move || {
+                        let this = self.clone();
+                        let session = session.clone();
+                        let url = url.clone();
+                        let email = email.clone();
+                        let name = name.clone();
+                        let spawner = session.global().runtime().spawner().clone();
+                        spawner.spawn(async move {
+                            this.do_register(
+                                session.clone(),
+                                &url,
+                                (*email.input_value()).clone(),
+                                (*name.input_value()).clone(),
+                            )
+                            .await
+                        });
+                    }
+                })
             });
         let page = d.create_element("div").child(text).child(form);
         Ok(Page::new(session.global().clone(), page))

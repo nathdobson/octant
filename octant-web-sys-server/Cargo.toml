@@ -19,6 +19,7 @@ safe-once = { workspace = true }
 base64urlsafedata = { workspace = true }
 octant-reffed = {workspace=true}
 futures = {workspace=true}
+parking_lot = {workspace=true}
 
 [build-dependencies]
 octant-sys-build = { workspace = true }
