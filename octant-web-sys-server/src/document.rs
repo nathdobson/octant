@@ -6,19 +6,21 @@ use crate::{
 };
 use octant_object::define_class;
 use octant_reffed::{ArcRef, Reffed};
+use octant_runtime::octant_future::OctantFuture;
 use octant_runtime::{
-    completable::Completable,
-    define_sys_class, define_sys_rpc,
+    // octant_future::Completable,
+    define_sys_class,
+    define_sys_rpc,
     handle::TypedHandle,
+    immediate_return::AsTypedHandle,
     peer::{Peer, PeerValue},
     proto::{DownMessage, UpMessage},
-    return_value::AsTypedHandle,
     runtime::Runtime,
 };
 use octant_serde::{define_serde_impl, DeserializeWith};
 use safe_once::sync::OnceLock;
 use serde::Serialize;
-use std::sync::Arc;
+use std::{future::Future, sync::Arc};
 
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
@@ -63,8 +65,11 @@ impl dyn Document {
     pub fn body<'a>(self: &'a Arc<Self>) -> &'a ArcHtmlElement {
         self.body.get_or_init(|| body(self.runtime(), self.clone()))
     }
-    pub async fn location<'a>(self: ArcRef<'a, Self>) -> String {
-        location(self.runtime(), self.arc()).await
+    pub fn location<'a>(self: ArcRef<'a, Self>) -> impl 'a + Send + Future<Output = String> {
+        async move {
+            let fut = location(self.runtime(), self.arc()).recv();
+            fut.await.unwrap()
+        }
     }
 }
 
@@ -86,78 +91,86 @@ define_sys_rpc! {
     }
 }
 
-define_sys_class! {
-    class LocationPromise;
-    extends Peer;
-    new_client _;
-    server_field response: Completable<String>;
-}
-
-#[cfg(side = "server")]
-impl LocationPromiseValue {
-    pub fn new(parent: PeerValue) -> Self {
-        LocationPromiseValue {
-            parent,
-            response: Completable::new(),
-        }
+define_sys_rpc! {
+    fn location(runtime, document: Arc<dyn Document>) -> OctantFuture<String> {
+        Ok(OctantFuture::<String>::spawn(runtime, async move{
+            document.native().location().unwrap().href().clone().unwrap()
+        }))
     }
 }
 
-#[derive(Serialize, Debug, DeserializeWith)]
-pub struct LocationRequest {
-    document: ArcDocument,
-    promise: TypedHandle<dyn LocationPromise>,
-}
-
-#[derive(Serialize, Debug, DeserializeWith)]
-pub struct LocationResponse {
-    promise: Arc<dyn LocationPromise>,
-    location: String,
-}
-
-define_serde_impl!(LocationRequest: DownMessage);
-impl DownMessage for LocationRequest {
-    #[cfg(side = "client")]
-    fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()> {
-        log::info!("Received request");
-        let promise: ArcLocationPromise = Arc::new(LocationPromiseValue::new());
-        runtime.add(self.promise, promise.clone());
-        spawn_local({
-            let runtime = runtime.clone();
-            async move {
-                log::info!("Sending response");
-                runtime.send(Box::<LocationResponse>::new(LocationResponse {
-                    promise,
-                    location: location_impl(&runtime, self.document).await,
-                }));
-            }
-        });
-        Ok(())
-    }
-}
-
-define_serde_impl!(LocationResponse: UpMessage);
-impl UpMessage for LocationResponse {
-    #[cfg(side = "server")]
-    fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()> {
-        self.promise.response.send(self.location);
-        Ok(())
-    }
-}
-
-#[cfg(side = "server")]
-async fn location(runtime: &Arc<Runtime>, document: ArcDocument) -> String {
-    let promise: ArcLocationPromise = runtime.add(LocationPromiseValue::new(runtime.add_uninit()));
-    log::info!("Sending request");
-    runtime.send(Box::<LocationRequest>::new(LocationRequest {
-        document,
-        promise: promise.typed_handle(),
-    }));
-    let response = promise.response.recv().await;
-    response
-}
-
-#[cfg(side = "client")]
-async fn location_impl(runtime: &Arc<Runtime>, document: Arc<dyn Document>) -> String {
-    document.native().location().unwrap().href().unwrap()
-}
+// define_sys_class! {
+//     class LocationPromise;
+//     extends Peer;
+//     new_client _;
+//     server_field response: Completable<String>;
+// }
+//
+// #[cfg(side = "server")]
+// impl LocationPromiseValue {
+//     pub fn new(parent: PeerValue) -> Self {
+//         LocationPromiseValue {
+//             parent,
+//             response: Completable::new(),
+//         }
+//     }
+// }
+//
+// #[derive(Serialize, Debug, DeserializeWith)]
+// pub struct LocationRequest {
+//     document: ArcDocument,
+//     promise: TypedHandle<dyn LocationPromise>,
+// }
+//
+// #[derive(Serialize, Debug, DeserializeWith)]
+// pub struct LocationResponse {
+//     promise: Arc<dyn LocationPromise>,
+//     location: String,
+// }
+//
+// define_serde_impl!(LocationRequest: DownMessage);
+// impl DownMessage for LocationRequest {
+//     #[cfg(side = "client")]
+//     fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()> {
+//         log::info!("Received request");
+//         let promise: ArcLocationPromise = Arc::new(LocationPromiseValue::new());
+//         runtime.add(self.promise, promise.clone());
+//         spawn_local({
+//             let runtime = runtime.clone();
+//             async move {
+//                 log::info!("Sending response");
+//                 runtime.send(Box::<LocationResponse>::new(LocationResponse {
+//                     promise,
+//                     location: location_impl(&runtime, self.document).await,
+//                 }));
+//             }
+//         });
+//         Ok(())
+//     }
+// }
+//
+// define_serde_impl!(LocationResponse: UpMessage);
+// impl UpMessage for LocationResponse {
+//     #[cfg(side = "server")]
+//     fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()> {
+//         self.promise.response.send(self.location);
+//         Ok(())
+//     }
+// }
+//
+// #[cfg(side = "server")]
+// async fn location(runtime: &Arc<Runtime>, document: ArcDocument) -> String {
+//     let promise: ArcLocationPromise = runtime.add(LocationPromiseValue::new(runtime.add_uninit()));
+//     log::info!("Sending request");
+//     runtime.send(Box::<LocationRequest>::new(LocationRequest {
+//         document,
+//         promise: promise.typed_handle(),
+//     }));
+//     let response = promise.response.recv().await;
+//     response
+// }
+//
+// #[cfg(side = "client")]
+// async fn location_impl(runtime: &Arc<Runtime>, document: Arc<dyn Document>) -> String {
+//     document.native().location().unwrap().href().unwrap()
+// }

@@ -266,11 +266,11 @@ macro_rules! define_class {
             impl $(< $($generics:'static),*>)? $crate::class::Ranked for [< $class Value >]$(< $($generics),*>)? $(where $($where)*)? {
                 type Rank = $crate::class::Succ<<<dyn $parent $(< $($parent_generics),*>)? as $crate::class::Class>::Value as $crate::class::Ranked>::Rank>;
             }
-            impl<T $(, $($generics:'static)*)?> $class $(< $($generics),*>)? for T where
-                T: $parent $(< $($parent_generics),*>)?,
-                $(T: $interface,)?
-                T: $crate::class::Ranked,
-                T: $crate::class::DerefRanked<T::Rank, <[< $class Value >] $(< $($generics),*>)? as $crate::class::Ranked>::Rank, TargetRanked = [< $class Value >] $(< $($generics),*>)?>,
+            impl<__super_secret__T $(, $($generics:'static)*)?> $class $(< $($generics),*>)? for __super_secret__T where
+                __super_secret__T: $parent $(< $($parent_generics),*>)?,
+                $(__super_secret__T: $interface,)?
+                __super_secret__T: $crate::class::Ranked,
+                __super_secret__T: $crate::class::DerefRanked<__super_secret__T::Rank, <[< $class Value >] $(< $($generics),*>)? as $crate::class::Ranked>::Rank, TargetRanked = [< $class Value >] $(< $($generics),*>)?>,
                 $( $($where)*)?
             {
                 fn [< $class:snake >](&self) -> &[< $class Value >] $(< $($generics),*>)? {

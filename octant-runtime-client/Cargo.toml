@@ -17,6 +17,7 @@ tokio = {workspace=true, features=["sync"]}
 safe-once = {workspace=true}
 web-sys = {workspace=true,features=["console"]}
 parking_lot = {workspace=true}
+wasm-bindgen-futures = {workspace=true}
 
 [build-dependencies]
 octant-sys-build = { workspace = true }

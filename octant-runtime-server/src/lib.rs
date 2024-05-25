@@ -3,6 +3,8 @@
 #![allow(unused_variables)]
 #![deny(unused_must_use)]
 
+extern crate core;
+
 use crate::{
     handle::{RawHandle, TypedHandle},
     runtime::Runtime,
@@ -38,8 +40,9 @@ mod delete;
 #[cfg_attr(side = "server", path = "server_peer.rs")]
 pub mod peer;
 pub mod proto;
-pub mod completable;
-pub mod return_value;
+pub mod octant_future;
+pub mod immediate_return;
+pub mod future_return;
 
 pub fn deserialize_object_with<'de, T: ?Sized + Class, D: Deserializer<'de>>(
     ctx: &DeserializeContext,

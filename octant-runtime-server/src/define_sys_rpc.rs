@@ -9,7 +9,7 @@ macro_rules! define_sys_rpc {
                 runtime: &::std::sync::Arc<$crate::runtime::Runtime>
                 $(, $input_name: $input)*
             ) -> $output {
-                let (output, down) = <$output as $crate::return_value::ImmediateReturn>::immediate_new(runtime);
+                let (output, down) = <$output as $crate::immediate_return::ImmediateReturn>::immediate_new(runtime);
                 runtime.send(Box::<[< $name:camel Request >]>::new([< $name:camel Request >] {
                     $($input_name,)*
                     down
@@ -20,7 +20,7 @@ macro_rules! define_sys_rpc {
             #[derive($crate::reexports::serde::Serialize,Debug,$crate::reexports::octant_serde::DeserializeWith)]
             pub struct [< $name:camel Request >] {
                 $($input_name: $input,)*
-                down: <$output as $crate::return_value::ImmediateReturn>::Down
+                down: <$output as $crate::immediate_return::ImmediateReturn>::Down
             }
 
             #[cfg(side="client")]
@@ -29,7 +29,7 @@ macro_rules! define_sys_rpc {
             impl $crate::proto::DownMessage for [< $name:camel Request >] {
                 fn run(self:Box<Self>, runtime:&::std::sync::Arc<$crate::runtime::Runtime>) -> $crate::reexports::anyhow::Result<()>{
                     let output=[<impl_ $name>](runtime $(, self.$input_name)*)?;
-                    $crate::return_value::ImmediateReturn::immediate_return(output, runtime, self.down);
+                    $crate::immediate_return::ImmediateReturn::immediate_return(output, runtime, self.down);
                     Ok(())
                 }
             }
