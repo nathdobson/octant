@@ -8,6 +8,7 @@ macro_rules! define_sys_class {
         $(new_server $new_server_dummy:tt;)?
         $(client_field $client_field:ident : $client_field_type:ty ;)*
         $(server_field $server_field:ident : $server_field_type:ty ;)*
+        $( client_fn{$($client_fn:tt)*} )*
         $( server_fn{$($server_fn:tt)*} )*
     } => {
         $crate::reexports::paste::paste! {
@@ -16,6 +17,7 @@ macro_rules! define_sys_class {
                 pub class $class extends $parent implements ::std::fmt::Debug{
                     $( field [< $class:snake >]: $wasm; )?
                     $(field $client_field : $client_field_type;)*
+                    $($($client_fn)*)*
                 }
             }
 

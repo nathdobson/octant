@@ -81,7 +81,7 @@ define_sys_rpc! {
         Ok(Arc2::new(HtmlInputElementValue::new(doc.native().create_element("input").unwrap().dyn_into().unwrap())))
     }
     pub fn create_element(_runtime:_, doc:Arc2<dyn Document>, tag: String) -> ArcElement {
-        Ok(Arc2::new(ElementValue::new(doc.native().create_element("input").unwrap())))
+        Ok(Arc2::new(ElementValue::new(doc.native().create_element(&tag).unwrap())))
     }
     pub fn create_form_element(_runtime:_, doc:Arc2<dyn Document>) -> ArcHtmlFormElement {
         Ok(Arc2::new(HtmlFormElementValue::new(doc.native().create_element("form").unwrap().dyn_into().unwrap())))

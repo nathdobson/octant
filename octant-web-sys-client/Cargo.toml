@@ -54,6 +54,7 @@ base64urlsafedata = { workspace = true }
 octant-reffed = {workspace = true}
 futures = { workspace=true}
 wasm-bindgen-futures = {workspace=true}
+by_address = {workspace=true}
 
 [build-dependencies]
 octant-sys-build = { workspace = true }

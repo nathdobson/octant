@@ -8,6 +8,8 @@ use std::{
     sync::Arc,
 };
 use octant_reffed::arc::ArcRef;
+#[cfg(side="client")]
+use octant_runtime::runtime::RuntimeSink;
 
 #[cfg(side="server")]
 trait EventHandlerTrait: 'static + Sync + Send + Fn() -> () {
@@ -57,8 +59,8 @@ impl dyn EventListener {
 
 #[cfg(side = "client")]
 impl dyn EventListener {
-    pub fn fire(self: &ArcRef<Self>, runtime: &Arc<Runtime>) {
-        runtime.send(Box::<EventFired>::new(EventFired {
+    pub fn fire(self: &ArcRef<Self>) {
+        self.sink().send(Box::<EventFired>::new(EventFired {
             listener: self.arc(),
         }))
     }

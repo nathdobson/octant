@@ -1,4 +1,5 @@
 use crate::event_listener::ArcEventListener;
+use octant_object::cast::downcast_object;
 use octant_reffed::arc::{Arc2, ArcRef};
 use octant_runtime::{define_sys_class, define_sys_rpc};
 #[cfg(side = "server")]
@@ -21,7 +22,7 @@ use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use web_sys::Event;
 
-use crate::html_element::HtmlElement;
+use crate::{html_element::HtmlElement, html_input_element::ArcHtmlInputElement};
 
 define_sys_class! {
     class HtmlFormElement;
@@ -29,7 +30,7 @@ define_sys_class! {
     wasm web_sys::HtmlFormElement;
     new_client _;
     new_server _;
-    client_field closure: OnceCell<Closure<dyn Fn()>> ;
+    client_field closure: OnceCell<Closure<dyn Fn(Event)>> ;
     server_field listener: OnceLock<ArcEventListener>;
     server_fn {
         fn set_listener(self: &ArcRef<Self>, listener: ArcEventListener){
@@ -40,15 +41,26 @@ define_sys_class! {
 }
 
 define_sys_rpc! {
-    pub fn set_listener(runtime:_, element: ArcHtmlFormElement, listener:ArcEventListener) -> () {
-        let runtime=Arc::downgrade(runtime);
-        let listener=Arc2::downgrade(&listener);
-        let cb = Closure::<dyn Fn(Event)>::new(move |e:Event|{
-            if let (Some(runtime),Some(listener)) = (runtime.upgrade(), listener.upgrade()){
-                listener.fire(&runtime);
+    fn set_listener(runtime:_, element: ArcHtmlFormElement, listener:ArcEventListener) -> () {
+        let cb = Closure::<dyn Fn(Event)>::new({
+            let listener=Arc2::downgrade(&listener);
+            let element=Arc2::downgrade(&element);
+            move |e:Event|{
+                e.prevent_default();
+                if let Some(element)=element.upgrade(){
+                    for child in element.children(){
+                        if let Ok(child)=downcast_object::<_,ArcHtmlInputElement>(child){
+                            child.update_value();
+                        }
+                    }
+                }
+                if let Some(listener) = listener.upgrade(){
+                    listener.fire();
+                }
             }
         });
         element.native().add_event_listener_with_callback("submit", cb.as_ref().unchecked_ref()).unwrap();
+        element.html_form_element().closure.get_or_init(||cb);
         Ok(())
     }
 }

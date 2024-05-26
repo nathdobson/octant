@@ -8,3 +8,4 @@ anyhow = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 futures = { workspace = true }
 parking_lot = { workspace = true }
+by_address = {workspace=true}

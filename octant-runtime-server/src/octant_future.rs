@@ -96,7 +96,7 @@ impl<T: Debug + FutureReturn> OctantFuture<T> {
                 let result = f.await;
                 let down = down.lock().take().unwrap();
                 let up = result.future_produce(&runtime, down);
-                runtime.send(Box::<FutureResponse>::new(FutureResponse {
+                runtime.sink().send(Box::<FutureResponse>::new(FutureResponse {
                     promise: parent,
                     value: Format::default().serialize_raw(&up).unwrap(),
                 }))

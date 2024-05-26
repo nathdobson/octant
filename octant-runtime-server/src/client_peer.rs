@@ -1,18 +1,23 @@
-use std::fmt::Debug;
 use crate::{
     handle::{RawHandle, TypedHandle},
+    runtime::RuntimeSink,
 };
 use octant_object::{
     base::{Base, BaseValue},
     define_class,
 };
-use safe_once::{
-    api::once::OnceEntry,
-    cell::{OnceCell},
-};
+use safe_once::{api::once::OnceEntry, cell::OnceCell};
+use std::{fmt::Debug, sync::Arc};
+
+#[derive(Debug)]
+struct PeerInit {
+    handle: RawHandle,
+    sink: Arc<RuntimeSink>,
+}
+
 define_class! {
     pub class Peer extends Base implements Debug {
-        field handle: OnceCell<RawHandle>;
+        field peer_init: OnceCell<PeerInit>;
     }
 }
 
@@ -20,17 +25,20 @@ impl PeerValue {
     pub fn new() -> Self {
         PeerValue {
             parent: BaseValue::default(),
-            handle: OnceCell::new(),
+            peer_init: OnceCell::new(),
         }
     }
     pub fn raw_handle(&self) -> RawHandle {
-        *self.handle.try_get().unwrap()
+        self.peer_init.try_get().unwrap().handle
     }
-    pub fn set_handle(&self, handle: RawHandle) {
-        match self.handle.lock() {
+    pub fn sink(&self) -> &Arc<RuntimeSink> {
+        &self.peer_init.try_get().unwrap().sink
+    }
+    pub fn init(&self, handle: RawHandle, sink: Arc<RuntimeSink>) {
+        match self.peer_init.lock() {
             OnceEntry::Occupied(_) => panic!("already initialized"),
             OnceEntry::Vacant(x) => {
-                x.init(handle);
+                x.init(PeerInit { handle, sink });
             }
         }
     }

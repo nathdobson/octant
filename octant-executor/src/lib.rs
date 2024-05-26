@@ -1,11 +1,14 @@
 #![deny(unused_must_use)]
 #![feature(never_type)]
+#![allow(dead_code)]
 
+use by_address::ByAddress;
 use std::{
+    collections::HashSet,
     future::{poll_fn, Future},
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc,
+        Arc, Weak,
     },
     task::{ready, Context, Poll, Wake, Waker},
 };
@@ -20,14 +23,20 @@ struct Task {
     spawn: Arc<Spawn>,
 }
 
+struct TaskSet {
+    tasks: Mutex<HashSet<ByAddress<Arc<Task>>>>,
+}
+
 pub struct Spawn {
     microtasks: mpsc::UnboundedSender<Arc<Task>>,
     macrotasks: mpsc::UnboundedSender<Arc<Task>>,
+    task_set: Weak<TaskSet>,
 }
 
 pub struct Pool {
     microtasks: mpsc::UnboundedReceiver<Arc<Task>>,
     macrotasks: mpsc::UnboundedReceiver<Arc<Task>>,
+    task_set: Arc<TaskSet>,
     flushing: bool,
     poll_flush: Box<dyn Send + FnMut(&mut Context<'_>) -> Poll<anyhow::Result<()>>>,
 }
@@ -37,11 +46,15 @@ impl Task {
         f: F,
         spawn: Arc<Spawn>,
     ) -> Arc<Self> {
-        Arc::new(Task {
+        let task = Arc::new(Task {
             woken: AtomicBool::new(true),
             inner: Mutex::new(Box::pin(f)),
-            spawn,
-        })
+            spawn: spawn.clone(),
+        });
+        if let Some(tasks) = spawn.task_set.upgrade() {
+            tasks.tasks.lock().insert(ByAddress(task.clone()));
+        }
+        task
     }
     pub fn poll_once(self: &Arc<Self>) -> anyhow::Result<()> {
         self.woken.store(false, Ordering::SeqCst);
@@ -51,7 +64,12 @@ impl Task {
             .as_mut()
             .poll(&mut Context::from_waker(&Waker::from(self.clone())))
         {
-            Poll::Ready(r) => r?,
+            Poll::Ready(r) => {
+                if let Some(tasks) = self.spawn.task_set.upgrade() {
+                    tasks.tasks.lock().remove(&ByAddress(self.clone()));
+                }
+                r?;
+            }
             Poll::Pending => {}
         }
         Ok(())
@@ -72,13 +90,18 @@ impl Pool {
     ) -> (Arc<Spawn>, Self) {
         let (micro_tx, micro_rx) = mpsc::unbounded_channel();
         let (macro_tx, macro_rx) = mpsc::unbounded_channel();
+        let task_set = Arc::new(TaskSet {
+            tasks: Mutex::new(HashSet::new()),
+        });
         let spawn = Arc::new(Spawn {
             microtasks: micro_tx,
             macrotasks: macro_tx,
+            task_set: Arc::downgrade(&task_set),
         });
         let pool = Pool {
             microtasks: micro_rx,
             macrotasks: macro_rx,
+            task_set,
             flushing: false,
             poll_flush: Box::new(poll_flush),
         };
@@ -142,7 +165,12 @@ impl Spawn {
 
 #[cfg(test)]
 mod test {
-    use std::{mem, task::Poll};
+    use std::{
+        future::{pending, poll_fn, Future},
+        mem,
+        pin::pin,
+        task::Poll,
+    };
 
     use parking_lot::Mutex;
     use tokio::task::yield_now;
@@ -198,6 +226,43 @@ mod test {
             LOG.lock().iter().collect::<Vec<_>>(),
             vec!["a", "b", "c", "yield", "d", "yield"]
         );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test3() -> anyhow::Result<()> {
+        static LOG: Mutex<Vec<String>> = Mutex::new(vec![]);
+        let (spawn, mut pool) = Pool::new(|_| Poll::Ready(Ok(())));
+        spawn.spawn({
+            async move {
+                struct Foo;
+                let foo: Foo = Foo;
+                impl Drop for Foo {
+                    fn drop(&mut self) {
+                        LOG.lock().push(format!("dropped"));
+                    }
+                }
+                pending::<!>().await;
+                mem::drop(foo);
+                Ok(())
+            }
+        });
+        mem::drop(spawn);
+        {
+            let mut pool_run = pin!(pool.run());
+            poll_fn(|ctx| {
+                match pool_run.as_mut().poll(ctx) {
+                    Poll::Ready(_) => unreachable!(),
+                    Poll::Pending => {}
+                }
+                Poll::Ready(())
+            })
+            .await;
+        }
+        assert_eq!(LOG.lock().iter().collect::<Vec<_>>(), Vec::<&str>::new());
+        mem::drop(pool);
+        assert_eq!(LOG.lock().iter().collect::<Vec<_>>(), vec!["dropped"]);
+
         Ok(())
     }
 }

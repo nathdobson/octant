@@ -6,11 +6,11 @@ use crate::{
 };
 use atomic_refcell::AtomicRefCell;
 use octant_object::{cast::downcast_object, class::Class};
+use octant_reffed::arc::Arc2;
 use octant_serde::DeserializeContext;
 use std::{collections::HashMap, marker::Unsize, sync::Arc};
 use tokio::sync::mpsc::UnboundedSender;
 use web_sys::console;
-use octant_reffed::arc::Arc2;
 
 struct State {
     handles: HashMap<RawHandle, ArcPeer>,
@@ -18,6 +18,11 @@ struct State {
 
 pub struct Runtime {
     state: AtomicRefCell<State>,
+    sink: Arc<RuntimeSink>,
+}
+
+#[derive(Debug)]
+pub struct RuntimeSink {
     sink: UnboundedSender<Box<dyn UpMessage>>,
 }
 
@@ -27,7 +32,7 @@ impl Runtime {
             state: AtomicRefCell::new(State {
                 handles: HashMap::new(),
             }),
-            sink,
+            sink: Arc::new(RuntimeSink { sink }),
         });
         Ok(runtime)
     }
@@ -38,7 +43,7 @@ impl Runtime {
         value: Arc2<T>,
     ) {
         let value = value as Arc2<dyn Peer>;
-        value.set_handle(assign.raw());
+        value.init(assign.raw(), self.sink.clone());
         assert!(self
             .state
             .borrow_mut()
@@ -46,7 +51,10 @@ impl Runtime {
             .insert(assign.raw(), value)
             .is_none());
     }
-    pub fn lookup<T: ?Sized + Class>(&self, handle: TypedHandle<T>) -> Result<Arc2<T>, LookupError> {
+    pub fn lookup<T: ?Sized + Class>(
+        &self,
+        handle: TypedHandle<T>,
+    ) -> Result<Arc2<T>, LookupError> {
         Ok(downcast_object(
             self.state
                 .borrow()
@@ -74,6 +82,12 @@ impl Runtime {
         message.run(self)?;
         Ok(())
     }
+    pub fn sink(&self) -> &Arc<RuntimeSink> {
+        &self.sink
+    }
+}
+
+impl RuntimeSink {
     pub fn send(&self, message: Box<dyn UpMessage>) {
         self.sink.send(message).ok();
     }

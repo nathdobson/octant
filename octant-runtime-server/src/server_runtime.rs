@@ -53,6 +53,7 @@ impl Runtime {
     }
     pub fn add<T: Peer>(&self, value: T) -> Arc2<T> {
         let handle = ((&value) as &dyn Peer).raw_handle();
+        log::info!("Adding handle {:?}", handle);
         let result = Arc2::new(value);
         self.state
             .borrow_mut()
@@ -70,6 +71,7 @@ impl Runtime {
         PeerValue::new(self.clone(), handle)
     }
     pub fn delete(self: &Arc<Self>, handle: RawHandle) {
+        log::info!("Deleting handle {:?}", handle);
         delete_rpc(self, handle);
     }
     pub fn run_batch(self: &Arc<Self>, batch: UpMessageList) -> anyhow::Result<()> {
