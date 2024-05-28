@@ -8,6 +8,8 @@
 #![allow(unused_variables)]
 #![feature(arbitrary_self_types)]
 #![feature(trait_alias)]
+#![feature(type_alias_impl_trait)]
+#![feature(try_blocks)]
 
 #[cfg(side="client")]
 extern crate octant_runtime_client as octant_runtime;

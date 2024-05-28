@@ -2,6 +2,7 @@
 #![feature(macro_metavar_expr)]
 #![allow(unused_variables)]
 #![deny(unused_must_use)]
+#![feature(trait_alias)]
 
 extern crate core;
 
@@ -45,6 +46,7 @@ pub mod proto;
 pub mod octant_future;
 pub mod immediate_return;
 pub mod future_return;
+pub mod error;
 
 pub fn deserialize_object_with<'de, T: ?Sized + Class, D: Deserializer<'de>>(
     ctx: &DeserializeContext,

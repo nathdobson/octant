@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{future::Future, sync::Arc};
 
 use anyhow::anyhow;
 use tokio::sync::RwLock;
@@ -23,53 +23,55 @@ pub struct LoginHandler {
 }
 
 impl LoginHandler {
-    pub async fn do_login(
+    pub fn do_login<'a>(
         self: Arc<Self>,
         session: Arc<Session>,
-        url: &Url,
-        email: &str,
-    ) -> anyhow::Result<()> {
-        let webauthn = build_webauthn(url)?;
-        let passkeys: Vec<Passkey> = {
-            let forest = self.forest.read().await;
-            let accounts = forest.read(&self.accounts);
-            let user = accounts
-                .users
-                .get(email)
-                .ok_or_else(|| anyhow!("account does not exist"))?;
-            user.passkeys.iter().map(|(k, v)| (*v).clone()).collect()
-        };
-        let (rcr, skr) = webauthn.start_passkey_authentication(&passkeys)?;
-        let options = session.global().new_credential_request_options();
-        options.public_key(rcr.public_key.into_octant());
-        let cred = session
-            .global()
-            .window()
-            .navigator()
-            .credentials()
-            .get_with_options(&options)
-            .await?;
-        let cred = cred.into_auth();
-        let result = webauthn.finish_passkey_authentication(&cred, &skr).unwrap();
-        let session_id = Uuid::new_v4();
-        self.session_table.sessions.lock().insert(
-            session_id,
-            Arc::new(VerifiedLogin {
-                email: email.to_string(),
-            }),
-        );
-        self.cookie_router
-            .create(
-                &session,
-                format!(
-                    "{}={}; HttpOnly; Secure; SameSite=Strict; Max-Age={}",
-                    SESSION_COOKIE,
-                    session_id,
-                    60 * 60 * 24 * 365
-                ),
-            )
-            .await?;
-        Ok(())
+        url: &'a Url,
+        email: &'a str,
+    ) -> impl 'a + Send + Future<Output = anyhow::Result<()>> {
+        async move {
+            let webauthn = build_webauthn(url)?;
+            let passkeys: Vec<Passkey> = {
+                let forest = self.forest.read().await;
+                let accounts = forest.read(&self.accounts);
+                let user = accounts
+                    .users
+                    .get(email)
+                    .ok_or_else(|| anyhow!("account does not exist"))?;
+                user.passkeys.iter().map(|(k, v)| (*v).clone()).collect()
+            };
+            let (rcr, skr) = webauthn.start_passkey_authentication(&passkeys)?;
+            let options = session.global().new_credential_request_options();
+            options.public_key(rcr.public_key.into_octant());
+            let cred = session
+                .global()
+                .window()
+                .navigator()
+                .credentials()
+                .get_with_options(options.clone())
+                .await?;
+            let cred = cred.into_auth();
+            let result = webauthn.finish_passkey_authentication(&cred, &skr).unwrap();
+            let session_id = Uuid::new_v4();
+            self.session_table.sessions.lock().insert(
+                session_id,
+                Arc::new(VerifiedLogin {
+                    email: email.to_string(),
+                }),
+            );
+            self.cookie_router
+                .create(
+                    &session,
+                    format!(
+                        "{}={}; HttpOnly; Secure; SameSite=Strict; Max-Age={}",
+                        SESSION_COOKIE,
+                        session_id,
+                        60 * 60 * 24 * 365
+                    ),
+                )
+                .await?;
+            Ok(())
+        }
     }
 }
 

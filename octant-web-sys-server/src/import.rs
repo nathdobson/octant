@@ -9,6 +9,8 @@ use base64urlsafedata::Base64UrlSafeData;
 use js_sys::{ArrayBuffer, Object, Uint8Array};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::console;
+use octant_runtime::error::OctantError;
+use wasm_error::WasmError;
 
 pub trait Import<T> {
     fn import(&self) -> T;
@@ -21,6 +23,12 @@ impl Import<CredentialData> for web_sys::Credential {
         } else {
             todo!();
         }
+    }
+}
+
+impl Import<CredentialData> for JsValue {
+    fn import(&self) -> CredentialData {
+        self.clone().dyn_into::<web_sys::Credential>().unwrap().import()
     }
 }
 
@@ -96,10 +104,8 @@ where
     }
 }
 
-// impl Import<Error> for JsValue {
-//     fn import(&self) -> Error {
-//         Error {
-//             content: self.clone().dyn_ref::<Object>().unwrap().to_string().into(),
-//         }
-//     }
-// }
+impl Import<OctantError> for JsValue {
+    fn import(&self) -> OctantError {
+        OctantError::from(anyhow::Error::from(WasmError::new(self.clone())))
+    }
+}

@@ -1,11 +1,14 @@
 #[cfg(side = "server")]
 use crate::peer::PeerValue;
-use crate::{handle::TypedHandle, immediate_return::ImmediateReturn, peer::Peer, runtime::Runtime};
+use crate::{
+    error::OctantError, handle::TypedHandle, immediate_return::ImmediateReturn, peer::Peer,
+    runtime::Runtime,
+};
 use octant_object::class::Class;
+use octant_reffed::arc::Arc2;
 use octant_serde::DeserializeWith;
 use serde::Serialize;
 use std::{fmt::Debug, marker::Unsize, sync::Arc};
-use octant_reffed::arc::Arc2;
 
 pub trait FutureReturn: 'static {
     type Down: 'static + Serialize + for<'de> DeserializeWith<'de> + Send + Sync + Debug;
@@ -95,6 +98,68 @@ impl<T1: FutureReturn, T2: FutureReturn> FutureReturn for (T1, T2) {
     }
 }
 
+impl<T: FutureReturn, E: FutureReturn> FutureReturn for Result<T, E> {
+    type Down = (T::Down, E::Down);
+    type Up = Result<T::Up, E::Up>;
+    #[cfg(side = "server")]
+    type Retain = (T::Retain, E::Retain);
+
+    #[cfg(side = "server")]
+    fn future_new(runtime: &Arc<Runtime>) -> (Self::Retain, Self::Down) {
+        let (tr, td) = T::future_new(runtime);
+        let (er, ed) = E::future_new(runtime);
+        ((tr, er), (td, ed))
+    }
+    #[cfg(side = "client")]
+    fn future_produce(self, runtime: &Arc<Runtime>, (td, ed): Self::Down) -> Self::Up {
+        match self {
+            Ok(t) => Ok(t.future_produce(runtime, td)),
+            Err(e) => Err(e.future_produce(runtime, ed)),
+        }
+    }
+    #[cfg(side = "server")]
+    fn future_return(runtime: &Arc<Runtime>, (tr, er): Self::Retain, up: Self::Up) -> Self {
+        match up {
+            Ok(t) => Ok(T::future_return(runtime, tr, t)),
+            Err(e) => Err(E::future_return(runtime, er, e)),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct DataReturn<T>(T);
+impl<T> DataReturn<T> {
+    pub fn new(x: T) -> Self {
+        DataReturn(x)
+    }
+    pub fn into_inner(self) -> T {
+        self.0
+    }
+}
+
+impl<T: 'static + Sync + Send + Debug + Serialize + for<'de> DeserializeWith<'de>> FutureReturn
+    for DataReturn<T>
+{
+    type Down = ();
+    type Up = T;
+    #[cfg(side = "server")]
+    type Retain = ();
+
+    #[cfg(side = "server")]
+    fn future_new(runtime: &Arc<Runtime>) -> (Self::Retain, Self::Down) {
+        ((), ())
+    }
+
+    #[cfg(side = "client")]
+    fn future_produce(self, runtime: &Arc<Runtime>, down: Self::Down) -> Self::Up {
+        self.0
+    }
+    #[cfg(side = "server")]
+    fn future_return(runtime: &Arc<Runtime>, _: Self::Retain, up: Self::Up) -> Self {
+        DataReturn(up)
+    }
+}
+
 macro_rules! future_return_simple {
     ($($type:ty;)*) => {
         $(
@@ -126,4 +191,5 @@ future_return_simple! {
     i8;i16;i32;i64;i128;
     f32;f64;
     String;
+    OctantError;
 }

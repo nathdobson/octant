@@ -10,10 +10,10 @@ use serde::{Deserialize, Serialize};
 use wasm_error::WasmError;
 
 use crate::{
-    credential_creation_options::ArcCredentialCreationOptions,
-    credential_request_options::ArcCredentialRequestOptions,
+    credential_creation_options::{ArcCredentialCreationOptions, CredentialCreationOptionsValue},
+    credential_request_options::{ArcCredentialRequestOptions, CredentialRequestOptionsValue},
     event_listener::{ArcEventListener, EventListenerValue},
-    request::ArcRequest,
+    request::{ArcRequest, RequestValue},
     request_init::{ArcRequestInit, RequestInit},
     window::{ArcWindow, Window, WindowValue},
 };
@@ -45,14 +45,14 @@ impl Global {
     pub fn new_request_init(&self) -> ArcRequestInit {
         new_request_init(&self.runtime)
     }
-    pub fn new_request(&self, url: String, request_init: &ArcRequestInit) -> ArcRequest {
-        todo!();
+    pub fn new_request(&self, url: String, request_init: ArcRequestInit) -> ArcRequest {
+        new_request(self.runtime(), url, request_init)
     }
     pub fn new_credential_request_options(&self) -> ArcCredentialRequestOptions {
-        todo!();
+        new_credential_request_options(self.runtime())
     }
     pub fn new_credential_creation_options(&self) -> ArcCredentialCreationOptions {
-        todo!();
+        new_credential_creation_options(self.runtime())
     }
     pub fn new_event_listener(
         &self,
@@ -73,6 +73,24 @@ define_sys_rpc! {
 define_sys_rpc! {
     fn new_request_init(_runtime:_) -> ArcRequestInit {
         Ok(Arc2::new(RequestInitValue::new(web_sys::RequestInit::new())))
+    }
+}
+
+define_sys_rpc! {
+    fn new_request(_runtime:_, url:String, init:ArcRequestInit) -> ArcRequest {
+        Ok(Arc2::new(RequestValue::new(web_sys::Request::new_with_str_and_init(&url, init.native()).unwrap())))
+    }
+}
+
+define_sys_rpc! {
+    fn new_credential_request_options(_runtime:_) -> ArcCredentialRequestOptions {
+        Ok(Arc2::new(CredentialRequestOptionsValue::new(web_sys::CredentialRequestOptions::new())))
+    }
+}
+
+define_sys_rpc! {
+    fn new_credential_creation_options(_runtime:_) -> ArcCredentialCreationOptions {
+        Ok(Arc2::new(CredentialCreationOptionsValue::new(web_sys::CredentialCreationOptions::new())))
     }
 }
 

@@ -246,7 +246,7 @@ macro_rules! define_class {
                     ) $(-> $return_type)?;
                 )*
             }
-            pub type [< Arc $class >] $(< $($generics),*>)? = $crate::reexports::octant_reffed::arc::Arc2<dyn $class $(< $($generics),*>)?>;
+            pub type [< Arc $class >] $(< $($generics),*>)? = $crate::reexports::octant_reffed::arc::Arc2<dyn 'static + $class $(< $($generics),*>)?>;
             impl $(< $($generics:'static),*>)? $crate::class::Class for dyn $class $(< $($generics),*>)? $(where $($where)*)? {
                 type Value = [< $class Value >] $(< $($generics),*>)?;
             }

@@ -84,21 +84,15 @@ impl Handler for ScoreHandler {
 
     fn handle(self: Arc<Self>, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
         let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());
-        global.window().alert(format!("{}", url));
-        let d = global.window().document().create_div();
-        Ok(Page::new(global, d))
-
-        // let d = session.global().window().document();
-        // let page = d.create_element("div");
-        //
-        // session.global().runtime().spawner().spawn({
-        //     let session = session.clone();
-        //     let page = page.clone();
-        //     async move {
-        //         self.handle_impl(page, session.clone()).await?;
-        //         Ok(())
-        //     }
-        // });
-        // Ok(Page::new(session.global().clone(), page))
+        let page = global.window().document().create_element("div");
+        session.global().runtime().spawner().spawn({
+            let session = session.clone();
+            let page = page.clone();
+            async move {
+                self.handle_impl(page, session.clone()).await?;
+                Ok(())
+            }
+        });
+        Ok(Page::new(session.global().clone(), page))
     }
 }

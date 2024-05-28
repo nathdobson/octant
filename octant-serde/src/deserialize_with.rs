@@ -1,7 +1,7 @@
 use crate::DeserializeContext;
 use octant_reffed::arc::Arc2;
 use serde::{
-    de::{DeserializeSeed, Error, SeqAccess, Visitor},
+    de::{DeserializeSeed, EnumAccess, Error, SeqAccess, VariantAccess, Visitor},
     Deserialize, Deserializer,
 };
 use std::{fmt::Formatter, marker::PhantomData};
@@ -197,6 +197,59 @@ macro_rules! derive_deserialize_with {
             }
         )*
     };
+}
+
+impl<'de, T, E> DeserializeWith<'de> for Result<T, E>
+where
+    T: DeserializeWith<'de>,
+    E: DeserializeWith<'de>,
+{
+    fn deserialize_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<Self, D::Error> {
+        struct V<'c, T, E> {
+            ctx: &'c DeserializeContext,
+            phantom: PhantomData<(T, E)>,
+        }
+        #[derive(Deserialize)]
+        enum Variant {
+            Ok,
+            Err,
+        }
+        impl<'c, 'de, T, E> Visitor<'de> for V<'c, T, E>
+        where
+            T: DeserializeWith<'de>,
+            E: DeserializeWith<'de>,
+        {
+            type Value = Result<T, E>;
+            fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
+                write!(f, "Result")
+            }
+            fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
+            where
+                A: EnumAccess<'de>,
+            {
+                let (variant, value) = data.variant::<Variant>()?;
+                Ok(match variant {
+                    Variant::Ok => {
+                        Ok(value.newtype_variant_seed(DeserializeWithSeed::new(self.ctx))?)
+                    }
+                    Variant::Err => {
+                        Err(value.newtype_variant_seed(DeserializeWithSeed::new(self.ctx))?)
+                    }
+                })
+            }
+        }
+        d.deserialize_enum(
+            "Result",
+            &["Ok", "Err"],
+            V {
+                ctx,
+                phantom: PhantomData,
+            },
+        )
+    }
 }
 
 derive_deserialize_with! {

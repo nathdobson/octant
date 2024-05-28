@@ -19,6 +19,7 @@ tokio = {workspace=true, features=["sync"]}
 parking_lot = {workspace=true}
 log = {workspace=true}
 octant-reffed = {workspace=true}
+cfg-if = {workspace=true}
 
 [build-dependencies]
 octant-sys-build = { workspace = true }

@@ -36,7 +36,7 @@ impl RegisterHandler {
             .window()
             .navigator()
             .credentials()
-            .create_with_options(&options);
+            .create_with_options(options);
 
         let this = self.clone();
         let cred = cred.await?.into_auth();

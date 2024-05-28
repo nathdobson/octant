@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    future::Future,
     sync::{Arc, Weak},
 };
 
@@ -76,33 +77,39 @@ impl CookieRouter {
             *session.data::<CookieData>().cookies.lock() = cookies;
         }
     }
-    pub async fn create(&self, session: &Arc<Session>, cookie: String) -> anyhow::Result<()> {
-        let (cookie_token, _guard) = self.create_start(cookie);
-        let request_init = session.global().new_request_init();
-        let request = session.global().new_request(
-            format!("/create_cookie?token={}", cookie_token),
-            &request_init,
-        );
-        session
-            .global()
-            .window()
-            .fetch(&request)
-            .await?
-            .text()
-            .await?;
-        Ok(())
+    pub fn create<'a>(
+        &'a self,
+        session: &'a Arc<Session>,
+        cookie: String,
+    ) -> impl 'a + Send + Future<Output = anyhow::Result<()>> {
+        async move {
+            let (cookie_token, _guard) = self.create_start(cookie);
+            let request_init = session.global().new_request_init();
+            let request = session.global().new_request(
+                format!("/create_cookie?token={}", cookie_token),
+                request_init,
+            );
+            session
+                .global()
+                .window()
+                .fetch(request)
+                .await?
+                .text()
+                .await?;
+            Ok(())
+        }
     }
     pub async fn update(&self, session: &Arc<Session>) -> anyhow::Result<()> {
         let (cookie_token, _guard) = self.update_start(&session);
         let request_init = session.global().new_request_init();
         let request = session.global().new_request(
             format!("/update_cookie?token={}", cookie_token),
-            &request_init,
+            request_init,
         );
         session
             .global()
             .window()
-            .fetch(&request)
+            .fetch(request)
             .await?
             .text()
             .await?;

@@ -1,5 +1,6 @@
 use base64urlsafedata::Base64UrlSafeData;
-use serde::{Deserialize, Serialize};
+use octant_serde::{DeserializeContext, DeserializeWith};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
     attestation_conveyance_preference::AttestationConveyancePreference,
@@ -20,4 +21,13 @@ pub struct PublicKeyCredentialCreationOptions {
     pub timeout: Option<u32>,
     pub attestation: AttestationConveyancePreference,
     pub extensions: Option<AuthenticationExtensionsClientInputs>,
+}
+
+impl<'de> DeserializeWith<'de> for PublicKeyCredentialCreationOptions {
+    fn deserialize_with<D: Deserializer<'de>>(
+        ctx: &DeserializeContext,
+        d: D,
+    ) -> Result<Self, D::Error> {
+        Self::deserialize(d)
+    }
 }
