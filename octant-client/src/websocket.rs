@@ -1,13 +1,12 @@
 use core::mem;
 use std::{pin::Pin, str, sync::Arc, task::Poll};
 
-use anyhow::{anyhow, Context};
+use anyhow::anyhow;
 use futures::Stream;
+use octant_error::{Context, OctantError};
 use tokio::sync::mpsc;
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
 use web_sys::{CloseEvent, ErrorEvent, Event, MessageEvent, WebSocket};
-
-use wasm_error::WasmError;
 
 struct WebSocketStream {
     socket: WebSocket,
@@ -57,8 +56,9 @@ impl WebSocketStream {
             WebSocketMessage::Text(x) => self.socket.send_with_str(&x),
             WebSocketMessage::Binary(x) => self.socket.send_with_u8_array(&x),
         }
-        .map_err(WasmError::new)
+        .map_err(OctantError::from)
         .context("Failed to send.")
+        .map_err(|e| e.into_anyhow())
     }
 }
 
@@ -73,7 +73,7 @@ impl Stream for WebSocketReceiver {
             Poll::Ready(Some(WebSocketEvent::Connect)) => unreachable!(),
             Poll::Ready(Some(WebSocketEvent::Message(x))) => Poll::Ready(Some(Ok(x))),
             Poll::Ready(Some(WebSocketEvent::Error(e))) => {
-                Poll::Ready(Some(Err(WasmError::new_anyhow(JsValue::from(e)))))
+                Poll::Ready(Some(Err(OctantError::from(JsValue::from(e)).into_anyhow())))
             }
             Poll::Ready(None) => Poll::Ready(None),
             Poll::Pending => Poll::Pending,
@@ -90,7 +90,7 @@ impl WebSocketSender {
 
 pub async fn connect(address: &str) -> anyhow::Result<(WebSocketSender, WebSocketReceiver)> {
     let socket = WebSocket::new(address)
-        .map_err(WasmError::new)
+        .map_err(OctantError::from)
         .context("Failed to create socket.")?;
     let (recv_tx, mut recv_rx) = mpsc::unbounded_channel();
     socket.set_binary_type(web_sys::BinaryType::Arraybuffer);
@@ -149,7 +149,9 @@ pub async fn connect(address: &str) -> anyhow::Result<(WebSocketSender, WebSocke
         WebSocketEvent::Connect => {}
         WebSocketEvent::Error(e) => {
             log::error!("receive error");
-            return Err(WasmError::new_anyhow(JsValue::from(e)).context("Failed to connect."));
+            return Err(OctantError::from(JsValue::from(e))
+                .context("Failed to connect.")
+                .into_anyhow());
         }
         WebSocketEvent::Message(_) => unreachable!(),
         WebSocketEvent::Close => {

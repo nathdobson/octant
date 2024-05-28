@@ -8,8 +8,8 @@ use std::{
 use crate::document::DocumentValue;
 use octant_reffed::arc::{Arc2, ArcRef};
 use octant_runtime::{
-    define_sys_class, define_sys_rpc, error::OctantError, future_return::FutureReturn,
-    octant_future::OctantFuture, runtime::Runtime,
+    define_sys_class, define_sys_rpc, future_return::FutureReturn, octant_future::OctantFuture,
+    runtime::Runtime,
 };
 use safe_once::sync::OnceLock;
 use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serializer};
@@ -17,7 +17,7 @@ use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serialize
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
-use wasm_error::WasmError;
+use octant_error::OctantError;
 
 use crate::{
     document::{ArcDocument, Document},
@@ -81,7 +81,7 @@ define_sys_rpc! {
     fn fetch(runtime: _, window:ArcWindow, req:ArcRequest) -> OctantFuture<Result<ArcResponse, OctantError>>{
         let fetch = window.native().fetch_with_request(req.native());
         Ok(OctantFuture::spawn(runtime, async move{
-            Ok(Arc2::new(ResponseValue::new(JsFuture::from(fetch).await.map_err(WasmError::new)?.dyn_into().map_err(WasmError::new)?)) as ArcResponse)
+            Ok(Arc2::new(ResponseValue::new(JsFuture::from(fetch).await.map_err(OctantError::from)?.dyn_into().map_err(OctantError::from)?)) as ArcResponse)
         }))
     }
 }

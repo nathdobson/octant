@@ -14,8 +14,7 @@ use std::sync::Arc;
 use tokio::{sync::mpsc::unbounded_channel, try_join};
 use wasm_bindgen::prelude::*;
 use web_sys::window;
-
-use wasm_error::{log_error, WasmError};
+use octant_error::OctantError;
 
 use crate::websocket::WebSocketMessage;
 
@@ -34,7 +33,7 @@ pub async fn main() {
     match main_impl().await {
         Ok(x) => match x {},
         Err(e) => {
-            log_error(&e);
+            octant_error::wasm::log_error(&e);
             display_error(&format!("{:?}", e));
         }
     }
@@ -42,8 +41,8 @@ pub async fn main() {
 
 pub async fn main_impl() -> anyhow::Result<!> {
     let location = window().expect("no window").location();
-    let http_proto = location.protocol().map_err(WasmError::new)?;
-    let host = location.host().map_err(WasmError::new)?;
+    let http_proto = location.protocol().map_err(OctantError::from)?;
+    let host = location.host().map_err(OctantError::from)?;
     let ws_proto = match &*http_proto {
         "http:" => "ws:",
         "https:" => "wss:",

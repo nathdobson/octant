@@ -20,7 +20,7 @@ parking_lot = {workspace=true}
 wasm-bindgen-futures = {workspace=true}
 octant-reffed = {workspace=true}
 cfg-if = {workspace=true}
-wasm-error = {workspace=true}
+octant-error = {workspace=true}
 
 [build-dependencies]
 octant-sys-build = { workspace = true }

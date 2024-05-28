@@ -7,7 +7,6 @@ use octant_runtime::{define_sys_rpc, runtime::Runtime};
 use octant_serde::define_serde_impl;
 use safe_once::sync::OnceLock;
 use serde::{Deserialize, Serialize};
-use wasm_error::WasmError;
 
 use crate::{
     credential_creation_options::{ArcCredentialCreationOptions, CredentialCreationOptionsValue},

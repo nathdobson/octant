@@ -5,6 +5,7 @@ use serde::{
     Deserialize, Deserializer,
 };
 use std::{fmt::Formatter, marker::PhantomData};
+use octant_error::OctantError;
 
 pub trait DeserializeWith<'de>: Sized {
     fn deserialize_with<D: Deserializer<'de>>(
@@ -258,4 +259,5 @@ derive_deserialize_with! {
     i8;i16;i32;i64;i128;
     f32; f64;
     String;
+    OctantError;
 }

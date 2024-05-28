@@ -1,0 +1,16 @@
+[package]
+name = "octant-error"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sendable = { workspace = true ,optional = true}
+wasm-bindgen = { workspace = true ,optional = true}
+web-sys = { workspace = true, features = ["console"] ,optional = true}
+log = { workspace = true }
+anyhow = { workspace = true, features= ["backtrace"] }
+serde = { version = "1.0.203", features = ["derive"] }
+backtrace = "0.3.71"
+
+[features]
+wasm = ["sendable", "wasm-bindgen", "web-sys"]

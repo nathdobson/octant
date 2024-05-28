@@ -1,15 +1,15 @@
 use std::{
     convert::TryFrom,
-    error::Error,
     fmt::{Debug, Display, Formatter},
 };
 
+use crate::OctantError;
 use sendable::SendOption;
 use wasm_bindgen::JsValue;
 use web_sys::console;
 
 #[derive(Debug)]
-pub struct WasmError {
+struct WasmError {
     value: SendOption<JsValue>,
 }
 
@@ -19,16 +19,13 @@ impl Display for WasmError {
     }
 }
 
-impl Error for WasmError {}
+impl std::error::Error for WasmError {}
 
 impl WasmError {
     pub fn new(x: JsValue) -> Self {
         WasmError {
             value: SendOption::new(Some(x)),
         }
-    }
-    pub fn new_anyhow(x: JsValue) -> anyhow::Error {
-        anyhow::Error::new(Self::new(x))
     }
     pub fn as_ref(&self) -> Option<&JsValue> {
         self.value.as_ref()
@@ -56,3 +53,15 @@ pub fn log_error(x: &anyhow::Error) {
 
 // not sure why SendOption doesn't do this.
 unsafe impl Sync for WasmError {}
+
+impl From<WasmError> for OctantError {
+    fn from(value: WasmError) -> Self {
+        Self::from(anyhow::Error::from(value))
+    }
+}
+
+impl From<JsValue> for OctantError {
+    fn from(value: JsValue) -> Self {
+        OctantError(anyhow::Error::new(WasmError::new(value)))
+    }
+}
