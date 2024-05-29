@@ -14,7 +14,6 @@ atomic_refcell = { workspace = true }
 url = { workspace = true }
 webauthn-rs = { workspace = true }
 webauthn-rs-core = { workspace = true }
-js-sys = { workspace = true }
 log = { workspace = true }
 octant-account = { workspace = true }
 octant-database = { workspace = true }

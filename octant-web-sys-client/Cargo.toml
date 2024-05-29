@@ -12,7 +12,7 @@ octant-serde = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 anyhow = { workspace = true }
 catalog = { workspace = true }
-octant-error = { workspace = true, features=["wasm"] }
+octant-error = { workspace = true }
 log = { workspace = true }
 octant-object = { workspace = true }
 web-sys = { workspace = true, features = ["HtmlDivElement",  "Location",
