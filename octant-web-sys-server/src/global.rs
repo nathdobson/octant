@@ -55,7 +55,7 @@ impl Global {
     }
     pub fn new_event_listener(
         &self,
-        handler: impl 'static + Sync + Send + Any + Fn(),
+        handler: impl 'static + Any + Fn(),
     ) -> ArcEventListener {
         let listener = new_event_listener(self.runtime());
         listener.set_handler(handler);

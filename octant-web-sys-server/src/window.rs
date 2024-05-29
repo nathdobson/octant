@@ -6,6 +6,7 @@ use std::{
 };
 
 use crate::document::DocumentValue;
+use octant_error::OctantError;
 use octant_reffed::arc::{Arc2, ArcRef};
 use octant_runtime::{
     define_sys_class, define_sys_rpc, future_return::FutureReturn, octant_future::OctantFuture,
@@ -17,7 +18,6 @@ use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serialize
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
-use octant_error::OctantError;
 
 use crate::{
     document::{ArcDocument, Document},
@@ -53,7 +53,7 @@ impl dyn Window {
     pub fn fetch<'a>(
         self: &'a ArcRef<Self>,
         request: ArcRequest,
-    ) -> impl 'a + Send + Future<Output = anyhow::Result<ArcResponse>> {
+    ) -> impl 'a + Future<Output = anyhow::Result<ArcResponse>> {
         async move { Ok(fetch_wrap(self.runtime(), self.arc(), request).await??) }
     }
 }
@@ -63,7 +63,7 @@ fn fetch_wrap(
     runtime: &Arc<Runtime>,
     window: ArcWindow,
     request: ArcRequest,
-) -> impl Send + Future<Output = Result<Result<ArcResponse, OctantError>, anyhow::Error>> {
+) -> impl Future<Output = Result<Result<ArcResponse, OctantError>, anyhow::Error>> {
     fetch(runtime, window, request)
 }
 

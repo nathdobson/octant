@@ -10,13 +10,13 @@ use tokio::sync::mpsc::UnboundedReceiver;
 pub struct BufferedDownMessageSink {
     source: UnboundedReceiver<Box<dyn DownMessage>>,
     buffer: Vec<Box<dyn DownMessage>>,
-    sink: Pin<Box<dyn Send + Sync + Sink<DownMessageList, Error = anyhow::Error>>>,
+    sink: Pin<Box<dyn Sink<DownMessageList, Error = anyhow::Error>>>,
 }
 
 impl BufferedDownMessageSink {
     pub fn new(
         source: UnboundedReceiver<Box<dyn DownMessage>>,
-        sink: Pin<Box<dyn Send + Sync + Sink<DownMessageList, Error = anyhow::Error>>>,
+        sink: Pin<Box<dyn Sink<DownMessageList, Error = anyhow::Error>>>,
     ) -> Self {
         BufferedDownMessageSink {
             source,

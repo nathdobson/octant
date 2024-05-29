@@ -13,6 +13,7 @@ use std::{
     fmt::{Debug, Formatter},
     sync::Arc,
 };
+use std::rc::Rc;
 use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
 use octant_executor::event_loop::EventSpawn;
@@ -24,7 +25,7 @@ struct State {
 
 pub struct Runtime {
     state: AtomicRefCell<State>,
-    spawn: Arc<EventSpawn>,
+    spawn: Rc<EventSpawn>,
     sink: UnboundedSender<Box<dyn DownMessage>>,
 }
 
@@ -35,7 +36,7 @@ impl Debug for Runtime {
 }
 
 impl Runtime {
-    pub fn new(sink: UnboundedSender<Box<dyn DownMessage>>, spawn: Arc<EventSpawn>) -> Self {
+    pub fn new(sink: UnboundedSender<Box<dyn DownMessage>>, spawn: Rc<EventSpawn>) -> Self {
         Runtime {
             state: AtomicRefCell::new(State {
                 next_handle: 0,
@@ -48,7 +49,7 @@ impl Runtime {
     pub fn send(&self, command: Box<dyn DownMessage>) {
         self.sink.send(command).ok();
     }
-    pub fn spawner(&self) -> &Arc<EventSpawn> {
+    pub fn spawner(&self) -> &Rc<EventSpawn> {
         &self.spawn
     }
     pub fn add<T: Peer>(&self, value: T) -> Arc2<T> {

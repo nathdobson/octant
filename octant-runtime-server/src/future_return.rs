@@ -12,10 +12,10 @@ use std::{fmt::Debug, marker::Unsize, sync::Arc};
 use octant_error::OctantError;
 
 pub trait FutureReturn: 'static {
-    type Down: 'static + Serialize + for<'de> DeserializeWith<'de> + Send + Sync + Debug;
-    type Up: 'static + Serialize + for<'de> DeserializeWith<'de> + Send + Sync + Debug;
+    type Down: 'static + Serialize + for<'de> DeserializeWith<'de> + Debug;
+    type Up: 'static + Serialize + for<'de> DeserializeWith<'de> + Debug;
     #[cfg(side = "server")]
-    type Retain: 'static + Send + Sync + Debug;
+    type Retain: 'static + Debug;
     #[cfg(side = "server")]
     fn future_new(runtime: &Arc<Runtime>) -> (Self::Retain, Self::Down);
     #[cfg(side = "client")]
@@ -25,7 +25,7 @@ pub trait FutureReturn: 'static {
 }
 
 #[cfg(side = "server")]
-impl<T: ?Sized + Class + Unsize<dyn Peer> + Send + Sync + Debug> FutureReturn for Arc2<T>
+impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Arc2<T>
 where
     T::Value: Peer + From<PeerValue> + Unsize<T>,
 {
@@ -138,7 +138,7 @@ impl<T> DataReturn<T> {
     }
 }
 
-impl<T: 'static + Sync + Send + Debug + Serialize + for<'de> DeserializeWith<'de>> FutureReturn
+impl<T: 'static + Debug + Serialize + for<'de> DeserializeWith<'de>> FutureReturn
     for DataReturn<T>
 {
     type Down = ();

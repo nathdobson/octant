@@ -10,3 +10,4 @@ futures = { workspace = true }
 parking_lot = { workspace = true }
 by_address = {workspace=true}
 safe-once = {workspace=true}
+slab = {workspace=true}

@@ -12,7 +12,7 @@ use crate::session::{Session, SessionData};
 
 pub struct CookieRouter {
     create_cookies: Mutex<HashMap<Uuid, String>>,
-    update_cookies: Mutex<WeakValueHashMap<Uuid, Weak<Session>>>,
+    update_cookies: Mutex<WeakValueHashMap<Uuid, Weak<SharedCookieData>>>,
 }
 
 pub struct CookieCreateGuard<'a> {
@@ -26,15 +26,20 @@ pub struct CookieUpdateGuard<'a> {
 }
 
 #[derive(Default, Debug)]
-pub struct CookieData {
+struct SharedCookieData {
     cookies: Mutex<HashMap<String, Arc<String>>>,
+}
+
+#[derive(Default, Debug)]
+pub struct CookieData {
+    shared_cookies: Arc<SharedCookieData>,
 }
 
 impl SessionData for CookieData {}
 
 impl CookieData {
     pub fn get(&self, key: &str) -> Option<Arc<String>> {
-        self.cookies.lock().get(key).cloned()
+        self.shared_cookies.cookies.lock().get(key).cloned()
     }
 }
 
@@ -63,7 +68,7 @@ impl CookieRouter {
         let update_token = Uuid::new_v4();
         self.update_cookies
             .lock()
-            .insert(update_token, session.clone());
+            .insert(update_token, session.data::<CookieData>().shared_cookies.clone());
         (
             update_token,
             CookieUpdateGuard {
@@ -73,15 +78,15 @@ impl CookieRouter {
         )
     }
     pub fn update_finish(&self, token: Uuid, cookies: HashMap<String, Arc<String>>) {
-        if let Some(session) = self.update_cookies.lock().get(&token) {
-            *session.data::<CookieData>().cookies.lock() = cookies;
+        if let Some(data) = self.update_cookies.lock().get(&token) {
+            *data.cookies.lock() = cookies;
         }
     }
     pub fn create<'a>(
         &'a self,
         session: &'a Arc<Session>,
         cookie: String,
-    ) -> impl 'a + Send + Future<Output = anyhow::Result<()>> {
+    ) -> impl 'a + Future<Output = anyhow::Result<()>> {
         async move {
             let (cookie_token, _guard) = self.create_start(cookie);
             let request_init = session.global().new_request_init();

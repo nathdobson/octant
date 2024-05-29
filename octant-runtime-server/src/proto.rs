@@ -18,13 +18,13 @@ pub trait DownMessage: SerializeDyn + Debug + Any {
 }
 
 #[cfg(side = "server")]
-pub trait DownMessage: SerializeDyn + Debug + Send + Sync + Any {}
+pub trait DownMessage: SerializeDyn + Debug + Any {}
 
 #[cfg(side = "client")]
 pub trait UpMessage: SerializeDyn + Debug + Any {}
 
 #[cfg(side = "server")]
-pub trait UpMessage: SerializeDyn + Debug + Send + Sync + Any {
+pub trait UpMessage: SerializeDyn + Debug + Any {
     fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()>;
 }
 

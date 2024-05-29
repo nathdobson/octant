@@ -28,7 +28,7 @@ impl LoginHandler {
         session: Arc<Session>,
         url: &'a Url,
         email: &'a str,
-    ) -> impl 'a + Send + Future<Output = anyhow::Result<()>> {
+    ) -> impl 'a + Future<Output = anyhow::Result<()>> {
         async move {
             let webauthn = build_webauthn(url)?;
             let passkeys: Vec<Passkey> = {

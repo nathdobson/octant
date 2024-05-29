@@ -8,11 +8,11 @@ use octant_object::{
 };
 use std::{fmt::Debug, sync::Arc};
 
-pub trait SendSyncDebug: Send + Sync + Debug {}
-impl<T> SendSyncDebug for T where T: Send + Sync + Debug {}
+// pub trait SendSyncDebug: Send + Sync + Debug {}
+// impl<T> SendSyncDebug for T where T: Send + Sync + Debug {}
 
 define_class! {
-    pub class Peer extends Base implements SendSyncDebug{
+    pub class Peer extends Base implements Debug{
         field runtime: Arc<Runtime>;
         field handle: RawHandle;
         fn runtime(self: &Self) -> &Arc<Runtime> {

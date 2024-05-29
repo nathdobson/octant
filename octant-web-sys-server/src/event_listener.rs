@@ -1,3 +1,6 @@
+use octant_reffed::arc::ArcRef;
+#[cfg(side = "client")]
+use octant_runtime::runtime::RuntimeSink;
 use octant_runtime::{define_sys_class, peer::Peer, proto::UpMessage, runtime::Runtime};
 use octant_serde::{define_serde_impl, DeserializeWith};
 use safe_once::sync::OnceLock;
@@ -7,23 +10,20 @@ use std::{
     fmt::{Debug, Formatter},
     sync::Arc,
 };
-use octant_reffed::arc::ArcRef;
-#[cfg(side="client")]
-use octant_runtime::runtime::RuntimeSink;
 
-#[cfg(side="server")]
-trait EventHandlerTrait: 'static + Sync + Send + Fn() -> () {
+#[cfg(side = "server")]
+trait EventHandlerTrait: 'static + Fn() -> () {
     fn debug_name(&self) -> &'static str {
         type_name::<Self>()
     }
 }
-#[cfg(side="server")]
-impl<T: 'static + Sync + Send + Any + Fn() -> ()> EventHandlerTrait for T {}
+#[cfg(side = "server")]
+impl<T: 'static + Any + Fn() -> ()> EventHandlerTrait for T {}
 
-#[cfg(side="server")]
+#[cfg(side = "server")]
 struct EventHandler(Box<dyn EventHandlerTrait>);
 
-#[cfg(side="server")]
+#[cfg(side = "server")]
 impl Debug for EventHandler {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Handler")
@@ -32,9 +32,9 @@ impl Debug for EventHandler {
     }
 }
 
-#[cfg(side="server")]
+#[cfg(side = "server")]
 impl EventHandler {
-    pub fn new<F: 'static + Sync + Send + Fn() -> ()>(f: F) -> Self {
+    pub fn new<F: 'static + Fn() -> ()>(f: F) -> Self {
         EventHandler(Box::<F>::new(f))
     }
 }
@@ -49,7 +49,7 @@ define_sys_class! {
 
 #[cfg(side = "server")]
 impl dyn EventListener {
-    pub fn set_handler(&self, handler: impl Sync + Send + Any + Fn()) {
+    pub fn set_handler(&self, handler: impl Any + Fn()) {
         self.event_listener()
             .handler
             .lock()

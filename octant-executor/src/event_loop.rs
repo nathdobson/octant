@@ -1,99 +1,81 @@
-
-use by_address::ByAddress;
 use std::{
-    collections::HashSet,
+    cell::RefCell,
     future::{poll_fn, Future},
+    rc,
+    rc::Rc,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, Weak,
+        Arc,
     },
     task::{ready, Context, Poll, Wake, Waker},
 };
 
-use futures::future::BoxFuture;
-use parking_lot::Mutex;
+use futures::future::LocalBoxFuture;
+use slab::Slab;
 use tokio::sync::mpsc;
 
-struct Task {
+#[derive(Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
+struct EventTaskId(usize);
+
+struct EventWaker {
     woken: AtomicBool,
-    inner: Mutex<BoxFuture<'static, anyhow::Result<()>>>,
-    spawn: Arc<EventSpawn>,
+    id: EventTaskId,
+    queue: Arc<EventQueue>,
+}
+
+struct EventTask {
+    waker: Arc<EventWaker>,
+    spawn: Rc<EventSpawn>,
+    inner: RefCell<LocalBoxFuture<'static, anyhow::Result<()>>>,
 }
 
 struct TaskSet {
-    tasks: Mutex<HashSet<ByAddress<Arc<Task>>>>,
+    tasks: RefCell<Slab<Rc<EventTask>>>,
+}
+
+struct EventQueue {
+    microtasks: mpsc::UnboundedSender<EventTaskId>,
+    macrotasks: mpsc::UnboundedSender<EventTaskId>,
 }
 
 pub struct EventSpawn {
-    microtasks: mpsc::UnboundedSender<Arc<Task>>,
-    macrotasks: mpsc::UnboundedSender<Arc<Task>>,
-    task_set: Weak<TaskSet>,
+    queue: Arc<EventQueue>,
+    task_set: rc::Weak<TaskSet>,
 }
 
 pub struct EventPool {
-    microtasks: mpsc::UnboundedReceiver<Arc<Task>>,
-    macrotasks: mpsc::UnboundedReceiver<Arc<Task>>,
-    task_set: Arc<TaskSet>,
+    microtasks: mpsc::UnboundedReceiver<EventTaskId>,
+    macrotasks: mpsc::UnboundedReceiver<EventTaskId>,
+    task_set: Rc<TaskSet>,
     flushing: bool,
-    poll_flush: Box<dyn Send + FnMut(&mut Context<'_>) -> Poll<anyhow::Result<()>>>,
+    poll_flush: Box<dyn FnMut(&mut Context<'_>) -> Poll<anyhow::Result<()>>>,
 }
 
-impl Task {
-    pub fn new<F: 'static + Send + Future<Output = anyhow::Result<()>>>(
-        f: F,
-        spawn: Arc<EventSpawn>,
-    ) -> Arc<Self> {
-        let task = Arc::new(Task {
-            woken: AtomicBool::new(true),
-            inner: Mutex::new(Box::pin(f)),
-            spawn: spawn.clone(),
-        });
-        if let Some(tasks) = spawn.task_set.upgrade() {
-            tasks.tasks.lock().insert(ByAddress(task.clone()));
-        }
-        task
-    }
-    pub fn poll_once(self: &Arc<Self>) -> anyhow::Result<()> {
-        self.woken.store(false, Ordering::SeqCst);
-        match self
-            .inner
-            .lock()
-            .as_mut()
-            .poll(&mut Context::from_waker(&Waker::from(self.clone())))
-        {
-            Poll::Ready(r) => {
-                if let Some(tasks) = self.spawn.task_set.upgrade() {
-                    tasks.tasks.lock().remove(&ByAddress(self.clone()));
-                }
-                r?;
-            }
-            Poll::Pending => {}
-        }
-        Ok(())
-    }
-}
+impl EventTask {}
 
-impl Wake for Task {
+impl Wake for EventWaker {
     fn wake(self: Arc<Self>) {
         if !self.woken.swap(true, Ordering::SeqCst) {
-            self.spawn.macrotasks.send(self.clone()).ok();
+            self.queue.macrotasks.send(self.id).ok();
         }
     }
 }
 
 impl EventPool {
-    pub fn new<F: 'static + Send + FnMut(&mut Context<'_>) -> Poll<anyhow::Result<()>>>(
+    pub fn new<F: 'static + FnMut(&mut Context<'_>) -> Poll<anyhow::Result<()>>>(
         poll_flush: F,
-    ) -> (Arc<EventSpawn>, Self) {
+    ) -> (Rc<EventSpawn>, Self) {
         let (micro_tx, micro_rx) = mpsc::unbounded_channel();
         let (macro_tx, macro_rx) = mpsc::unbounded_channel();
-        let task_set = Arc::new(TaskSet {
-            tasks: Mutex::new(HashSet::new()),
+        let task_set = Rc::new(TaskSet {
+            tasks: RefCell::new(Slab::new()),
         });
-        let spawn = Arc::new(EventSpawn {
-            microtasks: micro_tx,
-            macrotasks: macro_tx,
-            task_set: Arc::downgrade(&task_set),
+        let spawn = Rc::new(EventSpawn {
+            queue: Arc::new(EventQueue {
+                microtasks: micro_tx,
+                macrotasks: macro_tx,
+            }),
+            task_set: Rc::downgrade(&task_set),
         });
         let pool = EventPool {
             microtasks: micro_rx,
@@ -103,6 +85,24 @@ impl EventPool {
             poll_flush: Box::new(poll_flush),
         };
         (spawn, pool)
+    }
+
+    fn poll_once(&mut self, id: EventTaskId) -> anyhow::Result<()> {
+        let task = self.task_set.tasks.borrow_mut().get(id.0).unwrap().clone();
+        task.waker.woken.store(false, Ordering::SeqCst);
+        let polled = task
+            .inner
+            .borrow_mut()
+            .as_mut()
+            .poll(&mut Context::from_waker(&Waker::from(task.waker.clone())));
+        match polled {
+            Poll::Ready(r) => {
+                self.task_set.tasks.borrow_mut().remove(id.0);
+                r?;
+            }
+            Poll::Pending => {}
+        }
+        Ok(())
     }
 
     fn poll_step(&mut self, cx: &mut Context<'_>) -> Poll<anyhow::Result<()>> {
@@ -115,7 +115,7 @@ impl EventPool {
                 let mut pending = false;
                 pending |= match self.microtasks.poll_recv(cx) {
                     Poll::Ready(Some(task)) => {
-                        task.poll_once()?;
+                        self.poll_once(task)?;
                         self.flushing = true;
                         continue 'user;
                     }
@@ -124,7 +124,7 @@ impl EventPool {
                 };
                 pending |= match self.macrotasks.poll_recv(cx) {
                     Poll::Ready(Some(task)) => {
-                        task.poll_once()?;
+                        self.poll_once(task)?;
                         self.flushing = true;
                         continue 'system;
                     }
@@ -149,14 +149,37 @@ impl EventPool {
 }
 
 impl EventSpawn {
-    pub fn spawn<F: 'static + Send + Future<Output = anyhow::Result<()>>>(self: &Arc<Self>, f: F) {
-        self.microtasks.send(Task::new(f, self.clone())).ok();
-    }
-    pub fn spawn_macro<F: 'static + Send + Future<Output = anyhow::Result<()>>>(
-        self: &Arc<Self>,
+    fn try_insert<F: 'static + Future<Output = anyhow::Result<()>>>(
+        self: &Rc<EventSpawn>,
         f: F,
-    ) {
-        self.macrotasks.send(Task::new(f, self.clone())).ok();
+    ) -> Option<EventTaskId> {
+        if let Some(tasks) = self.task_set.upgrade() {
+            let ref mut tasks = *tasks.tasks.borrow_mut();
+            let id = EventTaskId(tasks.vacant_key());
+            let waker = Arc::new(EventWaker {
+                woken: AtomicBool::new(true),
+                queue: self.queue.clone(),
+                id,
+            });
+            tasks.insert(Rc::new(EventTask {
+                inner: RefCell::new(Box::pin(f)),
+                waker: waker.clone(),
+                spawn: self.clone(),
+            }));
+            Some(id)
+        } else {
+            None
+        }
+    }
+    pub fn spawn<F: 'static + Future<Output = anyhow::Result<()>>>(self: &Rc<Self>, f: F) {
+        if let Some(id) = self.try_insert(f) {
+            self.queue.microtasks.send(id).ok();
+        }
+    }
+    pub fn spawn_macro<F: 'static + Future<Output = anyhow::Result<()>>>(self: &Rc<Self>, f: F) {
+        if let Some(id) = self.try_insert(f) {
+            self.queue.macrotasks.send(id).ok();
+        }
     }
 }
 
@@ -169,10 +192,9 @@ mod test {
         task::Poll,
     };
 
+    use crate::event_loop::EventPool;
     use parking_lot::Mutex;
     use tokio::task::yield_now;
-    use crate::event_loop::EventPool;
-
 
     #[tokio::test]
     async fn test() -> anyhow::Result<()> {
@@ -254,7 +276,7 @@ mod test {
                 }
                 Poll::Ready(())
             })
-                .await;
+            .await;
         }
         assert_eq!(LOG.lock().iter().collect::<Vec<_>>(), Vec::<&str>::new());
         mem::drop(pool);
