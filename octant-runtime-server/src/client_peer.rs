@@ -7,12 +7,13 @@ use octant_object::{
     define_class,
 };
 use safe_once::{api::once::OnceEntry, cell::OnceCell};
-use std::{fmt::Debug, sync::Arc};
+use std::{fmt::Debug};
+use std::rc::Rc;
 
 #[derive(Debug)]
 struct PeerInit {
     handle: RawHandle,
-    sink: Arc<RuntimeSink>,
+    sink: Rc<RuntimeSink>,
 }
 
 define_class! {
@@ -31,10 +32,10 @@ impl PeerValue {
     pub fn raw_handle(&self) -> RawHandle {
         self.peer_init.try_get().unwrap().handle
     }
-    pub fn sink(&self) -> &Arc<RuntimeSink> {
+    pub fn sink(&self) -> &Rc<RuntimeSink> {
         &self.peer_init.try_get().unwrap().sink
     }
-    pub fn init(&self, handle: RawHandle, sink: Arc<RuntimeSink>) {
+    pub fn init(&self, handle: RawHandle, sink: Rc<RuntimeSink>) {
         match self.peer_init.lock() {
             OnceEntry::Occupied(_) => panic!("already initialized"),
             OnceEntry::Vacant(x) => {

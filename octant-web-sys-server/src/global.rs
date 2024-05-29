@@ -1,4 +1,5 @@
 use std::{any::Any, hint::must_use, marker::PhantomData, sync::Arc};
+use std::rc::Rc;
 
 use crate::request_init::RequestInitValue;
 use catalog::register;
@@ -20,17 +21,17 @@ use crate::{
 
 #[cfg(side = "server")]
 pub struct Global {
-    runtime: Arc<Runtime>,
+    runtime: Rc<Runtime>,
     window: OnceLock<RcWindow>,
 }
 
 #[cfg(side = "server")]
 impl Global {
-    pub fn runtime(&self) -> &Arc<Runtime> {
+    pub fn runtime(&self) -> &Rc<Runtime> {
         &self.runtime
     }
-    pub fn new(runtime: Arc<Runtime>) -> Arc<Self> {
-        Arc::new(Global {
+    pub fn new(runtime: Rc<Runtime>) -> Rc<Self> {
+        Rc::new(Global {
             runtime,
             window: OnceLock::new(),
         })

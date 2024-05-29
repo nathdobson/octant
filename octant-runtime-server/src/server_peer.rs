@@ -6,23 +6,21 @@ use octant_object::{
     base::{Base, BaseValue},
     define_class,
 };
-use std::{fmt::Debug, sync::Arc};
-
-// pub trait SendSyncDebug: Send + Sync + Debug {}
-// impl<T> SendSyncDebug for T where T: Send + Sync + Debug {}
+use std::{fmt::Debug};
+use std::rc::Rc;
 
 define_class! {
     pub class Peer extends Base implements Debug{
-        field runtime: Arc<Runtime>;
+        field runtime: Rc<Runtime>;
         field handle: RawHandle;
-        fn runtime(self: &Self) -> &Arc<Runtime> {
+        fn runtime(self: &Self) -> &Rc<Runtime> {
             &self.peer().runtime
         }
     }
 }
 
 impl PeerValue {
-    pub fn new(runtime: Arc<Runtime>, handle: RawHandle) -> Self {
+    pub fn new(runtime: Rc<Runtime>, handle: RawHandle) -> Self {
         PeerValue {
             parent: BaseValue::default(),
             runtime,

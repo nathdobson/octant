@@ -11,7 +11,6 @@ use octant_reffed::rc::{Rc2, Weak2};
 use octant_serde::DeserializeContext;
 use std::{
     fmt::{Debug, Formatter},
-    sync::Arc,
 };
 use std::rc::Rc;
 use tokio::sync::mpsc::UnboundedSender;
@@ -62,7 +61,7 @@ impl Runtime {
             .insert(handle, result.clone());
         result
     }
-    pub fn add_uninit(self: &Arc<Self>) -> PeerValue {
+    pub fn add_uninit(self: &Rc<Self>) -> PeerValue {
         let handle;
         {
             let ref mut this = *self.state.borrow_mut();
@@ -71,13 +70,13 @@ impl Runtime {
         }
         PeerValue::new(self.clone(), handle)
     }
-    pub fn delete(self: &Arc<Self>, handle: RawHandle) {
+    pub fn delete(self: &Rc<Self>, handle: RawHandle) {
         log::info!("Deleting handle {:?}", handle);
         delete_rpc(self, handle);
     }
-    pub fn run_batch(self: &Arc<Self>, batch: UpMessageList) -> anyhow::Result<()> {
+    pub fn run_batch(self: &Rc<Self>, batch: UpMessageList) -> anyhow::Result<()> {
         let mut ctx = DeserializeContext::new();
-        ctx.insert::<Arc<Runtime>>(self.clone());
+        ctx.insert::<Rc<Runtime>>(self.clone());
         for message in batch.commands {
             log::info!("Running up message{:?}", message);
             let message = message.deserialize_with(&ctx)?;
@@ -85,11 +84,11 @@ impl Runtime {
         }
         Ok(())
     }
-    pub fn run_message(self: &Arc<Self>, message: Box<dyn UpMessage>) -> anyhow::Result<()> {
+    pub fn run_message(self: &Rc<Self>, message: Box<dyn UpMessage>) -> anyhow::Result<()> {
         message.run(self)
     }
     pub fn lookup<T: ?Sized + Class>(
-        self: &Arc<Self>,
+        self: &Rc<Self>,
         handle: TypedHandle<T>,
     ) -> Result<Rc2<T>, LookupError> {
         Ok(downcast_object(

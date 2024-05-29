@@ -7,7 +7,8 @@ use crate::{
 use atomic_refcell::AtomicRefCell;
 use octant_object::{cast::downcast_object, class::Class};
 use octant_serde::DeserializeContext;
-use std::{collections::HashMap, marker::Unsize, sync::Arc};
+use std::{collections::HashMap, marker::Unsize};
+use std::rc::Rc;
 use tokio::sync::mpsc::UnboundedSender;
 use web_sys::console;
 use octant_reffed::rc::Rc2;
@@ -19,7 +20,7 @@ struct State {
 
 pub struct Runtime {
     state: AtomicRefCell<State>,
-    sink: Arc<RuntimeSink>,
+    sink: Rc<RuntimeSink>,
 }
 
 #[derive(Debug)]
@@ -28,18 +29,18 @@ pub struct RuntimeSink {
 }
 
 impl Runtime {
-    pub fn new(sink: UnboundedSender<Box<dyn UpMessage>>) -> anyhow::Result<Arc<Runtime>> {
-        let runtime = Arc::new(Runtime {
+    pub fn new(sink: UnboundedSender<Box<dyn UpMessage>>) -> anyhow::Result<Rc<Runtime>> {
+        let runtime = Rc::new(Runtime {
             state: AtomicRefCell::new(State {
                 handles: HashMap::new(),
             }),
-            sink: Arc::new(RuntimeSink { sink }),
+            sink: Rc::new(RuntimeSink { sink }),
         });
         Ok(runtime)
     }
 
     pub fn add<T: ?Sized + Class + Unsize<dyn Peer>>(
-        self: &Arc<Self>,
+        self: &Rc<Self>,
         assign: TypedHandle<T>,
         value: Rc2<T>,
     ) {
@@ -66,12 +67,12 @@ impl Runtime {
         )
         .map_err(|_| LookupError::DowncastFailed)?)
     }
-    pub fn delete(self: &Arc<Self>, handle: RawHandle) {
+    pub fn delete(self: &Rc<Self>, handle: RawHandle) {
         self.state.borrow_mut().handles.remove(&handle);
     }
-    pub async fn run_batch(self: &Arc<Self>, messages: DownMessageList) -> anyhow::Result<()> {
+    pub async fn run_batch(self: &Rc<Self>, messages: DownMessageList) -> anyhow::Result<()> {
         let mut ctx = DeserializeContext::new();
-        ctx.insert::<Arc<Runtime>>(self.clone());
+        ctx.insert::<Rc<Runtime>>(self.clone());
         for message in messages.commands {
             console::info_1(&format!("{:?}", message).into());
             let message = message.deserialize_with(&ctx)?;
@@ -79,11 +80,11 @@ impl Runtime {
         }
         Ok(())
     }
-    async fn run_message(self: &Arc<Self>, message: Box<dyn DownMessage>) -> anyhow::Result<()> {
+    async fn run_message(self: &Rc<Self>, message: Box<dyn DownMessage>) -> anyhow::Result<()> {
         message.run(self)?;
         Ok(())
     }
-    pub fn sink(&self) -> &Arc<RuntimeSink> {
+    pub fn sink(&self) -> &Rc<RuntimeSink> {
         &self.sink
     }
 }

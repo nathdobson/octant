@@ -8,6 +8,7 @@ use std::{
     collections::HashMap, future::pending, net::SocketAddr, sync::Arc,
     thread::available_parallelism,
 };
+use std::rc::Rc;
 
 use anyhow::anyhow;
 use clap::Parser;
@@ -80,7 +81,7 @@ struct OctantApplication {
 }
 
 impl OctantApplication {
-    fn create_page(&self, url: &str, _global: Arc<Global>) -> anyhow::Result<Page> {
+    fn create_page(&self, url: &str, _global: Rc<Global>) -> anyhow::Result<Page> {
         let url = Url::parse(url)?;
         let prefix = url
             .path_segments()
@@ -121,7 +122,7 @@ impl OctantServer {
             RawEncoded::Text(x) => Ok(Message::text(x)),
         }
     }
-    fn decode(runtime: &Arc<Runtime>, x: Message) -> anyhow::Result<Option<UpMessageList>> {
+    fn decode(runtime: &Rc<Runtime>, x: Message) -> anyhow::Result<Option<UpMessageList>> {
         if x.is_close() {
             Ok(None)
         } else if x.is_text() {
@@ -156,7 +157,7 @@ impl OctantServer {
         let (tx_inner, rx_inner) = mpsc::unbounded_channel();
         let mut sink = BufferedDownMessageSink::new(rx_inner, Box::pin(tx.with(Self::encode)));
         let (spawn, mut pool) = EventPool::new(move |cx| sink.poll_flush(cx));
-        let runtime = Arc::new(Runtime::new(tx_inner, spawn.clone()));
+        let runtime = Rc::new(Runtime::new(tx_inner, spawn.clone()));
         let global = Global::new(runtime);
         let session = Arc::new(Session::new(global.clone()));
         let app = Arc::new(OctantApplication {
@@ -294,12 +295,12 @@ pub trait Application: 'static + Sync + Send {
 }
 
 pub struct Page {
-    global: Arc<Global>,
+    global: Rc<Global>,
     node: RcNode,
 }
 
 impl Page {
-    pub fn new(global: Arc<Global>, node: RcNode) -> Page {
+    pub fn new(global: Rc<Global>, node: RcNode) -> Page {
         global.window().document().body().append_child(node.clone());
         Page { global, node }
     }

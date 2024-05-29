@@ -5,16 +5,16 @@ extern crate octant_web_sys_client;
 
 use anyhow::anyhow;
 use futures::StreamExt;
+use octant_error::OctantError;
 use octant_runtime_client::{
     proto::{DownMessageList, UpMessageList},
     runtime::Runtime,
 };
 use octant_serde::{DeserializeContext, Format, RawEncoded};
-use std::sync::Arc;
+use std::rc::Rc;
 use tokio::{sync::mpsc::unbounded_channel, try_join};
 use wasm_bindgen::prelude::*;
 use web_sys::window;
-use octant_error::OctantError;
 
 use crate::websocket::WebSocketMessage;
 
@@ -78,7 +78,7 @@ pub async fn main_impl() -> anyhow::Result<!> {
             };
             let message: DownMessageList = encoded.deserialize_as::<DownMessageList>()?;
             let mut ctx = DeserializeContext::new();
-            ctx.insert::<Arc<Runtime>>(runtime.clone());
+            ctx.insert::<Rc<Runtime>>(runtime.clone());
             for message in message.commands {
                 let message = message.deserialize_with(&ctx)?;
                 message.run(&runtime)?;

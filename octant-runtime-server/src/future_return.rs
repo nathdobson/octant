@@ -7,7 +7,8 @@ use crate::{
 use octant_object::class::Class;
 use octant_serde::DeserializeWith;
 use serde::Serialize;
-use std::{fmt::Debug, marker::Unsize, sync::Arc};
+use std::{fmt::Debug, marker::Unsize};
+use std::rc::Rc;
 use octant_error::OctantError;
 use octant_reffed::rc::Rc2;
 
@@ -17,11 +18,11 @@ pub trait FutureReturn: 'static {
     #[cfg(side = "server")]
     type Retain: 'static + Debug;
     #[cfg(side = "server")]
-    fn future_new(runtime: &Arc<Runtime>) -> (Self::Retain, Self::Down);
+    fn future_new(runtime: &Rc<Runtime>) -> (Self::Retain, Self::Down);
     #[cfg(side = "client")]
-    fn future_produce(self, runtime: &Arc<Runtime>, down: Self::Down) -> Self::Up;
+    fn future_produce(self, runtime: &Rc<Runtime>, down: Self::Down) -> Self::Up;
     #[cfg(side = "server")]
-    fn future_return(runtime: &Arc<Runtime>, retain: Self::Retain, up: Self::Up) -> Self;
+    fn future_return(runtime: &Rc<Runtime>, retain: Self::Retain, up: Self::Up) -> Self;
 }
 
 #[cfg(side = "server")]
@@ -32,10 +33,10 @@ where
     type Down = TypedHandle<T>;
     type Up = ();
     type Retain = Self;
-    fn future_new(runtime: &Arc<Runtime>) -> (Self::Retain, Self::Down) {
+    fn future_new(runtime: &Rc<Runtime>) -> (Self::Retain, Self::Down) {
         ImmediateReturn::immediate_new(runtime)
     }
-    fn future_return(runtime: &Arc<Runtime>, retain: Self::Retain, up: Self::Up) -> Self {
+    fn future_return(runtime: &Rc<Runtime>, retain: Self::Retain, up: Self::Up) -> Self {
         retain
     }
 }
@@ -48,7 +49,7 @@ where
     type Down = TypedHandle<T>;
     type Up = ();
     #[cfg(side = "client")]
-    fn future_produce(self, runtime: &Arc<Runtime>, down: Self::Down) -> Self::Up {
+    fn future_produce(self, runtime: &Rc<Runtime>, down: Self::Down) -> Self::Up {
         self.immediate_return(runtime, down)
     }
 }
@@ -59,15 +60,15 @@ impl FutureReturn for () {
     #[cfg(side = "server")]
     type Retain = ();
     #[cfg(side = "server")]
-    fn future_new(runtime: &Arc<Runtime>) -> ((), ()) {
+    fn future_new(runtime: &Rc<Runtime>) -> ((), ()) {
         ((), ())
     }
     #[cfg(side = "client")]
-    fn future_produce(self, runtime: &Arc<Runtime>, down: Self::Down) -> Self::Up {
+    fn future_produce(self, runtime: &Rc<Runtime>, down: Self::Down) -> Self::Up {
         ()
     }
     #[cfg(side = "server")]
-    fn future_return(runtime: &Arc<Runtime>, retain: Self::Retain, up: Self::Up) -> Self {
+    fn future_return(runtime: &Rc<Runtime>, retain: Self::Retain, up: Self::Up) -> Self {
         ()
     }
 }
@@ -78,20 +79,20 @@ impl<T1: FutureReturn, T2: FutureReturn> FutureReturn for (T1, T2) {
     #[cfg(side = "server")]
     type Retain = (T1::Retain, T2::Retain);
     #[cfg(side = "server")]
-    fn future_new(runtime: &Arc<Runtime>) -> ((T1::Retain, T2::Retain), (T1::Down, T2::Down)) {
+    fn future_new(runtime: &Rc<Runtime>) -> ((T1::Retain, T2::Retain), (T1::Down, T2::Down)) {
         let (r1, d1) = T1::future_new(runtime);
         let (r2, d2) = T2::future_new(runtime);
         ((r1, r2), (d1, d2))
     }
     #[cfg(side = "client")]
-    fn future_produce(self, runtime: &Arc<Runtime>, (d1, d2): Self::Down) -> Self::Up {
+    fn future_produce(self, runtime: &Rc<Runtime>, (d1, d2): Self::Down) -> Self::Up {
         (
             self.0.future_produce(runtime, d1),
             self.1.future_produce(runtime, d2),
         )
     }
     #[cfg(side = "server")]
-    fn future_return(runtime: &Arc<Runtime>, (r1, r2): Self::Retain, (u1, u2): Self::Up) -> Self {
+    fn future_return(runtime: &Rc<Runtime>, (r1, r2): Self::Retain, (u1, u2): Self::Up) -> Self {
         (
             T1::future_return(runtime, r1, u1),
             T2::future_return(runtime, r2, u2),
@@ -106,20 +107,20 @@ impl<T: FutureReturn, E: FutureReturn> FutureReturn for Result<T, E> {
     type Retain = (T::Retain, E::Retain);
 
     #[cfg(side = "server")]
-    fn future_new(runtime: &Arc<Runtime>) -> (Self::Retain, Self::Down) {
+    fn future_new(runtime: &Rc<Runtime>) -> (Self::Retain, Self::Down) {
         let (tr, td) = T::future_new(runtime);
         let (er, ed) = E::future_new(runtime);
         ((tr, er), (td, ed))
     }
     #[cfg(side = "client")]
-    fn future_produce(self, runtime: &Arc<Runtime>, (td, ed): Self::Down) -> Self::Up {
+    fn future_produce(self, runtime: &Rc<Runtime>, (td, ed): Self::Down) -> Self::Up {
         match self {
             Ok(t) => Ok(t.future_produce(runtime, td)),
             Err(e) => Err(e.future_produce(runtime, ed)),
         }
     }
     #[cfg(side = "server")]
-    fn future_return(runtime: &Arc<Runtime>, (tr, er): Self::Retain, up: Self::Up) -> Self {
+    fn future_return(runtime: &Rc<Runtime>, (tr, er): Self::Retain, up: Self::Up) -> Self {
         match up {
             Ok(t) => Ok(T::future_return(runtime, tr, t)),
             Err(e) => Err(E::future_return(runtime, er, e)),
@@ -147,16 +148,16 @@ impl<T: 'static + Debug + Serialize + for<'de> DeserializeWith<'de>> FutureRetur
     type Retain = ();
 
     #[cfg(side = "server")]
-    fn future_new(runtime: &Arc<Runtime>) -> (Self::Retain, Self::Down) {
+    fn future_new(runtime: &Rc<Runtime>) -> (Self::Retain, Self::Down) {
         ((), ())
     }
 
     #[cfg(side = "client")]
-    fn future_produce(self, runtime: &Arc<Runtime>, down: Self::Down) -> Self::Up {
+    fn future_produce(self, runtime: &Rc<Runtime>, down: Self::Down) -> Self::Up {
         self.0
     }
     #[cfg(side = "server")]
-    fn future_return(runtime: &Arc<Runtime>, _: Self::Retain, up: Self::Up) -> Self {
+    fn future_return(runtime: &Rc<Runtime>, _: Self::Retain, up: Self::Up) -> Self {
         DataReturn(up)
     }
 }
@@ -170,15 +171,15 @@ macro_rules! future_return_simple {
                 #[cfg(side = "server")]
                 type Retain = ();
                 #[cfg(side = "server")]
-                fn future_new(runtime: &Arc<Runtime>) -> ((), ()) {
+                fn future_new(runtime: &Rc<Runtime>) -> ((), ()) {
                     ((), ())
                 }
                 #[cfg(side = "client")]
-                fn future_produce(self, runtime: &Arc<Runtime>, down: Self::Down) -> Self::Up {
+                fn future_produce(self, runtime: &Rc<Runtime>, down: Self::Down) -> Self::Up {
                     self
                 }
                 #[cfg(side = "server")]
-                fn future_return(runtime: &Arc<Runtime>, retain: Self::Retain, up: Self::Up) -> Self {
+                fn future_return(runtime: &Rc<Runtime>, retain: Self::Retain, up: Self::Up) -> Self {
                     up
                 }
             }

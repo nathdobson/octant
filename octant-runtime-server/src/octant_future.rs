@@ -2,7 +2,7 @@ use crate::peer::Peer;
 #[cfg(side = "client")]
 use crate::peer::PeerValue;
 use octant_object::define_class;
-use std::{fmt::Debug, future::Future, marker::PhantomData, sync::Arc};
+use std::{fmt::Debug, future::Future, marker::PhantomData};
 
 #[cfg(side = "server")]
 use anyhow::anyhow;
@@ -11,6 +11,7 @@ use std::{
     pin::Pin,
     task::{Context, Poll},
 };
+use std::{rc::Rc, sync::Arc};
 
 #[cfg(side = "server")]
 use crate::immediate_return::AsTypedHandle;
@@ -19,16 +20,16 @@ use crate::{
     immediate_return::ImmediateReturn, proto::UpMessage, runtime::Runtime,
 };
 use octant_serde::{
-    define_serde_impl, DeserializeRcWith, DeserializeContext, DeserializeWith, RawEncoded,
+    define_serde_impl, DeserializeContext, DeserializeRcWith, DeserializeWith, RawEncoded,
 };
 
+use octant_reffed::rc::Rc2;
 #[cfg(side = "client")]
 use octant_serde::Format;
 use parking_lot::Mutex;
 use serde::{Deserializer, Serialize, Serializer};
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
-use octant_reffed::rc::Rc2;
 
 #[cfg(side = "server")]
 define_class! {
@@ -69,7 +70,7 @@ pub struct FutureResponse {
 define_serde_impl!(FutureResponse: UpMessage);
 impl UpMessage for FutureResponse {
     #[cfg(side = "server")]
-    fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()> {
+    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> anyhow::Result<()> {
         self.promise
             .sender
             .lock()
@@ -83,7 +84,7 @@ impl UpMessage for FutureResponse {
 
 #[cfg(side = "client")]
 impl<T: Debug + FutureReturn> OctantFuture<T> {
-    pub fn spawn<F: 'static + Future<Output = T>>(runtime: &Arc<Runtime>, f: F) -> Self {
+    pub fn spawn<F: 'static + Future<Output = T>>(runtime: &Rc<Runtime>, f: F) -> Self {
         let parent = Rc2::new(AbstractOctantFutureValue {
             parent: PeerValue::new(),
         });
@@ -96,10 +97,12 @@ impl<T: Debug + FutureReturn> OctantFuture<T> {
                 let result = f.await;
                 let down = down.lock().take().unwrap();
                 let up = result.future_produce(&runtime, down);
-                runtime.sink().send(Box::<FutureResponse>::new(FutureResponse {
-                    promise: parent,
-                    value: Format::default().serialize_raw(&up).unwrap(),
-                }))
+                runtime
+                    .sink()
+                    .send(Box::<FutureResponse>::new(FutureResponse {
+                        promise: parent,
+                        value: Format::default().serialize_raw(&up).unwrap(),
+                    }))
             }
         });
         OctantFuture {
@@ -116,7 +119,7 @@ impl<T: FutureReturn> Future for OctantFuture<T> {
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         if let Poll::Ready(up) = Pin::new(&mut (*self).receiver).poll(cx)? {
             let mut ctx = DeserializeContext::new();
-            ctx.insert::<Arc<Runtime>>(self.parent.runtime().clone());
+            ctx.insert::<Rc<Runtime>>(self.parent.runtime().clone());
             let up = up.deserialize_as_with::<T::Up>(&ctx)?;
             let retain = self.retain.take().unwrap();
             return Poll::Ready(Ok(T::future_return(self.parent.runtime(), retain, up)));
@@ -147,7 +150,7 @@ impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
     type Down = (TypedHandle<dyn AbstractOctantFuture>, T::Down);
 
     #[cfg(side = "server")]
-    fn immediate_new(runtime: &Arc<Runtime>) -> (Self, Self::Down) {
+    fn immediate_new(runtime: &Rc<Runtime>) -> (Self, Self::Down) {
         let (retain, down) = T::future_new(runtime);
         let (tx, rx) = oneshot::channel();
         let peer: Rc2<dyn AbstractOctantFuture> =
@@ -168,7 +171,7 @@ impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
     }
 
     #[cfg(side = "client")]
-    fn immediate_return(self, runtime: &Arc<Runtime>, down: Self::Down) {
+    fn immediate_return(self, runtime: &Rc<Runtime>, down: Self::Down) {
         *self.down.lock() = Some(down.1);
         runtime.add(down.0, self.parent)
     }

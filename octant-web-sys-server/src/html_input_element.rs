@@ -1,3 +1,4 @@
+use std::rc::Rc;
 #[cfg(side = "server")]
 use parking_lot::Mutex;
 use std::sync::Arc;
@@ -47,7 +48,7 @@ struct SetInput {
 define_serde_impl!(SetInput : UpMessage);
 impl UpMessage for SetInput {
     #[cfg(side = "server")]
-    fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()> {
+    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> anyhow::Result<()> {
         *self.element.html_input_element().value.lock() = Arc::new(self.value);
         Ok(())
     }

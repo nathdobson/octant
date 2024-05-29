@@ -9,12 +9,12 @@ use serde::{
 use std::{
     any::Any,
     fmt::{Debug, Formatter},
-    sync::Arc,
 };
+use std::rc::Rc;
 
 #[cfg(side = "client")]
 pub trait DownMessage: SerializeDyn + Debug + Any {
-    fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()>;
+    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> anyhow::Result<()>;
 }
 
 #[cfg(side = "server")]
@@ -25,7 +25,7 @@ pub trait UpMessage: SerializeDyn + Debug + Any {}
 
 #[cfg(side = "server")]
 pub trait UpMessage: SerializeDyn + Debug + Any {
-    fn run(self: Box<Self>, runtime: &Arc<Runtime>) -> anyhow::Result<()>;
+    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> anyhow::Result<()>;
 }
 
 #[derive(Serialize, Deserialize, Debug)]

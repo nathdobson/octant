@@ -4,6 +4,7 @@ use std::{
     mem::{ManuallyDrop, MaybeUninit},
     sync::Arc,
 };
+use std::rc::Rc;
 
 use crate::document::DocumentValue;
 use octant_error::OctantError;
@@ -61,7 +62,7 @@ impl dyn Window {
 
 #[cfg(side = "server")]
 fn fetch_wrap(
-    runtime: &Arc<Runtime>,
+    runtime: &Rc<Runtime>,
     window: RcWindow,
     request: RcRequest,
 ) -> impl Future<Output = Result<Result<RcResponse, OctantError>, anyhow::Error>> {

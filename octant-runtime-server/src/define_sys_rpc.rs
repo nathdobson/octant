@@ -9,7 +9,7 @@ macro_rules! define_sys_rpc {
             $(
                 #[cfg(side = "server")]
                 $vis fn $name(
-                    runtime: &::std::sync::Arc<$crate::runtime::Runtime>
+                    runtime: &::std::rc::Rc<$crate::runtime::Runtime>
                     $(, $input_name: $input)*
                 ) -> $output {
                     let (output, down) = <$output as $crate::immediate_return::ImmediateReturn>::immediate_new(runtime);
@@ -30,7 +30,7 @@ macro_rules! define_sys_rpc {
                 $crate::reexports::octant_serde::define_serde_impl!([< $name:camel Request >]: $crate::proto::DownMessage);
                 #[cfg(side="client")]
                 impl $crate::proto::DownMessage for [< $name:camel Request >] {
-                    fn run(self:Box<Self>, runtime:&::std::sync::Arc<$crate::runtime::Runtime>) -> $crate::reexports::anyhow::Result<()>{
+                    fn run(self:Box<Self>, runtime: &::std::rc::Rc<$crate::runtime::Runtime>) -> $crate::reexports::anyhow::Result<()>{
                         let output=[<impl_ $name>](runtime $(, self.$input_name)*)?;
                         $crate::immediate_return::ImmediateReturn::immediate_return(output, runtime, self.down);
                         Ok(())
@@ -44,7 +44,7 @@ macro_rules! define_sys_rpc {
 
                 #[cfg(side="client")]
                 fn [<impl_ $name>](
-                    $runtime: &::std::sync::Arc<$crate::runtime::Runtime>,
+                    $runtime: &::std::rc::Rc<$crate::runtime::Runtime>,
                     $($input_name: $input,)*
                 ) -> $crate::reexports::anyhow::Result<$output>
                 {
@@ -65,17 +65,17 @@ macro_rules! define_sys_rpc {
                 #[cfg(side="server")]
                 impl dyn $class {
                     $vis fn $name (
-                        self : $crate::reexports::octant_reffed::ArcRef<Self>
+                        self : $crate::reexports::octant_reffed::RcRef<Self>
                         $(, $input_name: $input)*
                     ) -> $output {
-                        [< $name _no_self >](self.runtime(), self.arc(), $( $input_name )*)
+                        [< $name _no_self >](self.runtime(), self.rc(), $( $input_name )*)
                     }
                 }
                 #[cfg(side="client")]
                 impl dyn $class {
                     $vis fn $name (
-                        $self : $crate::reexports::octant_reffed::ArcRef<Self>,
-                        $runtime : &::std::sync::Arc<$crate::runtime::Runtime>
+                        $self : $crate::reexports::octant_reffed::RcRef<Self>,
+                        $runtime : &::std::rc::Rc<$crate::runtime::Runtime>
                         $(, $input_name: $input)*
                     ) -> $crate::reexports::anyhow::Result<$output> {
                         $( $imp )*
@@ -84,7 +84,7 @@ macro_rules! define_sys_rpc {
                 define_sys_rpc! {
                     fn [< $name _no_self >] (
                         $runtime:_,
-                        this : ::std::sync::Arc<dyn $class>
+                        this : ::std::sync::Rc<dyn $class>
                         $(, $input_name: $input)*
                     ) -> $output {
                         this.reffed().$name($runtime $(,$input_name)*)
