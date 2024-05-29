@@ -1,4 +1,4 @@
-use safe_once::sync::OnceLock;
+use safe_once::cell::OnceCell;
 use serde::Serialize;
 
 use octant_object::define_class;
@@ -41,7 +41,7 @@ define_sys_class! {
     wasm web_sys::Document;
     new_client _;
     new_server _;
-    server_field body: OnceLock<RcHtmlElement>;
+    server_field body: OnceCell<RcHtmlElement>;
     server_fn {
         fn create_div(self: &RcRef<Self>) -> RcHtmlDivElement{
             create_div(self.runtime(), self.rc())

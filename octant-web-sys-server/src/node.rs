@@ -1,8 +1,6 @@
 use std::{cell::RefCell, collections::HashSet};
 
 use by_address::ByAddress;
-#[cfg(side = "server")]
-use parking_lot::Mutex;
 
 use octant_reffed::rc::RcRef;
 use octant_runtime::{define_sys_class, define_sys_rpc};
@@ -16,7 +14,7 @@ define_sys_class! {
     new_client _;
     new_server _;
     client_field children: RefCell<HashSet<ByAddress<RcNode>>>;
-    server_field children: Mutex<HashSet<ByAddress<RcNode>>>;
+    server_field children: RefCell<HashSet<ByAddress<RcNode>>>;
     client_fn {
         fn children(self:&RcRef<Self>)->Vec<RcNode>{
             self.node().children.borrow().iter().map(|x|x.0.clone()).collect()
@@ -24,11 +22,11 @@ define_sys_class! {
     }
     server_fn {
         fn append_child(self: &RcRef<Self>, e:RcNode){
-            self.node().children.lock().insert(ByAddress(e.clone()));
+            self.node().children.borrow_mut().insert(ByAddress(e.clone()));
             append_child(self.runtime(), self.rc(), e);
         }
         fn remove_child(self: &RcRef<Self>, e:RcNode){
-            self.node().children.lock().remove(&ByAddress(e.clone()));
+            self.node().children.borrow_mut().remove(&ByAddress(e.clone()));
             remove_child(self.runtime(), self.rc(), e);
         }
     }

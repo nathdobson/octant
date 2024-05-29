@@ -6,7 +6,6 @@ use std::{
 use safe_once::{
     api::once::OnceEntry,
     cell::OnceCell,
-    sync::{OnceLock, RawFusedLock},
 };
 use serde::Serialize;
 #[cfg(side = "client")]
@@ -19,8 +18,6 @@ use web_sys::Event;
 use octant_object::cast::downcast_object;
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{define_sys_class, define_sys_rpc};
-#[cfg(side = "server")]
-use parking_lot::Mutex;
 
 use crate::{html_element::HtmlElement, html_input_element::RcHtmlInputElement};
 use crate::event_listener::RcEventListener;
@@ -32,7 +29,7 @@ define_sys_class! {
     new_client _;
     new_server _;
     client_field closure: OnceCell<Closure<dyn Fn(Event)>> ;
-    server_field listener: OnceLock<RcEventListener>;
+    server_field listener: OnceCell<RcEventListener>;
     server_fn {
         fn set_listener(self: &RcRef<Self>, listener: RcEventListener){
             self.html_form_element().listener.get_or_init(||listener.clone());

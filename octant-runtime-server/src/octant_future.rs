@@ -1,40 +1,37 @@
-use std::{fmt::Debug, future::Future, marker::PhantomData};
+use std::{cell::RefCell, fmt::Debug, future::Future, marker::PhantomData, rc::Rc};
 #[cfg(side = "server")]
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-use std::rc::Rc;
 
 #[cfg(side = "server")]
 use anyhow::anyhow;
-use parking_lot::Mutex;
 use serde::{Deserializer, Serialize, Serializer};
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
 
 use octant_object::define_class;
 use octant_reffed::rc::Rc2;
+#[cfg(side = "client")]
+use octant_serde::Format;
 use octant_serde::{
     define_serde_impl, DeserializeContext, DeserializeRcWith, DeserializeWith, RawEncoded,
 };
-#[cfg(side = "client")]
-use octant_serde::Format;
 
-use crate::{
-    deserialize_object_with, future_return::FutureReturn, handle::TypedHandle,
-    immediate_return::ImmediateReturn, proto::UpMessage, runtime::Runtime,
-};
 #[cfg(side = "server")]
 use crate::immediate_return::AsTypedHandle;
-use crate::peer::Peer;
 #[cfg(side = "client")]
 use crate::peer::PeerValue;
+use crate::{
+    deserialize_object_with, future_return::FutureReturn, handle::TypedHandle,
+    immediate_return::ImmediateReturn, peer::Peer, proto::UpMessage, runtime::Runtime,
+};
 
 #[cfg(side = "server")]
 define_class! {
     pub class AbstractOctantFuture extends Peer {
-        field sender: Mutex<Option<oneshot::Sender<RawEncoded>>>;
+        field sender: RefCell<Option<oneshot::Sender<RawEncoded>>>;
     }
 }
 
@@ -57,7 +54,7 @@ impl<T: FutureReturn> Unpin for OctantFuture<T> {}
 #[cfg(side = "client")]
 pub struct OctantFuture<T: FutureReturn> {
     parent: RcAbstractOctantFuture,
-    down: Rc<Mutex<Option<T::Down>>>,
+    down: Rc<RefCell<Option<T::Down>>>,
     phantom: PhantomData<T>,
 }
 
@@ -73,7 +70,7 @@ impl UpMessage for FutureResponse {
     fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> anyhow::Result<()> {
         self.promise
             .sender
-            .lock()
+            .borrow_mut()
             .take()
             .ok_or_else(|| anyhow!("double return"))?
             .send(self.value)
@@ -88,14 +85,14 @@ impl<T: Debug + FutureReturn> OctantFuture<T> {
         let parent = Rc2::new(AbstractOctantFutureValue {
             parent: PeerValue::new(),
         });
-        let down = Rc::new(Mutex::new(None));
+        let down = Rc::new(RefCell::new(None));
         wasm_bindgen_futures::spawn_local({
             let parent = parent.clone();
             let down = down.clone();
             let runtime = runtime.clone();
             async move {
                 let result = f.await;
-                let down = down.lock().take().unwrap();
+                let down = down.borrow_mut().take().unwrap();
                 let up = result.future_produce(&runtime, down);
                 runtime
                     .sink()
@@ -156,7 +153,7 @@ impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
         let peer: Rc2<dyn AbstractOctantFuture> =
             runtime.add::<AbstractOctantFutureValue>(AbstractOctantFutureValue {
                 parent: runtime.add_uninit(),
-                sender: Mutex::new(Some(tx)),
+                sender: RefCell::new(Some(tx)),
             });
         let handle = (*peer).typed_handle();
         (
@@ -172,7 +169,7 @@ impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
 
     #[cfg(side = "client")]
     fn immediate_return(self, runtime: &Rc<Runtime>, down: Self::Down) {
-        *self.down.lock() = Some(down.1);
+        *self.down.borrow_mut() = Some(down.1);
         runtime.add(down.0, self.parent)
     }
 }

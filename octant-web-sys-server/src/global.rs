@@ -2,7 +2,7 @@ use std::{any::Any, hint::must_use, marker::PhantomData};
 use std::rc::Rc;
 
 use catalog::register;
-use safe_once::sync::OnceLock;
+use safe_once::cell::OnceCell;
 use serde::{Deserialize, Serialize};
 
 use octant_reffed::rc::{Rc2, RcRef};
@@ -22,7 +22,7 @@ use crate::request_init::RequestInitValue;
 #[cfg(side = "server")]
 pub struct Global {
     runtime: Rc<Runtime>,
-    window: OnceLock<RcWindow>,
+    window: OnceCell<RcWindow>,
 }
 
 #[cfg(side = "server")]
@@ -33,7 +33,7 @@ impl Global {
     pub fn new(runtime: Rc<Runtime>) -> Rc<Self> {
         Rc::new(Global {
             runtime,
-            window: OnceLock::new(),
+            window: OnceCell::new(),
         })
     }
 }

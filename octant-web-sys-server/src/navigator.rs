@@ -1,4 +1,4 @@
-use safe_once::sync::OnceLock;
+use safe_once::cell::OnceCell;
 
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{define_sys_class, define_sys_rpc};
@@ -12,7 +12,7 @@ define_sys_class! {
     wasm web_sys::Navigator;
     new_client _;
     new_server _;
-    server_field credentials_container: OnceLock<RcCredentialsContainer>;
+    server_field credentials_container: OnceCell<RcCredentialsContainer>;
     server_fn {
         fn credentials<'a>(self: &'a RcRef<Self>) -> &'a RcCredentialsContainer {
             self.navigator().credentials_container.get_or_init(|| credentials(self.runtime(),self.rc()))

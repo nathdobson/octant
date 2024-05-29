@@ -3,8 +3,8 @@ use std::{
     fmt::{Debug, Formatter},
 };
 use std::rc::Rc;
+use safe_once::cell::OnceCell;
 
-use safe_once::sync::OnceLock;
 use serde::Serialize;
 
 use octant_reffed::rc::RcRef;
@@ -46,7 +46,7 @@ define_sys_class! {
     extends Peer;
     new_client _;
     new_server _;
-    server_field handler: OnceLock<EventHandler>;
+    server_field handler: OnceCell<EventHandler>;
 }
 
 #[cfg(side = "server")]

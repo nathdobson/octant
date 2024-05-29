@@ -5,7 +5,7 @@ use std::{
 use std::rc::Rc;
 
 use futures::future::BoxFuture;
-use safe_once::sync::OnceLock;
+use safe_once::cell::OnceCell;
 use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serializer};
 
 use octant_error::OctantError;
@@ -34,8 +34,8 @@ define_sys_class! {
     wasm web_sys::Window;
     new_client _;
     new_server _;
-    server_field document : OnceLock<RcDocument>;
-    server_field navigator : OnceLock<RcNavigator>;
+    server_field document : OnceCell<RcDocument>;
+    server_field navigator : OnceCell<RcNavigator>;
     server_fn {
         fn document<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Document> {
             self.window().document.get_or_init(|| document(self.runtime(), self.rc()))
