@@ -1,6 +1,7 @@
 use octant_reffed::arc::{Arc2, ArcRef};
 use octant_runtime::{define_sys_class, define_sys_rpc};
 use std::sync::Arc;
+use octant_reffed::rc::RcRef;
 
 #[cfg(side = "client")]
 use crate::export::Export;
@@ -15,14 +16,14 @@ define_sys_class! {
     new_client _;
     new_server _;
     server_fn {
-        fn public_key(self: &ArcRef<Self>, options: PublicKeyCredentialCreationOptions) {
-            public_key(self.runtime(), self.arc(), options)
+        fn public_key(self: &RcRef<Self>, options: PublicKeyCredentialCreationOptions) {
+            public_key(self.runtime(), self.rc(), options)
         }
     }
 }
 
 define_sys_rpc! {
-    fn public_key(_runtime:_, options:ArcCredentialCreationOptions, public_key:PublicKeyCredentialCreationOptions) -> (){
+    fn public_key(_runtime:_, options:RcCredentialCreationOptions, public_key:PublicKeyCredentialCreationOptions) -> (){
         options.native().clone().public_key(&public_key.export());
         Ok(())
     }

@@ -74,13 +74,13 @@ macro_rules! define_sys_class {
                 }
             }
 
-            impl<'de> $crate::reexports::octant_serde::DeserializeArcWith<'de> for dyn $class {
-                fn deserialize_arc_with<
+            impl<'de> $crate::reexports::octant_serde::DeserializeRcWith<'de> for dyn $class {
+                fn deserialize_rc_with<
                     D: $crate::reexports::serde::Deserializer<'de>
                 >(
                     ctx: &$crate::reexports::octant_serde::DeserializeContext,
                     d: D
-                ) -> ::std::result::Result<$crate::reexports::octant_reffed::arc::Arc2<Self>, D::Error>{
+                ) -> ::std::result::Result<$crate::reexports::octant_reffed::rc::Rc2<Self>, D::Error>{
                     $crate::deserialize_object_with(ctx, d)
                 }
             }

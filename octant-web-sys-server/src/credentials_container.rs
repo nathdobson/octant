@@ -1,8 +1,8 @@
 #[cfg(side = "client")]
 use crate::import::Import;
 use crate::{
-    credential_creation_options::ArcCredentialCreationOptions, credential_data::CredentialData,
-    credential_request_options::ArcCredentialRequestOptions,
+    credential_creation_options::RcCredentialCreationOptions, credential_data::CredentialData,
+    credential_request_options::RcCredentialRequestOptions,
 };
 use octant_reffed::arc::Arc2;
 use octant_runtime::{
@@ -11,6 +11,7 @@ use octant_runtime::{
 };
 use std::sync::Arc;
 use octant_error::OctantError;
+use octant_reffed::rc::Rc2;
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
 
@@ -27,16 +28,16 @@ define_sys_class! {
 #[cfg(side = "server")]
 impl dyn CredentialsContainer {
     pub async fn get_with_options(
-        self: &Arc2<Self>,
-        req: ArcCredentialRequestOptions,
+        self: &Rc2<Self>,
+        req: RcCredentialRequestOptions,
     ) -> anyhow::Result<CredentialData> {
         Ok(get_with_options(self.runtime(), self.clone(), req)
             .await?
             .into_inner()?)
     }
     pub async fn create_with_options(
-        self: &Arc2<Self>,
-        req: ArcCredentialCreationOptions,
+        self: &Rc2<Self>,
+        req: RcCredentialCreationOptions,
     ) -> anyhow::Result<CredentialData> {
         Ok(create_with_options(self.runtime(), self.clone(), req)
             .await?
@@ -47,8 +48,8 @@ impl dyn CredentialsContainer {
 define_sys_rpc! {
     fn get_with_options(
         runtime:_,
-        credentials: ArcCredentialsContainer,
-        options:ArcCredentialRequestOptions
+        credentials: RcCredentialsContainer,
+        options:RcCredentialRequestOptions
     ) -> OctantFuture<DataReturn<Result<CredentialData, OctantError>>>{
         let fut = credentials.native().get_with_options(options.native()).map_err(OctantError::from)?;
         Ok(OctantFuture::spawn(runtime, async move{
@@ -58,8 +59,8 @@ define_sys_rpc! {
     }
     fn create_with_options(
         runtime:_,
-        credentials: ArcCredentialsContainer,
-        options:ArcCredentialCreationOptions
+        credentials: RcCredentialsContainer,
+        options:RcCredentialCreationOptions
     ) -> OctantFuture<DataReturn<Result<CredentialData, OctantError>>>{
         let fut = credentials.native().create_with_options(options.native()).map_err(OctantError::from)?;
         Ok(OctantFuture::spawn(runtime, async move{

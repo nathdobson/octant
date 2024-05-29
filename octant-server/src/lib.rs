@@ -34,7 +34,7 @@ use octant_runtime_server::{
     runtime::Runtime,
 };
 use octant_serde::{Format, RawEncoded};
-use octant_web_sys_server::{global::Global, node::ArcNode};
+use octant_web_sys_server::{global::Global, node::RcNode};
 
 use crate::{cookies::CookieRouter, session::Session, sink::BufferedDownMessageSink};
 
@@ -295,11 +295,11 @@ pub trait Application: 'static + Sync + Send {
 
 pub struct Page {
     global: Arc<Global>,
-    node: ArcNode,
+    node: RcNode,
 }
 
 impl Page {
-    pub fn new(global: Arc<Global>, node: ArcNode) -> Page {
+    pub fn new(global: Arc<Global>, node: RcNode) -> Page {
         global.window().document().body().append_child(node.clone());
         Page { global, node }
     }

@@ -8,7 +8,7 @@ use octant_account::SessionTable;
 use octant_server::{cookies::CookieRouter, session::Session, Handler, Page};
 use octant_web_sys_server::{
     builder::{ElementExt, HtmlFormElementExt, NodeExt},
-    element::ArcElement,
+    element::RcElement,
 };
 
 pub struct ScoreHandler {
@@ -36,7 +36,7 @@ impl ScoreHandler {
     }
     pub async fn handle_impl(
         self: &Arc<Self>,
-        mut page: ArcElement,
+        mut page: RcElement,
         session: Arc<Session>,
     ) -> anyhow::Result<()> {
         let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());

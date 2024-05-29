@@ -14,17 +14,18 @@ use octant_runtime::{
 };
 use safe_once::sync::OnceLock;
 use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serializer};
+use octant_reffed::rc::{Rc2, RcRef};
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
 
 use crate::{
-    document::{ArcDocument, Document},
-    navigator::{ArcNavigator, Navigator, NavigatorValue},
+    document::{RcDocument, Document},
+    navigator::{RcNavigator, Navigator, NavigatorValue},
     object::Object,
-    request::{ArcRequest, Request},
-    response::{ArcResponse, ResponseValue},
+    request::{RcRequest, Request},
+    response::{RcResponse, ResponseValue},
 };
 
 define_sys_class! {
@@ -33,17 +34,17 @@ define_sys_class! {
     wasm web_sys::Window;
     new_client _;
     new_server _;
-    server_field document : OnceLock<ArcDocument>;
-    server_field navigator : OnceLock<ArcNavigator>;
+    server_field document : OnceLock<RcDocument>;
+    server_field navigator : OnceLock<RcNavigator>;
     server_fn {
-        fn document<'a>(self: &'a ArcRef<Self>) -> &'a ArcRef<dyn Document> {
-            self.window().document.get_or_init(|| document(self.runtime(), self.arc()))
+        fn document<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Document> {
+            self.window().document.get_or_init(|| document(self.runtime(), self.rc()))
         }
-        fn navigator<'a>(self: &'a ArcRef<Self>) -> &'a ArcRef< dyn Navigator> {
-            self.window().navigator.get_or_init(|| navigator(self.runtime(),self.arc()))
+        fn navigator<'a>(self: &'a RcRef<Self>) -> &'a RcRef< dyn Navigator> {
+            self.window().navigator.get_or_init(|| navigator(self.runtime(),self.rc()))
         }
-        fn alert(self: & ArcRef<Self>, message: String) {
-            alert(self.runtime(), self.arc(), message);
+        fn alert(self: & RcRef<Self>, message: String) {
+            alert(self.runtime(), self.rc(), message);
         }
     }
 }
@@ -51,37 +52,37 @@ define_sys_class! {
 #[cfg(side = "server")]
 impl dyn Window {
     pub fn fetch<'a>(
-        self: &'a ArcRef<Self>,
-        request: ArcRequest,
-    ) -> impl 'a + Future<Output = anyhow::Result<ArcResponse>> {
-        async move { Ok(fetch_wrap(self.runtime(), self.arc(), request).await??) }
+        self: &'a RcRef<Self>,
+        request: RcRequest,
+    ) -> impl 'a + Future<Output = anyhow::Result<RcResponse>> {
+        async move { Ok(fetch_wrap(self.runtime(), self.rc(), request).await??) }
     }
 }
 
 #[cfg(side = "server")]
 fn fetch_wrap(
     runtime: &Arc<Runtime>,
-    window: ArcWindow,
-    request: ArcRequest,
-) -> impl Future<Output = Result<Result<ArcResponse, OctantError>, anyhow::Error>> {
+    window: RcWindow,
+    request: RcRequest,
+) -> impl Future<Output = Result<Result<RcResponse, OctantError>, anyhow::Error>> {
     fetch(runtime, window, request)
 }
 
 define_sys_rpc! {
-    fn alert(_runtime:_, window: Arc2<dyn Window>, message: String) -> () {
+    fn alert(_runtime:_, window: RcWindow, message: String) -> () {
         window.native().alert_with_message(&message).unwrap();
         Ok(())
     }
-    fn document(_runtime:_, window: Arc2<dyn Window>) -> ArcDocument {
-        Ok(Arc2::new(DocumentValue::new(window.native().document().unwrap())))
+    fn document(_runtime:_, window: RcWindow) -> RcDocument {
+        Ok(Rc2::new(DocumentValue::new(window.native().document().unwrap())))
     }
-    fn navigator(_runtime:_,window:ArcWindow)->ArcNavigator{
-        Ok(Arc2::new(NavigatorValue::new(window.native().navigator())))
+    fn navigator(_runtime:_,window:RcWindow)->RcNavigator{
+        Ok(Rc2::new(NavigatorValue::new(window.native().navigator())))
     }
-    fn fetch(runtime: _, window:ArcWindow, req:ArcRequest) -> OctantFuture<Result<ArcResponse, OctantError>>{
+    fn fetch(runtime: _, window:RcWindow, req:RcRequest) -> OctantFuture<Result<RcResponse, OctantError>>{
         let fetch = window.native().fetch_with_request(req.native());
         Ok(OctantFuture::spawn(runtime, async move{
-            Ok(Arc2::new(ResponseValue::new(JsFuture::from(fetch).await.map_err(OctantError::from)?.dyn_into().map_err(OctantError::from)?)) as ArcResponse)
+            Ok(Rc2::new(ResponseValue::new(JsFuture::from(fetch).await.map_err(OctantError::from)?.dyn_into().map_err(OctantError::from)?)) as RcResponse)
         }))
     }
 }

@@ -19,7 +19,7 @@ use crate::{
     immediate_return::ImmediateReturn, proto::UpMessage, runtime::Runtime,
 };
 use octant_serde::{
-    define_serde_impl, DeserializeArcWith, DeserializeContext, DeserializeWith, RawEncoded,
+    define_serde_impl, DeserializeRcWith, DeserializeContext, DeserializeWith, RawEncoded,
 };
 
 #[cfg(side = "client")]
@@ -28,7 +28,7 @@ use parking_lot::Mutex;
 use serde::{Deserializer, Serialize, Serializer};
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
-use octant_reffed::arc::Arc2;
+use octant_reffed::rc::Rc2;
 
 #[cfg(side = "server")]
 define_class! {
@@ -45,7 +45,7 @@ define_class! {
 
 #[cfg(side = "server")]
 pub struct OctantFuture<T: FutureReturn> {
-    parent: ArcAbstractOctantFuture,
+    parent: RcAbstractOctantFuture,
     retain: Option<T::Retain>,
     receiver: oneshot::Receiver<RawEncoded>,
     phantom: PhantomData<T>,
@@ -55,14 +55,14 @@ impl<T: FutureReturn> Unpin for OctantFuture<T> {}
 
 #[cfg(side = "client")]
 pub struct OctantFuture<T: FutureReturn> {
-    parent: ArcAbstractOctantFuture,
+    parent: RcAbstractOctantFuture,
     down: Arc<Mutex<Option<T::Down>>>,
     phantom: PhantomData<T>,
 }
 
 #[derive(Serialize, Debug, DeserializeWith)]
 pub struct FutureResponse {
-    promise: ArcAbstractOctantFuture,
+    promise: RcAbstractOctantFuture,
     value: RawEncoded,
 }
 
@@ -84,7 +84,7 @@ impl UpMessage for FutureResponse {
 #[cfg(side = "client")]
 impl<T: Debug + FutureReturn> OctantFuture<T> {
     pub fn spawn<F: 'static + Future<Output = T>>(runtime: &Arc<Runtime>, f: F) -> Self {
-        let parent = Arc2::new(AbstractOctantFutureValue {
+        let parent = Rc2::new(AbstractOctantFutureValue {
             parent: PeerValue::new(),
         });
         let down = Arc::new(Mutex::new(None));
@@ -134,11 +134,11 @@ impl Serialize for dyn AbstractOctantFuture {
     }
 }
 
-impl<'de> DeserializeArcWith<'de> for dyn AbstractOctantFuture {
-    fn deserialize_arc_with<D: Deserializer<'de>>(
+impl<'de> DeserializeRcWith<'de> for dyn AbstractOctantFuture {
+    fn deserialize_rc_with<D: Deserializer<'de>>(
         ctx: &DeserializeContext,
         d: D,
-    ) -> Result<Arc2<Self>, D::Error> {
+    ) -> Result<Rc2<Self>, D::Error> {
         deserialize_object_with(ctx, d)
     }
 }
@@ -150,7 +150,7 @@ impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
     fn immediate_new(runtime: &Arc<Runtime>) -> (Self, Self::Down) {
         let (retain, down) = T::future_new(runtime);
         let (tx, rx) = oneshot::channel();
-        let peer: Arc2<dyn AbstractOctantFuture> =
+        let peer: Rc2<dyn AbstractOctantFuture> =
             runtime.add::<AbstractOctantFutureValue>(AbstractOctantFutureValue {
                 parent: runtime.add_uninit(),
                 sender: Mutex::new(Some(tx)),

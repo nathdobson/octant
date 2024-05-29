@@ -10,6 +10,7 @@ use std::{
     fmt::{Debug, Formatter},
     sync::Arc,
 };
+use octant_reffed::rc::RcRef;
 
 #[cfg(side = "server")]
 trait EventHandlerTrait: 'static + Fn() -> () {
@@ -59,16 +60,16 @@ impl dyn EventListener {
 
 #[cfg(side = "client")]
 impl dyn EventListener {
-    pub fn fire(self: &ArcRef<Self>) {
+    pub fn fire(self: &RcRef<Self>) {
         self.sink().send(Box::<EventFired>::new(EventFired {
-            listener: self.arc(),
+            listener: self.rc(),
         }))
     }
 }
 
 #[derive(Serialize, Debug, DeserializeWith)]
 struct EventFired {
-    listener: ArcEventListener,
+    listener: RcEventListener,
 }
 
 define_serde_impl!(EventFired : UpMessage);

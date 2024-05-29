@@ -5,11 +5,11 @@ use crate::{
     runtime::Runtime,
 };
 use octant_object::class::Class;
-use octant_reffed::arc::Arc2;
 use octant_serde::DeserializeWith;
 use serde::Serialize;
 use std::{fmt::Debug, marker::Unsize, sync::Arc};
 use octant_error::OctantError;
+use octant_reffed::rc::Rc2;
 
 pub trait FutureReturn: 'static {
     type Down: 'static + Serialize + for<'de> DeserializeWith<'de> + Debug;
@@ -25,7 +25,7 @@ pub trait FutureReturn: 'static {
 }
 
 #[cfg(side = "server")]
-impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Arc2<T>
+impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Rc2<T>
 where
     T::Value: Peer + From<PeerValue> + Unsize<T>,
 {
@@ -41,7 +41,7 @@ where
 }
 
 #[cfg(side = "client")]
-impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Arc2<T>
+impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Rc2<T>
 where
     T::Value: Peer + Unsize<T>,
 {

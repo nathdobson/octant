@@ -1,11 +1,11 @@
 use crate::DeserializeContext;
-use octant_reffed::arc::Arc2;
 use serde::{
     de::{DeserializeSeed, EnumAccess, Error, SeqAccess, VariantAccess, Visitor},
     Deserialize, Deserializer,
 };
 use std::{fmt::Formatter, marker::PhantomData};
 use octant_error::OctantError;
+use octant_reffed::rc::Rc2;
 
 pub trait DeserializeWith<'de>: Sized {
     fn deserialize_with<D: Deserializer<'de>>(
@@ -14,22 +14,22 @@ pub trait DeserializeWith<'de>: Sized {
     ) -> Result<Self, D::Error>;
 }
 
-pub trait DeserializeArcWith<'de> {
-    fn deserialize_arc_with<D: Deserializer<'de>>(
+pub trait DeserializeRcWith<'de> {
+    fn deserialize_rc_with<D: Deserializer<'de>>(
         ctx: &DeserializeContext,
         d: D,
-    ) -> Result<Arc2<Self>, D::Error>;
+    ) -> Result<Rc2<Self>, D::Error>;
 }
 
-impl<'de, T: ?Sized> DeserializeWith<'de> for Arc2<T>
+impl<'de, T: ?Sized> DeserializeWith<'de> for Rc2<T>
 where
-    T: DeserializeArcWith<'de>,
+    T: DeserializeRcWith<'de>,
 {
     fn deserialize_with<D: Deserializer<'de>>(
         ctx: &DeserializeContext,
         d: D,
-    ) -> Result<Arc2<T>, D::Error> {
-        T::deserialize_arc_with(ctx, d)
+    ) -> Result<Rc2<T>, D::Error> {
+        T::deserialize_rc_with(ctx, d)
     }
 }
 

@@ -7,7 +7,7 @@ use crate::{
 };
 use atomic_refcell::AtomicRefCell;
 use octant_object::{cast::downcast_object, class::Class};
-use octant_reffed::arc::{Arc2, Weak2};
+use octant_reffed::rc::{Rc2, Weak2};
 use octant_serde::DeserializeContext;
 use std::{
     fmt::{Debug, Formatter},
@@ -52,10 +52,10 @@ impl Runtime {
     pub fn spawner(&self) -> &Rc<EventSpawn> {
         &self.spawn
     }
-    pub fn add<T: Peer>(&self, value: T) -> Arc2<T> {
+    pub fn add<T: Peer>(&self, value: T) -> Rc2<T> {
         let handle = ((&value) as &dyn Peer).raw_handle();
         log::info!("Adding handle {:?}", handle);
-        let result = Arc2::new(value);
+        let result = Rc2::new(value);
         self.state
             .borrow_mut()
             .handles
@@ -91,7 +91,7 @@ impl Runtime {
     pub fn lookup<T: ?Sized + Class>(
         self: &Arc<Self>,
         handle: TypedHandle<T>,
-    ) -> Result<Arc2<T>, LookupError> {
+    ) -> Result<Rc2<T>, LookupError> {
         Ok(downcast_object(
             self.state
                 .borrow()

@@ -7,7 +7,7 @@ use octant_object::class::Class;
 use octant_serde::DeserializeWith;
 use serde::Serialize;
 use std::{marker::Unsize, sync::Arc};
-use octant_reffed::arc::Arc2;
+use octant_reffed::rc::Rc2;
 #[cfg(side="server")]
 use crate::peer::PeerValue;
 
@@ -30,14 +30,14 @@ pub trait ImmediateReturn: Sized {
 }
 
 #[cfg(side="server")]
-impl<T: ?Sized + Class + Unsize<dyn Peer>> ImmediateReturn for Arc2<T>
+impl<T: ?Sized + Class + Unsize<dyn Peer>> ImmediateReturn for Rc2<T>
 where
     T::Value: Peer + From<PeerValue> + Unsize<T>,
 {
     type Down = TypedHandle<T>;
     #[cfg(side = "server")]
     fn immediate_new(runtime: &Arc<Runtime>) -> (Self, Self::Down) {
-        let peer: Arc2<T> = runtime.add::<T::Value>(T::Value::from(runtime.add_uninit()));
+        let peer: Rc2<T> = runtime.add::<T::Value>(T::Value::from(runtime.add_uninit()));
         let handle = (*peer).typed_handle();
         (peer, handle)
     }
@@ -45,7 +45,7 @@ where
 }
 
 #[cfg(side="client")]
-impl<T: ?Sized + Class + Unsize<dyn Peer>> ImmediateReturn for Arc2<T>
+impl<T: ?Sized + Class + Unsize<dyn Peer>> ImmediateReturn for Rc2<T>
     where
         T::Value: Peer + Unsize<T>,
 {

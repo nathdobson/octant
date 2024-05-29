@@ -7,20 +7,21 @@ use octant_runtime::{define_sys_rpc, runtime::Runtime};
 use octant_serde::define_serde_impl;
 use safe_once::sync::OnceLock;
 use serde::{Deserialize, Serialize};
+use octant_reffed::rc::{Rc2, RcRef};
 
 use crate::{
-    credential_creation_options::{ArcCredentialCreationOptions, CredentialCreationOptionsValue},
-    credential_request_options::{ArcCredentialRequestOptions, CredentialRequestOptionsValue},
-    event_listener::{ArcEventListener, EventListenerValue},
-    request::{ArcRequest, RequestValue},
-    request_init::{ArcRequestInit, RequestInit},
-    window::{ArcWindow, Window, WindowValue},
+    credential_creation_options::{CredentialCreationOptionsValue, RcCredentialCreationOptions},
+    credential_request_options::{CredentialRequestOptionsValue, RcCredentialRequestOptions},
+    event_listener::{EventListenerValue, RcEventListener},
+    request::{RcRequest, RequestValue},
+    request_init::{RcRequestInit, RequestInit},
+    window::{RcWindow, Window, WindowValue},
 };
 
 #[cfg(side = "server")]
 pub struct Global {
     runtime: Arc<Runtime>,
-    window: OnceLock<ArcWindow>,
+    window: OnceLock<RcWindow>,
 }
 
 #[cfg(side = "server")]
@@ -38,25 +39,22 @@ impl Global {
 
 #[cfg(side = "server")]
 impl Global {
-    pub fn window(&self) -> &ArcRef<dyn Window> {
+    pub fn window(&self) -> &RcRef<dyn Window> {
         self.window.get_or_init(|| window(&self.runtime))
     }
-    pub fn new_request_init(&self) -> ArcRequestInit {
+    pub fn new_request_init(&self) -> RcRequestInit {
         new_request_init(&self.runtime)
     }
-    pub fn new_request(&self, url: String, request_init: ArcRequestInit) -> ArcRequest {
+    pub fn new_request(&self, url: String, request_init: RcRequestInit) -> RcRequest {
         new_request(self.runtime(), url, request_init)
     }
-    pub fn new_credential_request_options(&self) -> ArcCredentialRequestOptions {
+    pub fn new_credential_request_options(&self) -> RcCredentialRequestOptions {
         new_credential_request_options(self.runtime())
     }
-    pub fn new_credential_creation_options(&self) -> ArcCredentialCreationOptions {
+    pub fn new_credential_creation_options(&self) -> RcCredentialCreationOptions {
         new_credential_creation_options(self.runtime())
     }
-    pub fn new_event_listener(
-        &self,
-        handler: impl 'static + Any + Fn(),
-    ) -> ArcEventListener {
+    pub fn new_event_listener(&self, handler: impl 'static + Any + Fn()) -> RcEventListener {
         let listener = new_event_listener(self.runtime());
         listener.set_handler(handler);
         listener
@@ -64,37 +62,37 @@ impl Global {
 }
 
 define_sys_rpc! {
-    fn window(_runtime:_) -> ArcWindow {
-        Ok(Arc2::new(WindowValue::new(web_sys::window().unwrap())))
+    fn window(_runtime:_) -> RcWindow {
+        Ok(Rc2::new(WindowValue::new(web_sys::window().unwrap())))
     }
 }
 
 define_sys_rpc! {
-    fn new_request_init(_runtime:_) -> ArcRequestInit {
-        Ok(Arc2::new(RequestInitValue::new(web_sys::RequestInit::new())))
+    fn new_request_init(_runtime:_) -> RcRequestInit {
+        Ok(Rc2::new(RequestInitValue::new(web_sys::RequestInit::new())))
     }
 }
 
 define_sys_rpc! {
-    fn new_request(_runtime:_, url:String, init:ArcRequestInit) -> ArcRequest {
-        Ok(Arc2::new(RequestValue::new(web_sys::Request::new_with_str_and_init(&url, init.native()).unwrap())))
+    fn new_request(_runtime:_, url:String, init:RcRequestInit) -> RcRequest {
+        Ok(Rc2::new(RequestValue::new(web_sys::Request::new_with_str_and_init(&url, init.native()).unwrap())))
     }
 }
 
 define_sys_rpc! {
-    fn new_credential_request_options(_runtime:_) -> ArcCredentialRequestOptions {
-        Ok(Arc2::new(CredentialRequestOptionsValue::new(web_sys::CredentialRequestOptions::new())))
+    fn new_credential_request_options(_runtime:_) -> RcCredentialRequestOptions {
+        Ok(Rc2::new(CredentialRequestOptionsValue::new(web_sys::CredentialRequestOptions::new())))
     }
 }
 
 define_sys_rpc! {
-    fn new_credential_creation_options(_runtime:_) -> ArcCredentialCreationOptions {
-        Ok(Arc2::new(CredentialCreationOptionsValue::new(web_sys::CredentialCreationOptions::new())))
+    fn new_credential_creation_options(_runtime:_) -> RcCredentialCreationOptions {
+        Ok(Rc2::new(CredentialCreationOptionsValue::new(web_sys::CredentialCreationOptions::new())))
     }
 }
 
 define_sys_rpc! {
-    fn new_event_listener(_runtime:_) -> ArcEventListener {
-        Ok(Arc2::new(EventListenerValue::new()))
+    fn new_event_listener(_runtime:_) -> RcEventListener {
+        Ok(Rc2::new(EventListenerValue::new()))
     }
 }

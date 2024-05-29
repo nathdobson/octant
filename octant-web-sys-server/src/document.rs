@@ -1,11 +1,11 @@
 use crate::{
     html_div_element::HtmlDivElementValue,
-    html_element::{ArcHtmlElement, HtmlElement, HtmlElementValue},
+    html_element::{RcHtmlElement, HtmlElement, HtmlElementValue},
     node::NodeValue,
     text::{Text, TextValue},
 };
 use octant_object::define_class;
-use octant_reffed::arc::{Arc2, ArcRef};
+use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::octant_future::OctantFuture;
 use octant_runtime::{
     // octant_future::Completable,
@@ -28,12 +28,12 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
 
 use crate::{
-    element::{ArcElement, ElementValue},
-    html_div_element::{ArcHtmlDivElement, HtmlDivElement},
-    html_form_element::{ArcHtmlFormElement, HtmlFormElementValue},
-    html_input_element::{ArcHtmlInputElement, HtmlInputElementValue},
-    node::{ArcNode, Node},
-    text::ArcText,
+    element::{RcElement, ElementValue},
+    html_div_element::{RcHtmlDivElement, HtmlDivElement},
+    html_form_element::{RcHtmlFormElement, HtmlFormElementValue},
+    html_input_element::{RcHtmlInputElement, HtmlInputElementValue},
+    node::{RcNode, Node},
+    text::RcText,
 };
 
 define_sys_class! {
@@ -42,54 +42,54 @@ define_sys_class! {
     wasm web_sys::Document;
     new_client _;
     new_server _;
-    server_field body: OnceLock<ArcHtmlElement>;
+    server_field body: OnceLock<RcHtmlElement>;
     server_fn {
-        fn create_div(self: &ArcRef<Self>) -> ArcHtmlDivElement{
-            create_div(self.runtime(), self.arc())
+        fn create_div(self: &RcRef<Self>) -> RcHtmlDivElement{
+            create_div(self.runtime(), self.rc())
         }
-        fn create_form_element(self: &ArcRef<Self>) -> ArcHtmlFormElement {
-            create_form_element(self.runtime(), self.arc())
+        fn create_form_element(self: &RcRef<Self>) -> RcHtmlFormElement {
+            create_form_element(self.runtime(), self.rc())
         }
-        fn create_element(self: &ArcRef<Self>, tag: &str) -> ArcElement {
-            create_element(self.runtime(), self.arc(), tag.to_string())
+        fn create_element(self: &RcRef<Self>, tag: &str) -> RcElement {
+            create_element(self.runtime(), self.rc(), tag.to_string())
         }
-        fn create_text_node(self: &ArcRef<Self>, text: String) -> ArcText{
-            create_text_node(self.runtime(),self.arc(),text)
+        fn create_text_node(self: &RcRef<Self>, text: String) -> RcText{
+            create_text_node(self.runtime(),self.rc(),text)
         }
-        fn create_input_element(self: &ArcRef<Self>) -> ArcHtmlInputElement{
-            create_input_element(self.runtime(), self.arc())
+        fn create_input_element(self: &RcRef<Self>) -> RcHtmlInputElement{
+            create_input_element(self.runtime(), self.rc())
         }
-        fn location(self: &ArcRef<Self>) -> OctantFuture<String>{
-            location(self.runtime(), self.arc())
+        fn location(self: &RcRef<Self>) -> OctantFuture<String>{
+            location(self.runtime(), self.rc())
         }
-        fn body<'a> (self: &'a ArcRef<Self>) -> &'a ArcRef<dyn HtmlElement>{
+        fn body<'a> (self: &'a RcRef<Self>) -> &'a RcRef<dyn HtmlElement>{
             self.document().body.get_or_init(||{
-                body(self.runtime(),self.arc())
+                body(self.runtime(),self.rc())
             })
         }
     }
 }
 
 define_sys_rpc! {
-    pub fn create_div(_runtime:_, doc:Arc2<dyn Document>) -> ArcHtmlDivElement {
-        Ok(Arc2::new(HtmlDivElementValue::new(doc.native().create_element("div").unwrap().dyn_into().unwrap())))
+    pub fn create_div(_runtime:_, doc:Rc2<dyn Document>) -> RcHtmlDivElement {
+        Ok(Rc2::new(HtmlDivElementValue::new(doc.native().create_element("div").unwrap().dyn_into().unwrap())))
     }
-    pub fn create_text_node(_runtime:_, doc:Arc2<dyn Document>, text: String) -> ArcText {
-        Ok(Arc2::new(TextValue::new(doc.native().create_text_node(&text).dyn_into().unwrap())))
+    pub fn create_text_node(_runtime:_, doc:Rc2<dyn Document>, text: String) -> RcText {
+        Ok(Rc2::new(TextValue::new(doc.native().create_text_node(&text).dyn_into().unwrap())))
     }
-    pub fn create_input_element(_runtime:_, doc:Arc2<dyn Document>) -> ArcHtmlInputElement {
-        Ok(Arc2::new(HtmlInputElementValue::new(doc.native().create_element("input").unwrap().dyn_into().unwrap())))
+    pub fn create_input_element(_runtime:_, doc:Rc2<dyn Document>) -> RcHtmlInputElement {
+        Ok(Rc2::new(HtmlInputElementValue::new(doc.native().create_element("input").unwrap().dyn_into().unwrap())))
     }
-    pub fn create_element(_runtime:_, doc:Arc2<dyn Document>, tag: String) -> ArcElement {
-        Ok(Arc2::new(ElementValue::new(doc.native().create_element(&tag).unwrap())))
+    pub fn create_element(_runtime:_, doc:Rc2<dyn Document>, tag: String) -> RcElement {
+        Ok(Rc2::new(ElementValue::new(doc.native().create_element(&tag).unwrap())))
     }
-    pub fn create_form_element(_runtime:_, doc:Arc2<dyn Document>) -> ArcHtmlFormElement {
-        Ok(Arc2::new(HtmlFormElementValue::new(doc.native().create_element("form").unwrap().dyn_into().unwrap())))
+    pub fn create_form_element(_runtime:_, doc:Rc2<dyn Document>) -> RcHtmlFormElement {
+        Ok(Rc2::new(HtmlFormElementValue::new(doc.native().create_element("form").unwrap().dyn_into().unwrap())))
     }
-    pub fn body(_runtime:_, doc:Arc2<dyn Document>) -> ArcHtmlElement {
-        Ok(Arc2::new(HtmlElementValue::new(doc.native().body().unwrap()) ))
+    pub fn body(_runtime:_, doc:Rc2<dyn Document>) -> RcHtmlElement {
+        Ok(Rc2::new(HtmlElementValue::new(doc.native().body().unwrap()) ))
     }
-    pub fn location(runtime:_, doc:Arc2<dyn Document>) -> OctantFuture<String> {
+    pub fn location(runtime:_, doc:Rc2<dyn Document>) -> OctantFuture<String> {
         Ok(OctantFuture::<String>::spawn(&runtime, async move{
             doc.native().location().unwrap().href().clone().unwrap()
         }))

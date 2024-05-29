@@ -2,11 +2,12 @@
 use parking_lot::Mutex;
 use std::sync::Arc;
 
-use crate::{event_listener::ArcEventListener, html_element::HtmlElement};
+use crate::{event_listener::RcEventListener, html_element::HtmlElement};
 use octant_reffed::arc::ArcRef;
 use octant_runtime::{define_sys_class, proto::UpMessage, runtime::Runtime};
 use octant_serde::{define_serde_impl, DeserializeWith};
 use serde::Serialize;
+use octant_reffed::rc::RcRef;
 
 define_sys_class! {
     class HtmlInputElement;
@@ -16,10 +17,10 @@ define_sys_class! {
     new_server _;
     server_field value: Mutex<Arc<String>>;
     client_fn{
-        fn update_value(self:&ArcRef<Self>){
-            let this=self as &ArcRef<dyn HtmlInputElement>;
+        fn update_value(self:&RcRef<Self>){
+            let this=self as &RcRef<dyn HtmlInputElement>;
             this.sink().send(Box::<SetInput>::new(SetInput{
-                element: self.arc(),
+                element: self.rc(),
                 value: this.native().value()
             }));
         }
@@ -39,7 +40,7 @@ impl HtmlInputElementValue {}
 
 #[derive(Serialize, Debug, DeserializeWith)]
 struct SetInput {
-    element: ArcHtmlInputElement,
+    element: RcHtmlInputElement,
     value: String,
 }
 
