@@ -1,23 +1,24 @@
 use core::mem;
-use std::{pin::Pin, str, sync::Arc, task::Poll};
+use std::{pin::Pin, rc::Rc, str, task::Poll};
 
 use anyhow::anyhow;
 use futures::Stream;
-use octant_error::{Context, OctantError};
 use tokio::sync::mpsc;
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
 use web_sys::{CloseEvent, ErrorEvent, Event, MessageEvent, WebSocket};
+
+use octant_error::{Context, OctantError};
 
 struct WebSocketStream {
     socket: WebSocket,
 }
 
 pub struct WebSocketSender {
-    stream: Arc<WebSocketStream>,
+    stream: Rc<WebSocketStream>,
 }
 
 pub struct WebSocketReceiver {
-    _stream: Arc<WebSocketStream>,
+    _stream: Rc<WebSocketStream>,
     receiver: mpsc::UnboundedReceiver<WebSocketEvent>,
 }
 
@@ -159,7 +160,7 @@ pub async fn connect(address: &str) -> anyhow::Result<(WebSocketSender, WebSocke
         }
     }
 
-    let stream = Arc::new(WebSocketStream { socket });
+    let stream = Rc::new(WebSocketStream { socket });
     Ok((
         WebSocketSender {
             stream: stream.clone(),

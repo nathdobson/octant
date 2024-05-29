@@ -1,33 +1,32 @@
-use futures::future::BoxFuture;
 use std::{
     future::Future,
     mem::{ManuallyDrop, MaybeUninit},
-    sync::Arc,
 };
 use std::rc::Rc;
 
-use crate::document::DocumentValue;
+use futures::future::BoxFuture;
+use safe_once::sync::OnceLock;
+use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serializer};
+
 use octant_error::OctantError;
-use octant_reffed::arc::{Arc2, ArcRef};
+use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{
     define_sys_class, define_sys_rpc, future_return::FutureReturn, octant_future::OctantFuture,
     runtime::Runtime,
 };
-use safe_once::sync::OnceLock;
-use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serializer};
-use octant_reffed::rc::{Rc2, RcRef};
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
 
 use crate::{
-    document::{RcDocument, Document},
-    navigator::{RcNavigator, Navigator, NavigatorValue},
+    document::{Document, RcDocument},
+    navigator::{Navigator, NavigatorValue, RcNavigator},
     object::Object,
     request::{RcRequest, Request},
     response::{RcResponse, ResponseValue},
 };
+use crate::document::DocumentValue;
 
 define_sys_class! {
     class Window;

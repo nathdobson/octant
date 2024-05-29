@@ -3,18 +3,20 @@
 
 extern crate octant_web_sys_client;
 
+use std::rc::Rc;
+
 use anyhow::anyhow;
 use futures::StreamExt;
+use tokio::{sync::mpsc::unbounded_channel, try_join};
+use wasm_bindgen::prelude::*;
+use web_sys::window;
+
 use octant_error::OctantError;
 use octant_runtime_client::{
     proto::{DownMessageList, UpMessageList},
     runtime::Runtime,
 };
 use octant_serde::{DeserializeContext, Format, RawEncoded};
-use std::rc::Rc;
-use tokio::{sync::mpsc::unbounded_channel, try_join};
-use wasm_bindgen::prelude::*;
-use web_sys::window;
 
 use crate::websocket::WebSocketMessage;
 

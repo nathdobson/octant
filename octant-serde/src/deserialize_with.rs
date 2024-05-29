@@ -1,11 +1,14 @@
-use crate::DeserializeContext;
+use std::{fmt::Formatter, marker::PhantomData};
+
 use serde::{
     de::{DeserializeSeed, EnumAccess, Error, SeqAccess, VariantAccess, Visitor},
     Deserialize, Deserializer,
 };
-use std::{fmt::Formatter, marker::PhantomData};
+
 use octant_error::OctantError;
 use octant_reffed::rc::Rc2;
+
+use crate::DeserializeContext;
 
 pub trait DeserializeWith<'de>: Sized {
     fn deserialize_with<D: Deserializer<'de>>(

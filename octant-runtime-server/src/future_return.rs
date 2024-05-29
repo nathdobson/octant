@@ -1,16 +1,19 @@
-#[cfg(side = "server")]
-use crate::peer::PeerValue;
+use std::{fmt::Debug, marker::Unsize};
+use std::rc::Rc;
+
+use serde::Serialize;
+
+use octant_error::OctantError;
+use octant_object::class::Class;
+use octant_reffed::rc::Rc2;
+use octant_serde::DeserializeWith;
+
 use crate::{
     handle::TypedHandle, immediate_return::ImmediateReturn, peer::Peer,
     runtime::Runtime,
 };
-use octant_object::class::Class;
-use octant_serde::DeserializeWith;
-use serde::Serialize;
-use std::{fmt::Debug, marker::Unsize};
-use std::rc::Rc;
-use octant_error::OctantError;
-use octant_reffed::rc::Rc2;
+#[cfg(side = "server")]
+use crate::peer::PeerValue;
 
 pub trait FutureReturn: 'static {
     type Down: 'static + Serialize + for<'de> DeserializeWith<'de> + Debug;

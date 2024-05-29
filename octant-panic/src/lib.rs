@@ -2,7 +2,7 @@
 
 use std::{
     cell::Cell,
-    panic::{catch_unwind, update_hook, PanicInfo, UnwindSafe},
+    panic::{catch_unwind, PanicInfo, UnwindSafe, update_hook},
     sync::Once,
 };
 

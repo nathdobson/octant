@@ -3,10 +3,11 @@ use std::{
     fmt::{Debug, Display, Formatter},
 };
 
-use crate::OctantError;
 use sendable::SendOption;
 use wasm_bindgen::JsValue;
 use web_sys::console;
+
+use crate::OctantError;
 
 #[derive(Debug)]
 struct WasmError {

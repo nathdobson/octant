@@ -2,7 +2,7 @@ extern crate proc_macro;
 
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
-use syn::{parse_macro_input, Data, DataStruct, DeriveInput, Fields, Type};
+use syn::{Data, DataStruct, DeriveInput, Fields, parse_macro_input, Type};
 
 #[proc_macro_derive(DeserializeWith)]
 pub fn derive_deserialize_with(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

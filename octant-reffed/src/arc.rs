@@ -1,4 +1,3 @@
-use serde::{Serialize, Serializer};
 use std::{
     fmt::{Debug, Formatter},
     hash::Hash,
@@ -6,6 +5,8 @@ use std::{
     ops::{CoerceUnsized, Deref, DispatchFromDyn},
     sync::{Arc, Weak},
 };
+
+use serde::{Serialize, Serializer};
 use weak_table::traits::{WeakElement, WeakKey};
 
 #[repr(transparent)]

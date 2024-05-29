@@ -1,29 +1,29 @@
-use crate::event_listener::RcEventListener;
-use octant_object::cast::downcast_object;
-use octant_reffed::arc::{Arc2, ArcRef};
-use octant_runtime::{define_sys_class, define_sys_rpc};
-#[cfg(side = "server")]
-use parking_lot::Mutex;
+use std::{
+    any::{Any, type_name},
+    fmt::{Debug, Formatter},
+};
+
 use safe_once::{
     api::once::OnceEntry,
     cell::OnceCell,
     sync::{OnceLock, RawFusedLock},
 };
 use serde::Serialize;
-use std::{
-    any::{type_name, Any},
-    fmt::{Debug, Formatter},
-    sync::Arc,
-};
 #[cfg(side = "client")]
 use wasm_bindgen::closure::Closure;
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use web_sys::Event;
+
+use octant_object::cast::downcast_object;
 use octant_reffed::rc::{Rc2, RcRef};
+use octant_runtime::{define_sys_class, define_sys_rpc};
+#[cfg(side = "server")]
+use parking_lot::Mutex;
 
 use crate::{html_element::HtmlElement, html_input_element::RcHtmlInputElement};
+use crate::event_listener::RcEventListener;
 
 define_sys_class! {
     class HtmlFormElement;

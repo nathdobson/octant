@@ -1,14 +1,17 @@
-use crate::{
-    handle::{RawHandle, TypedHandle},
-    runtime::RuntimeSink,
-};
+use std::fmt::Debug;
+use std::rc::Rc;
+
+use safe_once::{api::once::OnceEntry, cell::OnceCell};
+
 use octant_object::{
     base::{Base, BaseValue},
     define_class,
 };
-use safe_once::{api::once::OnceEntry, cell::OnceCell};
-use std::{fmt::Debug};
-use std::rc::Rc;
+
+use crate::{
+    handle::{RawHandle, TypedHandle},
+    runtime::RuntimeSink,
+};
 
 #[derive(Debug)]
 struct PeerInit {

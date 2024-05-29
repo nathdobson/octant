@@ -1,11 +1,13 @@
-use futures::{Sink, SinkExt};
-use octant_runtime_server::proto::{DownMessage, DownMessageList};
-use octant_serde::Format;
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
+
+use futures::{Sink, SinkExt};
 use tokio::sync::mpsc::UnboundedReceiver;
+
+use octant_runtime_server::proto::{DownMessage, DownMessageList};
+use octant_serde::Format;
 
 pub struct BufferedDownMessageSink {
     source: UnboundedReceiver<Box<dyn DownMessage>>,

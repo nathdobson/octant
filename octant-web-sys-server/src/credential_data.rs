@@ -1,5 +1,6 @@
-use octant_serde::{DeserializeContext, DeserializeWith};
 use serde::{Deserialize, Deserializer, Serialize};
+
+use octant_serde::{DeserializeContext, DeserializeWith};
 
 use crate::public_key_credential::PublicKeyCredential;
 

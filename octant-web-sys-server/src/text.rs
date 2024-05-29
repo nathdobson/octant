@@ -1,4 +1,5 @@
 use octant_runtime::define_sys_class;
+
 use crate::node::Node;
 
 define_sys_class! {

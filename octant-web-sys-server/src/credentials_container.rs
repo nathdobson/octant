@@ -1,20 +1,19 @@
 #[cfg(side = "client")]
-use crate::import::Import;
-use crate::{
-    credential_creation_options::RcCredentialCreationOptions, credential_data::CredentialData,
-    credential_request_options::RcCredentialRequestOptions,
-};
-use octant_reffed::arc::Arc2;
+use wasm_bindgen_futures::JsFuture;
+
+use octant_error::OctantError;
+use octant_reffed::rc::Rc2;
 use octant_runtime::{
     define_sys_class, define_sys_rpc, future_return::DataReturn,
     octant_future::OctantFuture,
 };
-use std::sync::Arc;
-use octant_error::OctantError;
-use octant_reffed::rc::Rc2;
-#[cfg(side = "client")]
-use wasm_bindgen_futures::JsFuture;
 
+use crate::{
+    credential_creation_options::RcCredentialCreationOptions, credential_data::CredentialData,
+    credential_request_options::RcCredentialRequestOptions,
+};
+#[cfg(side = "client")]
+use crate::import::Import;
 use crate::object::Object;
 
 define_sys_class! {

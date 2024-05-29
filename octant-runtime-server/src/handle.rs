@@ -1,11 +1,13 @@
-use octant_object::class::Class;
-use octant_serde::{DeserializeContext, DeserializeWith};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     any::type_name,
     fmt::{Debug, Formatter},
     marker::{PhantomData, Unsize},
 };
+
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+use octant_object::class::Class;
+use octant_serde::{DeserializeContext, DeserializeWith};
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct RawHandle(pub u64);

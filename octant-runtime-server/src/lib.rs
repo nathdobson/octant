@@ -6,18 +6,19 @@
 
 extern crate core;
 
+use std::fmt::{Display, Formatter};
+use std::rc::Rc;
+
+use serde::{de::Error, Deserialize, Deserializer};
+
+use octant_object::class::Class;
+use octant_reffed::rc::Rc2;
+use octant_serde::DeserializeContext;
+
 use crate::{
     handle::{RawHandle, TypedHandle},
     runtime::Runtime,
 };
-use octant_object::class::Class;
-use octant_serde::DeserializeContext;
-use serde::{de::Error, Deserialize, Deserializer};
-use std::{
-    fmt::{Display, Formatter},
-};
-use std::rc::Rc;
-use octant_reffed::rc::Rc2;
 
 pub mod define_sys_class;
 pub mod define_sys_rpc;
@@ -30,8 +31,8 @@ pub mod reexports {
     pub use serde;
 
     pub use octant_object;
-    pub use octant_serde;
     pub use octant_reffed;
+    pub use octant_serde;
 }
 
 #[cfg_attr(side = "client", path = "client_runtime.rs")]

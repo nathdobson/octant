@@ -1,10 +1,11 @@
 use std::{
     future::Future,
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc,
+        atomic::{AtomicUsize, Ordering},
     },
 };
+
 use tokio::{
     runtime,
     sync::{
@@ -91,9 +92,11 @@ impl LocalSetSpawn {
 
 #[cfg(test)]
 mod test {
-    use crate::local_set::LocalSetPool;
     use std::{future::pending, mem};
+
     use tokio::sync::mpsc::{error::TryRecvError, unbounded_channel};
+
+    use crate::local_set::LocalSetPool;
 
     #[tokio::test]
     async fn test() {

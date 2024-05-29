@@ -1,13 +1,13 @@
 use std::{
     cell::RefCell,
-    future::{poll_fn, Future},
+    future::{Future, poll_fn},
     rc,
     rc::Rc,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
-    task::{ready, Context, Poll, Wake, Waker},
+    task::{Context, Poll, ready, Wake, Waker},
 };
 
 use futures::future::LocalBoxFuture;
@@ -186,15 +186,16 @@ impl EventSpawn {
 #[cfg(test)]
 mod test {
     use std::{
-        future::{pending, poll_fn, Future},
+        future::{Future, pending, poll_fn},
         mem,
         pin::pin,
         task::Poll,
     };
 
-    use crate::event_loop::EventPool;
     use parking_lot::Mutex;
     use tokio::task::yield_now;
+
+    use crate::event_loop::EventPool;
 
     #[tokio::test]
     async fn test() -> anyhow::Result<()> {

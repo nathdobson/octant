@@ -1,9 +1,10 @@
-#[cfg(feature = "wasm")]
-pub mod wasm;
+use std::fmt::{Debug, Display, Formatter};
 
 use anyhow::anyhow;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt::{Debug, Display, Formatter};
+
+#[cfg(feature = "wasm")]
+pub mod wasm;
 
 #[derive(Debug)]
 pub struct OctantError(anyhow::Error);

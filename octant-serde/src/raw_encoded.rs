@@ -1,6 +1,8 @@
-use crate::{DeserializeContext, DeserializeWith, Error};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Debug, Formatter};
+
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+use crate::{DeserializeContext, DeserializeWith, Error};
 
 #[derive(Clone)]
 pub enum RawEncoded {

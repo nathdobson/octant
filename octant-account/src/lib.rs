@@ -4,7 +4,7 @@
 #![allow(unused_variables)]
 #![deny(unused_must_use)]
 
-use std::{collections::HashMap};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::anyhow;

@@ -1,8 +1,7 @@
-use octant_reffed::arc::{Arc2, ArcRef};
-use octant_runtime::{define_sys_class, define_sys_rpc};
 use safe_once::sync::OnceLock;
-use std::sync::Arc;
+
 use octant_reffed::rc::{Rc2, RcRef};
+use octant_runtime::{define_sys_class, define_sys_rpc};
 
 use crate::{credentials_container::RcCredentialsContainer, object::Object};
 use crate::credentials_container::{CredentialsContainer, CredentialsContainerValue};

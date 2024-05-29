@@ -1,7 +1,5 @@
-use octant_reffed::arc::ArcRef;
-use octant_runtime::{define_sys_class, define_sys_rpc};
-use std::sync::Arc;
 use octant_reffed::rc::RcRef;
+use octant_runtime::{define_sys_class, define_sys_rpc};
 
 use crate::node::Node;
 

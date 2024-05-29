@@ -1,17 +1,19 @@
-use crate::{
-    handle::{RawHandle, TypedHandle},
-    peer::{ Peer},
-    proto::{DownMessage, DownMessageList, UpMessage},
-    LookupError,
-};
-use atomic_refcell::AtomicRefCell;
-use octant_object::{cast::downcast_object, class::Class};
-use octant_serde::DeserializeContext;
 use std::{collections::HashMap, marker::Unsize};
 use std::rc::Rc;
+
+use atomic_refcell::AtomicRefCell;
+use octant_object::{cast::downcast_object, class::Class};
+use octant_reffed::rc::Rc2;
+use octant_serde::DeserializeContext;
 use tokio::sync::mpsc::UnboundedSender;
 use web_sys::console;
-use octant_reffed::rc::Rc2;
+
+use crate::{
+    handle::{RawHandle, TypedHandle},
+    LookupError,
+    peer::Peer,
+    proto::{DownMessage, DownMessageList, UpMessage},
+};
 use crate::peer::RcPeer;
 
 struct State {

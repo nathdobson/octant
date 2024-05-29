@@ -1,6 +1,7 @@
 use base64urlsafedata::Base64UrlSafeData;
-use octant_serde::{DeserializeContext, DeserializeWith};
 use serde::{Deserialize, Deserializer, Serialize};
+
+use octant_serde::{DeserializeContext, DeserializeWith};
 
 use crate::{
     attestation_conveyance_preference::AttestationConveyancePreference,

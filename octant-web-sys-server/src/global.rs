@@ -1,14 +1,13 @@
-use std::{any::Any, hint::must_use, marker::PhantomData, sync::Arc};
+use std::{any::Any, hint::must_use, marker::PhantomData};
 use std::rc::Rc;
 
-use crate::request_init::RequestInitValue;
 use catalog::register;
-use octant_reffed::arc::{Arc2, ArcRef};
-use octant_runtime::{define_sys_rpc, runtime::Runtime};
-use octant_serde::define_serde_impl;
 use safe_once::sync::OnceLock;
 use serde::{Deserialize, Serialize};
+
 use octant_reffed::rc::{Rc2, RcRef};
+use octant_runtime::{define_sys_rpc, runtime::Runtime};
+use octant_serde::define_serde_impl;
 
 use crate::{
     credential_creation_options::{CredentialCreationOptionsValue, RcCredentialCreationOptions},
@@ -18,6 +17,7 @@ use crate::{
     request_init::{RcRequestInit, RequestInit},
     window::{RcWindow, Window, WindowValue},
 };
+use crate::request_init::RequestInitValue;
 
 #[cfg(side = "server")]
 pub struct Global {

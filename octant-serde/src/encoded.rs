@@ -1,9 +1,11 @@
-use crate::{DeserializeContext, DeserializeWith, Error, RawEncoded, DESERIALIZE_REGISTRY};
-use serde::{Deserialize, Deserializer, Serialize};
 use std::{
     fmt::{Debug, Formatter},
     marker::PhantomData,
 };
+
+use serde::{Deserialize, Deserializer, Serialize};
+
+use crate::{DESERIALIZE_REGISTRY, DeserializeContext, DeserializeWith, Error, RawEncoded};
 
 #[derive(Serialize, Deserialize)]
 pub struct Encoded<U: ?Sized> {

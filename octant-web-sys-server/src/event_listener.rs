@@ -1,17 +1,17 @@
-use octant_reffed::arc::ArcRef;
-#[cfg(side = "client")]
-use octant_runtime::runtime::RuntimeSink;
-use octant_runtime::{define_sys_class, peer::Peer, proto::UpMessage, runtime::Runtime};
-use octant_serde::{define_serde_impl, DeserializeWith};
-use safe_once::sync::OnceLock;
-use serde::Serialize;
 use std::{
-    any::{type_name, Any},
+    any::{Any, type_name},
     fmt::{Debug, Formatter},
-    sync::Arc,
 };
 use std::rc::Rc;
+
+use safe_once::sync::OnceLock;
+use serde::Serialize;
+
 use octant_reffed::rc::RcRef;
+use octant_runtime::{define_sys_class, peer::Peer, proto::UpMessage, runtime::Runtime};
+#[cfg(side = "client")]
+use octant_runtime::runtime::RuntimeSink;
+use octant_serde::{define_serde_impl, DeserializeWith};
 
 #[cfg(side = "server")]
 trait EventHandlerTrait: 'static + Fn() -> () {

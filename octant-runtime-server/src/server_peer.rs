@@ -1,13 +1,15 @@
-use crate::{
-    handle::{RawHandle, TypedHandle},
-    runtime::Runtime,
-};
+use std::fmt::Debug;
+use std::rc::Rc;
+
 use octant_object::{
     base::{Base, BaseValue},
     define_class,
 };
-use std::{fmt::Debug};
-use std::rc::Rc;
+
+use crate::{
+    handle::{RawHandle, TypedHandle},
+    runtime::Runtime,
+};
 
 define_class! {
     pub class Peer extends Base implements Debug{

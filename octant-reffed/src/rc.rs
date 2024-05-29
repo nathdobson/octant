@@ -4,6 +4,7 @@ use std::hash::Hash;
 use std::marker::Unsize;
 use std::ops::{CoerceUnsized, DispatchFromDyn};
 use std::rc::{Rc, Weak};
+
 use serde::{Serialize, Serializer};
 use weak_table::traits::{WeakElement, WeakKey};
 

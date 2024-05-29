@@ -10,7 +10,7 @@ use anyhow::Context;
 use parking_lot::Mutex;
 
 use octant_account::{
-    login::LoginHandler, register::RegisterHandler, AccountDatabase, SessionTable,
+    AccountDatabase, login::LoginHandler, register::RegisterHandler, SessionTable,
 };
 use octant_database::{database_struct, file::Database, tree::Tree};
 use octant_panic::register_handler;

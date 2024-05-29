@@ -27,6 +27,7 @@ impl<'de> DeserializeWith<'de> for Foo {
 mod b {
     use crate::define_serde_impl;
     use crate::Foo;
+
     define_serde_impl!(Foo: crate::MyTrait);
 }
 

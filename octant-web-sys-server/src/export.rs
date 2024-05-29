@@ -1,3 +1,8 @@
+use base64urlsafedata::Base64UrlSafeData;
+
+use js_sys::{Array, Object, Reflect, Uint8Array};
+use wasm_bindgen::JsValue;
+
 use crate::{
     allow_credentials::AllowCredentials, allow_credentials_type::AllowCredentialsType,
     attestation_conveyance_preference::AttestationConveyancePreference,
@@ -11,9 +16,6 @@ use crate::{
     public_key_credential_user_entity::PublicKeyCredentialUserEntity,
     user_verification_requirement::UserVerificationRequirement,
 };
-use base64urlsafedata::Base64UrlSafeData;
-use js_sys::{Array, Object, Reflect, Uint8Array};
-use wasm_bindgen::JsValue;
 
 pub trait Export<T> {
     fn export(&self) -> T;

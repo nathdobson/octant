@@ -121,6 +121,7 @@ pub mod class;
 #[doc(hidden)]
 pub mod reexports {
     pub use paste;
+
     pub use octant_reffed;
 }
 

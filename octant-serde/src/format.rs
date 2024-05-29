@@ -1,9 +1,10 @@
+use serde::Serialize;
+
 use crate::{
     encoded::Encoded,
-    registry::{SerializeDyn, SerializeType},
-    Error, RawEncoded,
+    Error,
+    RawEncoded, registry::{SerializeDyn, SerializeType},
 };
-use serde::Serialize;
 
 #[derive(Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
 pub enum Format {

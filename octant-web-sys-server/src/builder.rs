@@ -1,12 +1,10 @@
-use octant_reffed::arc::Arc2;
-use std::{marker::Unsize, sync::Arc};
 use octant_reffed::rc::Rc2;
 
 use crate::{
     element::Element,
-    event_listener::{RcEventListener, EventListener},
+    event_listener::{EventListener, RcEventListener},
     html_form_element::HtmlFormElement,
-    node::{RcNode, Node},
+    node::{Node, RcNode},
 };
 
 pub trait NodeExt {

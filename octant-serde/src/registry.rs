@@ -1,12 +1,14 @@
-use crate::{DeserializeContext, DeserializeWith, Error, Format, RawEncoded};
-use anyhow::anyhow;
-use catalog::{Builder, BuilderFrom, Registry};
-use serde::Serialize;
 use std::{
     any::Any,
     collections::HashMap,
     marker::{PhantomData, Unsize},
 };
+
+use anyhow::anyhow;
+use catalog::{Builder, BuilderFrom, Registry};
+use serde::Serialize;
+
+use crate::{DeserializeContext, DeserializeWith, Error, Format, RawEncoded};
 
 type DeserializeFn<U> =
     for<'c, 'de> fn(&'c DeserializeContext, &'de RawEncoded) -> Result<Box<U>, Error>;

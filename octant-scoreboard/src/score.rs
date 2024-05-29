@@ -6,7 +6,7 @@ use parking_lot::Mutex;
 use url::Url;
 
 use octant_account::SessionTable;
-use octant_server::{cookies::CookieRouter, session::Session, Handler, Page};
+use octant_server::{cookies::CookieRouter, Handler, Page, session::Session};
 use octant_web_sys_server::{
     builder::{ElementExt, HtmlFormElementExt, NodeExt},
     element::RcElement,

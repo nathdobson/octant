@@ -1,16 +1,19 @@
-use crate::runtime::Runtime;
-use octant_serde::{
-    DeserializeContext, DeserializeWith, DeserializeWithSeed, Encoded, SerializeDyn,
-};
-use serde::{
-    de::{Error, MapAccess, Visitor},
-    Deserialize, Deserializer, Serialize,
-};
 use std::{
     any::Any,
     fmt::{Debug, Formatter},
 };
 use std::rc::Rc;
+
+use serde::{
+    de::{Error, MapAccess, Visitor},
+    Deserialize, Deserializer, Serialize,
+};
+
+use octant_serde::{
+    DeserializeContext, DeserializeWith, DeserializeWithSeed, Encoded, SerializeDyn,
+};
+
+use crate::runtime::Runtime;
 
 #[cfg(side = "client")]
 pub trait DownMessage: SerializeDyn + Debug + Any {

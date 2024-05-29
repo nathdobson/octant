@@ -1,3 +1,10 @@
+use base64urlsafedata::Base64UrlSafeData;
+
+use js_sys::{ArrayBuffer, Uint8Array};
+use octant_error::OctantError;
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::console;
+
 use crate::{
     authentication_extensions_client_outputs::AuthenticationExtensionsClientOutputs,
     authenticator_assertion_response::AuthenticatorAssertionResponse,
@@ -5,11 +12,6 @@ use crate::{
     authenticator_response::AuthenticatorResponse, credential_data::CredentialData,
     public_key_credential::PublicKeyCredential,
 };
-use base64urlsafedata::Base64UrlSafeData;
-use js_sys::{ArrayBuffer, Object, Uint8Array};
-use octant_error::OctantError;
-use wasm_bindgen::{JsCast, JsValue};
-use web_sys::console;
 
 pub trait Import<T> {
     fn import(&self) -> T;

@@ -14,22 +14,22 @@ use anyhow::anyhow;
 use clap::Parser;
 use cookie::Cookie;
 use futures::{
-    stream::{SplitSink, SplitStream, StreamExt},
     SinkExt,
+    stream::{SplitSink, SplitStream, StreamExt},
 };
 use itertools::Itertools;
-use octant_executor::{
-    event_loop::EventPool,
-    local_set::{LocalSetPool, LocalSetSpawn},
-};
 use tokio::{sync::mpsc, try_join};
 use url::Url;
 use uuid::Uuid;
 use warp::{
-    ws::{Message, WebSocket},
-    Filter, Reply,
+    Filter,
+    Reply, ws::{Message, WebSocket},
 };
 
+use octant_executor::{
+    event_loop::EventPool,
+    local_set::{LocalSetPool, LocalSetSpawn},
+};
 use octant_runtime_server::{
     proto::{DownMessageList, UpMessageList},
     runtime::Runtime,

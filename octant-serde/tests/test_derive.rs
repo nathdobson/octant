@@ -1,8 +1,9 @@
 #![deny(unused_must_use)]
 
+use serde::Serialize;
+
 use octant_serde::{DeserializeContext, Format};
 use octant_serde_derive::DeserializeWith;
-use serde::Serialize;
 
 #[derive(Serialize, DeserializeWith)]
 pub struct Foo {

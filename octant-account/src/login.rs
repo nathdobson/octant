@@ -8,12 +8,12 @@ use uuid::Uuid;
 use webauthn_rs::prelude::Passkey;
 
 use octant_database::{forest::Forest, tree::Tree};
-use octant_server::{cookies::CookieRouter, session::Session, Handler, Page};
+use octant_server::{cookies::CookieRouter, Handler, Page, session::Session};
 use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
 
 use crate::{
-    build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, AccountDatabase, SessionTable,
-    VerifiedLogin, SESSION_COOKIE,
+    AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, SESSION_COOKIE,
+    SessionTable, VerifiedLogin,
 };
 
 pub struct LoginHandler {

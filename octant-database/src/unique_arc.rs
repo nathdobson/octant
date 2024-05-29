@@ -1,5 +1,5 @@
 use std::{
-    alloc::{handle_alloc_error, Allocator, Global, Layout},
+    alloc::{Allocator, Global, handle_alloc_error, Layout},
     any::Any,
     cell::UnsafeCell,
     marker::Unsize,
@@ -8,8 +8,8 @@ use std::{
     ops::{CoerceUnsized, Deref, DerefMut},
     ptr::NonNull,
     sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc, Weak,
+        Arc,
+        atomic::{AtomicUsize, Ordering}, Weak,
     },
 };
 

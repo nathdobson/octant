@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::ser::PrettyFormatter;
 use tokio::{
     fs,
-    fs::{read_dir, File},
+    fs::{File, read_dir},
     io::AsyncWriteExt,
     sync::RwLock,
 };

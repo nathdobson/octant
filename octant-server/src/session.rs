@@ -1,6 +1,4 @@
-use std::{
-    any::{Any, TypeId},
-};
+use std::any::{Any, TypeId};
 use std::rc::Rc;
 
 use memo_map::MemoMap;
