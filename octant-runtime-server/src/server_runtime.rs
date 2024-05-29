@@ -6,7 +6,6 @@ use crate::{
     LookupError,
 };
 use atomic_refcell::AtomicRefCell;
-use octant_executor::Spawn;
 use octant_object::{cast::downcast_object, class::Class};
 use octant_reffed::arc::{Arc2, Weak2};
 use octant_serde::DeserializeContext;
@@ -16,6 +15,7 @@ use std::{
 };
 use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
+use octant_executor::event_loop::EventSpawn;
 
 struct State {
     next_handle: u64,
@@ -24,7 +24,7 @@ struct State {
 
 pub struct Runtime {
     state: AtomicRefCell<State>,
-    spawn: Arc<Spawn>,
+    spawn: Arc<EventSpawn>,
     sink: UnboundedSender<Box<dyn DownMessage>>,
 }
 
@@ -35,7 +35,7 @@ impl Debug for Runtime {
 }
 
 impl Runtime {
-    pub fn new(sink: UnboundedSender<Box<dyn DownMessage>>, spawn: Arc<Spawn>) -> Self {
+    pub fn new(sink: UnboundedSender<Box<dyn DownMessage>>, spawn: Arc<EventSpawn>) -> Self {
         Runtime {
             state: AtomicRefCell::new(State {
                 next_handle: 0,
@@ -48,7 +48,7 @@ impl Runtime {
     pub fn send(&self, command: Box<dyn DownMessage>) {
         self.sink.send(command).ok();
     }
-    pub fn spawner(&self) -> &Arc<Spawn> {
+    pub fn spawner(&self) -> &Arc<EventSpawn> {
         &self.spawn
     }
     pub fn add<T: Peer>(&self, value: T) -> Arc2<T> {

@@ -4,8 +4,10 @@
 #![feature(trait_upcasting)]
 #![feature(never_type)]
 
-use std::{collections::HashMap, net::SocketAddr, sync::Arc};
-use std::future::pending;
+use std::{
+    collections::HashMap, future::pending, net::SocketAddr, sync::Arc,
+    thread::available_parallelism,
+};
 
 use anyhow::anyhow;
 use clap::Parser;
@@ -15,6 +17,10 @@ use futures::{
     SinkExt,
 };
 use itertools::Itertools;
+use octant_executor::{
+    event_loop::EventPool,
+    local_set::{LocalSetPool, LocalSetSpawn},
+};
 use tokio::{sync::mpsc, try_join};
 use url::Url;
 use uuid::Uuid;
@@ -23,7 +29,6 @@ use warp::{
     Filter, Reply,
 };
 
-use octant_executor::Pool;
 use octant_runtime_server::{
     proto::{DownMessageList, UpMessageList},
     runtime::Runtime,
@@ -55,6 +60,7 @@ pub struct OctantServer {
     options: OctantServerOptions,
     handlers: HashMap<String, Arc<dyn Handler>>,
     cookie_router: Arc<CookieRouter>,
+    spawn: Arc<LocalSetSpawn>,
 }
 
 impl OctantServerOptions {
@@ -95,10 +101,13 @@ impl OctantApplication {
 
 impl OctantServer {
     pub fn new(options: OctantServerOptions) -> Self {
+        let (spawn, pool) = LocalSetPool::new(available_parallelism().unwrap().get());
+        pool.detach();
         OctantServer {
             options,
             handlers: HashMap::new(),
             cookie_router: CookieRouter::new(),
+            spawn,
         }
     }
     pub fn cookie_router(&self) -> &Arc<CookieRouter> {
@@ -128,13 +137,25 @@ impl OctantServer {
     }
     pub async fn run_socket(
         self: Arc<Self>,
-        _name: &str,
+        tx: SplitSink<WebSocket, Message>,
+        rx: SplitStream<WebSocket>,
+    ) -> anyhow::Result<()> {
+        let spawn = self.spawn.clone();
+        spawn
+            .spawn_async(move || async move {
+                self.run_socket_local(tx, rx).await?;
+                Ok(())
+            })
+            .await?
+    }
+    pub async fn run_socket_local(
+        self: Arc<Self>,
         tx: SplitSink<WebSocket, Message>,
         mut rx: SplitStream<WebSocket>,
     ) -> anyhow::Result<()> {
         let (tx_inner, rx_inner) = mpsc::unbounded_channel();
         let mut sink = BufferedDownMessageSink::new(rx_inner, Box::pin(tx.with(Self::encode)));
-        let (spawn, mut pool) = Pool::new(move |cx| sink.poll_flush(cx));
+        let (spawn, mut pool) = EventPool::new(move |cx| sink.poll_flush(cx));
         let runtime = Arc::new(Runtime::new(tx_inner, spawn.clone()));
         let global = Global::new(runtime);
         let session = Arc::new(Session::new(global.clone()));
@@ -224,7 +245,7 @@ impl OctantServer {
                     ws.on_upgrade(|websocket| async move {
                         log::info!("Upgraded");
                         let (tx, rx) = websocket.split();
-                        if let Err(e) = this.run_socket(&name, tx, rx).await {
+                        if let Err(e) = this.run_socket(tx, rx).await {
                             log::error!("Error handling websocket: {:?}", e);
                         }
                     })
@@ -279,11 +300,7 @@ pub struct Page {
 
 impl Page {
     pub fn new(global: Arc<Global>, node: ArcNode) -> Page {
-        global
-            .window()
-            .document()
-            .body()
-            .append_child(node.clone());
+        global.window().document().body().append_child(node.clone());
         Page { global, node }
     }
 }

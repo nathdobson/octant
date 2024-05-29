@@ -40,7 +40,6 @@ impl ScoreHandler {
         session: Arc<Session>,
     ) -> anyhow::Result<()> {
         let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());
-        global.window().alert(format!("hi"));
         // prompt(
         //     session.global().runtime(),
         //     &session.global().window(),

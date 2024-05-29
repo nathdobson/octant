@@ -5,7 +5,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = { workspace = true }
-tokio = { workspace = true, features = ["sync"] }
+tokio = { workspace = true, features = ["sync", "rt","macros"] }
 futures = { workspace = true }
 parking_lot = { workspace = true }
 by_address = {workspace=true}
+safe-once = {workspace=true}
