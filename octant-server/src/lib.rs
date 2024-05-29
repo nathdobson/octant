@@ -72,12 +72,12 @@ impl OctantServerOptions {
 
 pub trait Handler: 'static + Sync + Send {
     fn prefix(&self) -> String;
-    fn handle(self: Arc<Self>, url: &Url, session: Arc<Session>) -> anyhow::Result<Page>;
+    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> anyhow::Result<Page>;
 }
 
 struct OctantApplication {
     server: Arc<OctantServer>,
-    session: Arc<Session>,
+    session: Rc<Session>,
 }
 
 impl OctantApplication {
@@ -159,8 +159,8 @@ impl OctantServer {
         let (spawn, mut pool) = EventPool::new(move |cx| sink.poll_flush(cx));
         let runtime = Rc::new(Runtime::new(tx_inner, spawn.clone()));
         let global = Global::new(runtime);
-        let session = Arc::new(Session::new(global.clone()));
-        let app = Arc::new(OctantApplication {
+        let session = Rc::new(Session::new(global.clone()));
+        let app = Rc::new(OctantApplication {
             server: self,
             session,
         });

@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::sync::Arc;
 
 use anyhow::anyhow;
@@ -23,7 +24,7 @@ pub struct Guess {
 }
 
 impl ScoreHandler {
-    pub fn handle_form(&self, session: &Arc<Session>, guess: &str) -> anyhow::Result<()> {
+    pub fn handle_form(&self, session: &Rc<Session>, guess: &str) -> anyhow::Result<()> {
         let login = self
             .session_table
             .get(session)
@@ -37,7 +38,7 @@ impl ScoreHandler {
     pub async fn handle_impl(
         self: &Arc<Self>,
         mut page: RcElement,
-        session: Arc<Session>,
+        session: Rc<Session>,
     ) -> anyhow::Result<()> {
         let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());
         // prompt(
@@ -81,7 +82,7 @@ impl Handler for ScoreHandler {
         "score".to_string()
     }
 
-    fn handle(self: Arc<Self>, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
+    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> anyhow::Result<Page> {
         let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());
         let page = global.window().document().create_element("div");
         session.global().runtime().spawner().spawn({

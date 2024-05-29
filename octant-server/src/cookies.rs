@@ -3,6 +3,7 @@ use std::{
     future::Future,
     sync::{Arc, Weak},
 };
+use std::rc::Rc;
 
 use parking_lot::Mutex;
 use uuid::Uuid;
@@ -64,7 +65,7 @@ impl CookieRouter {
     pub fn create_finish(&self, token: Uuid) -> Option<String> {
         self.create_cookies.lock().get(&token).cloned()
     }
-    pub fn update_start(&self, session: &Arc<Session>) -> (Uuid, CookieUpdateGuard) {
+    pub fn update_start(&self, session: &Rc<Session>) -> (Uuid, CookieUpdateGuard) {
         let update_token = Uuid::new_v4();
         self.update_cookies
             .lock()
@@ -84,7 +85,7 @@ impl CookieRouter {
     }
     pub fn create<'a>(
         &'a self,
-        session: &'a Arc<Session>,
+        session: &'a Rc<Session>,
         cookie: String,
     ) -> impl 'a + Future<Output = anyhow::Result<()>> {
         async move {
@@ -104,7 +105,7 @@ impl CookieRouter {
             Ok(())
         }
     }
-    pub async fn update(&self, session: &Arc<Session>) -> anyhow::Result<()> {
+    pub async fn update(&self, session: &Rc<Session>) -> anyhow::Result<()> {
         let (cookie_token, _guard) = self.update_start(&session);
         let request_init = session.global().new_request_init();
         let request = session.global().new_request(

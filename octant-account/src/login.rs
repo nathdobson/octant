@@ -1,4 +1,5 @@
 use std::{future::Future, sync::Arc};
+use std::rc::Rc;
 
 use anyhow::anyhow;
 use tokio::sync::RwLock;
@@ -25,7 +26,7 @@ pub struct LoginHandler {
 impl LoginHandler {
     pub fn do_login<'a>(
         self: Arc<Self>,
-        session: Arc<Session>,
+        session: Rc<Session>,
         url: &'a Url,
         email: &'a str,
     ) -> impl 'a + Future<Output = anyhow::Result<()>> {
@@ -80,7 +81,7 @@ impl Handler for LoginHandler {
         "login".to_string()
     }
 
-    fn handle(self: Arc<Self>, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
+    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> anyhow::Result<Page> {
         let url = url.clone();
         let d = session.global().window().document();
         let text = d.create_text_node(format!("Register"));

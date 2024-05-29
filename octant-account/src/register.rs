@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Context};
@@ -21,7 +22,7 @@ pub struct RegisterHandler {
 impl RegisterHandler {
     pub async fn do_register(
         self: &Arc<Self>,
-        session: Arc<Session>,
+        session: Rc<Session>,
         url: &Url,
         email: String,
         name: String,
@@ -65,7 +66,7 @@ impl Handler for RegisterHandler {
         "register".to_string()
     }
 
-    fn handle(self: Arc<Self>, url: &Url, session: Arc<Session>) -> anyhow::Result<Page> {
+    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> anyhow::Result<Page> {
         let url = url.clone();
         let d = session.global().window().document();
         let text = d.create_text_node(format!("Register"));

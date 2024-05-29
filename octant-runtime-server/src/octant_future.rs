@@ -11,7 +11,7 @@ use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-use std::{rc::Rc, sync::Arc};
+use std::{rc::Rc};
 
 #[cfg(side = "server")]
 use crate::immediate_return::AsTypedHandle;
@@ -57,7 +57,7 @@ impl<T: FutureReturn> Unpin for OctantFuture<T> {}
 #[cfg(side = "client")]
 pub struct OctantFuture<T: FutureReturn> {
     parent: RcAbstractOctantFuture,
-    down: Arc<Mutex<Option<T::Down>>>,
+    down: Rc<Mutex<Option<T::Down>>>,
     phantom: PhantomData<T>,
 }
 
@@ -88,7 +88,7 @@ impl<T: Debug + FutureReturn> OctantFuture<T> {
         let parent = Rc2::new(AbstractOctantFutureValue {
             parent: PeerValue::new(),
         });
-        let down = Arc::new(Mutex::new(None));
+        let down = Rc::new(Mutex::new(None));
         wasm_bindgen_futures::spawn_local({
             let parent = parent.clone();
             let down = down.clone();
