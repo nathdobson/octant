@@ -117,6 +117,7 @@ fn derive_class_impl(input: ItemStruct) -> syn::Result<TokenStream> {
     );
     let get_mut = format_ident!("{}_mut", get_ref);
     output = quote! {
+        #[derive(::octant_object::DebugClass)]
         pub struct #value {
             parent: <dyn #parent as ::octant_object::class::Class>::Value,
             #(#field_defs),*
@@ -181,15 +182,48 @@ fn derive_class_impl(input: ItemStruct) -> syn::Result<TokenStream> {
                 f.finish()
             }
         }
-        impl ::octant_object::class::DebugClass for #value {
-            fn fmt_class(&self, f: &mut ::std::fmt::DebugStruct) {
-                ::octant_object::class::DebugClass::fmt_class(&self.parent, f);
-                #(
-                    f.field(std::stringify!(#field_names), &self.#field_names);
-                )*
-            }
-        }
     };
+    Ok(output)
+}
 
+#[proc_macro_derive(DebugClass)]
+pub fn derive_debug_class(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    proc_macro::TokenStream::from(
+        derive_debug_class_impl(input).unwrap_or_else(syn::Error::into_compile_error),
+    )
+}
+
+fn derive_debug_class_impl(input: DeriveInput) -> syn::Result<TokenStream> {
+    let output: TokenStream;
+    let DeriveInput {
+        attrs: input_attrs,
+        vis: input_vis,
+        ident: input_ident,
+        generics: input_generics,
+        data: input_data,
+    } = &input;
+    match input_data {
+        Data::Struct(strukt) => {
+            let DataStruct {
+                struct_token,
+                fields,
+                semi_token,
+            } = strukt;
+            let field_names: Vec<_> = fields.iter().skip(1).map(|x| &x.ident).collect();
+            output = quote! {
+                impl ::octant_object::class::DebugClass for #input_ident {
+                    fn fmt_class(&self, f: &mut ::std::fmt::DebugStruct) {
+                        ::octant_object::class::DebugClass::fmt_class(&self.parent, f);
+                        #(
+                            f.field(std::stringify!(#field_names), &self.#field_names);
+                        )*
+                    }
+                }
+            };
+        }
+        Data::Enum(_) => todo!(),
+        Data::Union(_) => todo!(),
+    }
     Ok(output)
 }

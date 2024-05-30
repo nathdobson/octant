@@ -28,17 +28,11 @@ use crate::{
     immediate_return::ImmediateReturn, peer::Peer, proto::UpMessage, runtime::Runtime,
 };
 
-#[cfg(side = "server")]
 #[class]
 pub struct AbstractOctantFuture {
     parent: dyn Peer,
+    #[cfg(side = "server")]
     sender: RefCell<Option<oneshot::Sender<RawEncoded>>>,
-}
-
-#[cfg(side = "client")]
-#[class]
-pub struct AbstractOctantFuture {
-    parent: dyn Peer,
 }
 
 pub trait AbstractOctantFuture: AsAbstractOctantFuture {}
