@@ -1,6 +1,5 @@
 use octant_object::class;
 use octant_runtime::{
-    define_sys_class,
     peer::{Peer, PeerValue},
     DeserializePeer, PeerNew, SerializePeer,
 };

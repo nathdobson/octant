@@ -5,8 +5,8 @@ use octant_error::OctantError;
 use octant_object::class;
 use octant_reffed::rc::Rc2;
 use octant_runtime::{
-    define_sys_class, define_sys_rpc, future_return::DataReturn, octant_future::OctantFuture,
-    peer::AsNative, DeserializePeer, PeerNew, SerializePeer,
+    define_sys_rpc, future_return::DataReturn, octant_future::OctantFuture, peer::AsNative,
+    DeserializePeer, PeerNew, SerializePeer,
 };
 
 #[cfg(side = "client")]

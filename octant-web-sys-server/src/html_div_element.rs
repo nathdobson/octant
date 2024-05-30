@@ -1,7 +1,7 @@
 use octant_object::class;
 use serde::Serialize;
 
-use octant_runtime::{define_sys_class, DeserializePeer, peer::PeerValue, PeerNew, SerializePeer};
+use octant_runtime::{peer::PeerValue, DeserializePeer, PeerNew, SerializePeer};
 
 use crate::html_element::{HtmlElement, HtmlElementValue};
 

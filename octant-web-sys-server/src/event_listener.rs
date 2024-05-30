@@ -13,7 +13,6 @@ use octant_reffed::rc::RcRef;
 #[cfg(side = "client")]
 use octant_runtime::runtime::RuntimeSink;
 use octant_runtime::{
-    define_sys_class,
     peer::{Peer, PeerValue},
     proto::UpMessage,
     runtime::Runtime,

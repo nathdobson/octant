@@ -1,9 +1,8 @@
-use octant_object::class;
-use octant_runtime::{define_sys_class, DeserializePeer, PeerNew, SerializePeer};
 use crate::credential::AsCredential;
+use octant_object::class;
+use octant_runtime::{DeserializePeer, PeerNew, SerializePeer};
 
-use crate::node::Node;
-use crate::object::Object;
+use crate::{node::Node, object::Object};
 
 #[class]
 #[derive(PeerNew, SerializePeer, DeserializePeer)]

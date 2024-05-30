@@ -1,5 +1,5 @@
 use octant_object::class;
-use octant_runtime::{define_sys_class, DeserializePeer, PeerNew, SerializePeer};
+use octant_runtime::{DeserializePeer, PeerNew, SerializePeer};
 
 use crate::object::Object;
 

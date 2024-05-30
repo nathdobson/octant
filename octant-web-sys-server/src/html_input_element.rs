@@ -5,8 +5,7 @@ use serde::Serialize;
 
 use octant_reffed::rc::RcRef;
 use octant_runtime::{
-    define_sys_class, peer::AsNative, proto::UpMessage, runtime::Runtime, DeserializePeer, PeerNew,
-    SerializePeer,
+    peer::AsNative, proto::UpMessage, runtime::Runtime, DeserializePeer, PeerNew, SerializePeer,
 };
 use octant_serde::{define_serde_impl, DeserializeWith};
 

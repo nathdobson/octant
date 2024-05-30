@@ -5,9 +5,7 @@ use octant_object::class;
 
 use crate::credential::AsCredential;
 use octant_reffed::rc::RcRef;
-use octant_runtime::{
-    define_sys_class, define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer,
-};
+use octant_runtime::{define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer};
 
 use crate::object::Object;
 

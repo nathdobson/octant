@@ -1,8 +1,7 @@
-use crate::node::Node;
+use crate::{node::Node, octant_runtime::peer::AsNative};
 use octant_object::class;
 use octant_reffed::rc::RcRef;
-use octant_runtime::{define_sys_class, define_sys_rpc, DeserializePeer, PeerNew, SerializePeer};
-use crate::octant_runtime::peer::AsNative;
+use octant_runtime::{define_sys_rpc, DeserializePeer, PeerNew, SerializePeer};
 
 #[class]
 #[derive(PeerNew, SerializePeer, DeserializePeer)]

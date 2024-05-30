@@ -2,7 +2,7 @@ use crate::octant_runtime::PeerNew;
 use octant_object::{class, define_class};
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{
-    define_sys_class, define_sys_rpc,
+    define_sys_rpc,
     handle::TypedHandle,
     immediate_return::AsTypedHandle,
     octant_future::OctantFuture,
@@ -45,7 +45,7 @@ pub trait Document: AsDocument {}
 
 impl<T> Document for T where T: AsDocument {}
 
-#[cfg(side="server")]
+#[cfg(side = "server")]
 impl dyn Document {
     pub fn create_div(self: &RcRef<Self>) -> RcHtmlDivElement {
         create_div(self.runtime(), self.rc())

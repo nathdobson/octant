@@ -2,9 +2,7 @@ use octant_object::class;
 use safe_once::cell::OnceCell;
 
 use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::{
-    define_sys_class, define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer,
-};
+use octant_runtime::{define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer};
 
 use crate::{
     credential::AsCredential,

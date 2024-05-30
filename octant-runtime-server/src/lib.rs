@@ -22,7 +22,6 @@ use crate::{
     runtime::Runtime,
 };
 
-pub mod define_sys_class;
 pub mod define_sys_rpc;
 pub mod handle;
 #[doc(hidden)]

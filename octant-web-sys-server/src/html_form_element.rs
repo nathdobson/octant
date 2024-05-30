@@ -14,15 +14,12 @@ use web_sys::Event;
 
 use octant_object::{cast::downcast_object, class};
 use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::{
-    define_sys_class, define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer,
-};
+use octant_runtime::{define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer};
 
 use crate::{
     credential::AsCredential, event_listener::RcEventListener, html_element::HtmlElement,
-    html_input_element::RcHtmlInputElement, object::Object,
+    html_input_element::RcHtmlInputElement, node::Node, object::Object,
 };
-use crate::node::Node;
 
 #[class]
 #[derive(PeerNew, SerializePeer, DeserializePeer)]

@@ -1,8 +1,8 @@
 use std::{
     future::Future,
     mem::{ManuallyDrop, MaybeUninit},
+    rc::Rc,
 };
-use std::rc::Rc;
 
 use futures::future::BoxFuture;
 use safe_once::cell::OnceCell;
@@ -11,23 +11,23 @@ use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serialize
 use octant_error::OctantError;
 use octant_object::class;
 use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::{define_sys_class, define_sys_rpc, DeserializePeer, future_return::FutureReturn, octant_future::OctantFuture, PeerNew, runtime::Runtime, SerializePeer};
+use octant_runtime::{
+    define_sys_rpc, future_return::FutureReturn, octant_future::OctantFuture, peer::AsNative,
+    runtime::Runtime, DeserializePeer, PeerNew, SerializePeer,
+};
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
-use octant_runtime::peer::AsNative;
 
 use crate::{
-    document::{Document, RcDocument},
+    credential::AsCredential,
+    document::{Document, DocumentValue, RcDocument},
     navigator::{Navigator, NavigatorValue, RcNavigator},
     object::Object,
     request::{RcRequest, Request},
     response::{RcResponse, ResponseValue},
 };
-use crate::credential::AsCredential;
-use crate::document::DocumentValue;
-
 
 #[class]
 #[derive(PeerNew, SerializePeer, DeserializePeer)]
@@ -35,10 +35,10 @@ pub struct Window {
     parent: dyn Object,
     #[cfg(side = "client")]
     any_value: web_sys::Window,
-    #[cfg(side="server")]
-    document : OnceCell<RcDocument>,
-    #[cfg(side="server")]
-    navigator : OnceCell<RcNavigator>,
+    #[cfg(side = "server")]
+    document: OnceCell<RcDocument>,
+    #[cfg(side = "server")]
+    navigator: OnceCell<RcNavigator>,
 }
 
 pub trait Window: AsWindow {}
@@ -54,12 +54,16 @@ impl dyn Window {
         async move { Ok(fetch_wrap(self.runtime(), self.rc(), request).await??) }
     }
     pub fn document<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Document> {
-        self.window().document.get_or_init(|| document(self.runtime(), self.rc()))
+        self.window()
+            .document
+            .get_or_init(|| document(self.runtime(), self.rc()))
     }
-    pub fn navigator<'a>(self: &'a RcRef<Self>) -> &'a RcRef< dyn Navigator> {
-        self.window().navigator.get_or_init(|| navigator(self.runtime(),self.rc()))
+    pub fn navigator<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Navigator> {
+        self.window()
+            .navigator
+            .get_or_init(|| navigator(self.runtime(), self.rc()))
     }
-    pub fn alert(self: & RcRef<Self>, message: String) {
+    pub fn alert(self: &RcRef<Self>, message: String) {
         alert(self.runtime(), self.rc(), message);
     }
 }
@@ -91,4 +95,3 @@ define_sys_rpc! {
         }))
     }
 }
-
