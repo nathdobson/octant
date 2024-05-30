@@ -125,6 +125,8 @@ pub mod reexports {
     pub use octant_reffed;
 }
 
+pub use octant_object_derive::*;
+
 /// Create a new class.
 ///
 /// A <i>class</i> is a trait `Foo` and a struct `FooValue` where
@@ -223,6 +225,27 @@ macro_rules! define_class {
                 parent: <dyn $parent $(< $($parent_generics),*>)? as $crate::class::Class>::Value,
                 $($field_vis $field : $type,)*
             }
+            pub trait $class $(< $($generics:'static),*>)? : [< As $class Value >] $(< $($generics),*>)? $(where $($where)*)?{
+                $(
+                    fn $method $(<$($lifetime),*>)?(
+                        $( $params )*
+                    ) $(-> $return_type)?;
+                )*
+            }
+            impl<__super_secret__T $(, $($generics:'static)*)?> $class $(< $($generics),*>)?
+                for __super_secret__T
+                where __super_secret__T: [< As $class Value >] $(< $($generics),*>)?, $( $($where)*)?{
+                $(
+                    fn $method $(<$($lifetime),*>)?(
+                        $($params)*
+                    ) $(-> $return_type)?
+                    $body
+                )*
+            }
+            pub trait [< As $class Value >] $(< $($generics:'static),*>)? : $parent $(< $($parent_generics),*>)? $(+ $interface)? $(where $($where)*)? {
+                fn [< $class:snake >](&self) -> &[< $class Value >] $(< $($generics),*>)?;
+                fn [< $class:snake _mut >](&mut self) -> &mut [< $class Value >] $(< $($generics),*>)?;
+            }
             impl $(< $($generics:'static + ::std::fmt::Debug),*>)? ::std::fmt::Debug for [< $class Value >] $(< $($generics),*>)? $(where $($where)*)? {
                 fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                     let mut f = f.debug_struct(::std::stringify!($class));
@@ -238,15 +261,6 @@ macro_rules! define_class {
                     )*
                 }
             }
-            pub trait $class $(< $($generics:'static),*>)? : $parent $(< $($parent_generics),*>)? $(+ $interface)? $(where $($where)*)? {
-                fn [< $class:snake >](&self) -> &[< $class Value >] $(< $($generics),*>)?;
-                fn [< $class:snake _mut >](&mut self) -> &mut [< $class Value >] $(< $($generics),*>)?;
-                $(
-                    fn $method $(<$($lifetime),*>)?(
-                        $( $params )*
-                    ) $(-> $return_type)?;
-                )*
-            }
             pub type [< Rc $class >] $(< $($generics),*>)? = $crate::reexports::octant_reffed::rc::Rc2<dyn 'static + $class $(< $($generics),*>)?>;
             impl $(< $($generics:'static),*>)? $crate::class::Class for dyn $class $(< $($generics),*>)? $(where $($where)*)? {
                 type Value = [< $class Value >] $(< $($generics),*>)?;
@@ -260,7 +274,7 @@ macro_rules! define_class {
             impl $(< $($generics:'static),*>)? $crate::class::Ranked for [< $class Value >]$(< $($generics),*>)? $(where $($where)*)? {
                 type Rank = $crate::class::Succ<<<dyn $parent $(< $($parent_generics),*>)? as $crate::class::Class>::Value as $crate::class::Ranked>::Rank>;
             }
-            impl<__super_secret__T $(, $($generics:'static)*)?> $class $(< $($generics),*>)? for __super_secret__T where
+            impl<__super_secret__T $(, $($generics:'static)*)?> [< As $class Value >] $(< $($generics),*>)? for __super_secret__T where
                 __super_secret__T: $parent $(< $($parent_generics),*>)?,
                 $(__super_secret__T: $interface,)?
                 __super_secret__T: $crate::class::Ranked,
@@ -273,24 +287,17 @@ macro_rules! define_class {
                 fn [< $class:snake _mut >](&mut self) -> &mut [< $class Value >] $(< $($generics),*>)?{
                     self.deref_mut_ranked()
                 }
-                $(
-                    fn $method $(<$($lifetime),*>)?(
-                        $($params)*
-                    ) $(-> $return_type)?
-                    $body
-                )*
             }
-
             impl $(< $($generics:'static),*>)? ::std::ops::Deref for dyn $class $(< $($generics),*>)? $(where $($where)*)? {
                 type Target = [< $class Value >] $(< $($generics),*>)?;
                 fn deref(&self) -> &Self::Target {
-                    $class$(::< $($generics),*>)?::[< $class:snake >](self)
+                    [< As $class Value >]$(::< $($generics),*>)?::[< $class:snake >](self)
                 }
             }
 
             impl $(< $($generics:'static),*>)? ::std::ops::DerefMut for dyn $class $(< $($generics),*>)? $(where $($where)*)? {
                 fn deref_mut(&mut self) -> &mut Self::Target {
-                    $class$(::< $($generics),*>)?::[< $class:snake _mut >](self)
+                    [< As $class Value >]$(::< $($generics),*>)?::[< $class:snake _mut >](self)
                 }
             }
 

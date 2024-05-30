@@ -17,7 +17,7 @@ members = [
     "octant-serde",
     "octant-web-sys-client",
     "octant-web-sys-server",
-    "octant-sys-build", "octant-runtime-client", "octant-runtime-server", "octant-serde-derive",
+    "octant-sys-build", "octant-runtime-client", "octant-runtime-server", "octant-serde-derive", "octant-object-derive",
 ]
 
 [profile.release]
@@ -93,3 +93,5 @@ syn ="2.0.66"
 quote = "1.0.36"
 cfg-if = "1.0.0"
 slab = "0.4.9"
+octant-object-derive = {path="octant-object-derive"}
+convert_case = "0.6.0"

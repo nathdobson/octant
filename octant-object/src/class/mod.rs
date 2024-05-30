@@ -12,6 +12,8 @@ pub trait Class: Any + Unsize<dyn Any> + Pointee<Metadata = DynMetadata<Self>> {
     type Value: ClassValue<Dyn = Self>;
 }
 
+pub type ValueOf<T>=<T as Class>::Value;
+
 pub trait Subclass: Class + Unsize<Self::Parent> {
     type Parent: ?Sized + Class;
 }

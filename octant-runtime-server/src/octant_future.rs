@@ -11,7 +11,7 @@ use serde::{Deserializer, Serialize, Serializer};
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
 
-use octant_object::define_class;
+use octant_object::class;
 use octant_reffed::rc::Rc2;
 #[cfg(side = "client")]
 use octant_serde::Format;
@@ -29,17 +29,35 @@ use crate::{
 };
 
 #[cfg(side = "server")]
-define_class! {
-    pub class AbstractOctantFuture extends Peer {
-        field sender: RefCell<Option<oneshot::Sender<RawEncoded>>>;
-    }
+#[class]
+pub struct AbstractOctantFuture {
+    parent: dyn Peer,
+    sender: RefCell<Option<oneshot::Sender<RawEncoded>>>,
 }
 
 #[cfg(side = "client")]
-define_class! {
-    pub class AbstractOctantFuture extends Peer {
-    }
+#[class]
+pub struct AbstractOctantFuture {
+    parent: dyn Peer,
 }
+
+pub trait AbstractOctantFuture: AsAbstractOctantFuture {}
+
+impl<T> AbstractOctantFuture for T where T: AsAbstractOctantFuture {}
+
+//
+// #[cfg(side = "server")]
+// define_class! {
+//     pub class AbstractOctantFuture extends Peer {
+//         field sender: RefCell<Option<oneshot::Sender<RawEncoded>>>;
+//     }
+// }
+//
+// #[cfg(side = "client")]
+// define_class! {
+//     pub class AbstractOctantFuture extends Peer {
+//     }
+// }
 
 #[cfg(side = "server")]
 pub struct OctantFuture<T: FutureReturn> {

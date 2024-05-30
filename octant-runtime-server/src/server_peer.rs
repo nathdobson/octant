@@ -1,9 +1,8 @@
-use std::fmt::Debug;
-use std::rc::Rc;
+use std::{fmt::Debug, rc::Rc};
 
 use octant_object::{
     base::{Base, BaseValue},
-    define_class,
+    class,
 };
 
 use crate::{
@@ -11,15 +10,20 @@ use crate::{
     runtime::Runtime,
 };
 
-define_class! {
-    pub class Peer extends Base implements Debug{
-        field runtime: Rc<Runtime>;
-        field handle: RawHandle;
-        fn runtime(self: &Self) -> &Rc<Runtime> {
-            &self.peer().runtime
-        }
+#[class]
+pub struct Peer {
+    parent: dyn Base,
+    runtime: Rc<Runtime>,
+    handle: RawHandle,
+}
+
+pub trait Peer: AsPeer + Debug {
+    fn runtime(&self) -> &Rc<Runtime> {
+        &self.peer().runtime
     }
 }
+
+impl<T> Peer for T where T: AsPeer + Debug {}
 
 impl PeerValue {
     pub fn new(runtime: Rc<Runtime>, handle: RawHandle) -> Self {

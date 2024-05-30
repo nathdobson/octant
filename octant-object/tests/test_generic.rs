@@ -1,5 +1,6 @@
-use std::fmt::Debug;
-use std::hash::Hash;
+#![feature(unsize)]
+
+use std::{fmt::Debug, hash::Hash};
 
 use octant_object::{
     base::{Base, BaseValue},

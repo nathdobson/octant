@@ -8,16 +8,24 @@
 
 use std::rc::Rc;
 
-use octant_object::{base, base::Base, cast::downcast_object, define_class};
+use octant_object::{base, base::Base, cast::downcast_object};
+use octant_object_derive::class;
 
-trait SendSync = Send + Sync;
+#[class]
+struct A {
+    parent: dyn Base,
+    x: u32,
+}
+pub trait A: AsA + Sync + Send {
+    fn get_x(&self) -> &u32;
+}
 
-define_class! {
-    pub class A extends Base implements SendSync {
-        field x: u32;
-        fn get_x<'a>(self:&'a Self) -> &'a u32{
-            &self.a().x
-        }
+impl<T> A for T
+where
+    T: AsA + Sync + Send,
+{
+    fn get_x(&self) -> &u32 {
+        &self.a().x
     }
 }
 
@@ -30,9 +38,21 @@ impl AValue {
     }
 }
 
-define_class! {
-    pub class B extends A {
-        field y: u32;
+#[class]
+struct B {
+    parent: dyn A,
+    y: u32,
+}
+pub trait B: AsB {
+    fn get_y(&self) -> &u32;
+}
+
+impl<T> B for T
+where
+    T: AsB,
+{
+    fn get_y(&self) -> &u32 {
+        &self.b().y
     }
 }
 
@@ -45,9 +65,21 @@ impl BValue {
     }
 }
 
-define_class! {
-    pub class C extends B{
-        field z:u32;
+#[class]
+struct C {
+    parent: dyn B,
+    z: u32,
+}
+pub trait C: AsC {
+    fn get_z(&self) -> &u32;
+}
+
+impl<T> C for T
+where
+    T: AsC,
+{
+    fn get_z(&self) -> &u32 {
+        &self.c().z
     }
 }
 
@@ -60,9 +92,21 @@ impl CValue {
     }
 }
 
-define_class! {
-    pub class D extends C {
-        field w:u32;
+#[class]
+struct D {
+    parent: dyn C,
+    w: u32,
+}
+pub trait D: AsD {
+    fn get_w(&self) -> &u32;
+}
+
+impl<T> D for T
+where
+    T: AsD,
+{
+    fn get_w(&self) -> &u32 {
+        &self.d().w
     }
 }
 

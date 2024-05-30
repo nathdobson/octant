@@ -1,17 +1,14 @@
-use std::fmt::Debug;
-use std::rc::Rc;
+use std::{fmt::Debug, rc::Rc};
 
 use safe_once::{api::once::OnceEntry, cell::OnceCell};
 
-use octant_object::{
-    base::{Base, BaseValue},
-    define_class,
-};
+use octant_object::base::{Base, BaseValue};
 
 use crate::{
     handle::{RawHandle, TypedHandle},
     runtime::RuntimeSink,
 };
+use octant_object::class;
 
 #[derive(Debug)]
 struct PeerInit {
@@ -19,11 +16,15 @@ struct PeerInit {
     sink: Rc<RuntimeSink>,
 }
 
-define_class! {
-    pub class Peer extends Base implements Debug {
-        field peer_init: OnceCell<PeerInit>;
-    }
+#[class]
+pub struct Peer {
+    parent: dyn Base,
+    peer_init: OnceCell<PeerInit>,
 }
+
+pub trait Peer: AsPeer + Debug {}
+
+impl<T> Peer for T where T: AsPeer + Debug {}
 
 impl PeerValue {
     pub fn new() -> Self {
