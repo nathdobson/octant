@@ -19,6 +19,7 @@ use octant_serde::{define_serde_impl, DeserializeWith};
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use wasm_bindgen_futures::spawn_local;
+use octant_runtime::peer::AsNative;
 
 use crate::{
     element::{ElementValue, RcElement},

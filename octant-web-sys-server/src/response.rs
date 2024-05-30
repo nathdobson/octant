@@ -5,6 +5,7 @@ use octant_runtime::{
 };
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
+use octant_runtime::peer::AsNative;
 
 use crate::object::Object;
 

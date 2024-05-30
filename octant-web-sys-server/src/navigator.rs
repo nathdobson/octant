@@ -2,6 +2,7 @@ use safe_once::cell::OnceCell;
 
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{define_sys_class, define_sys_rpc, PeerNew};
+use octant_runtime::peer::AsNative;
 
 use crate::{credentials_container::RcCredentialsContainer, object::Object};
 use crate::credentials_container::{CredentialsContainer, CredentialsContainerValue};

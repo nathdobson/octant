@@ -38,14 +38,15 @@ macro_rules! define_sys_class {
                 }
             }
 
-            #[cfg(side="client")]
-            impl [< $class Value >] {
-                $(
-                    pub fn native(&self) -> &$wasm{
+            $(
+                #[cfg(side="client")]
+                impl $crate::peer::AsNative for dyn $class {
+                    type Native = $wasm;
+                    fn native(&self) -> &$wasm{
                         &self.[< $class:snake >]
                     }
-                )?
-            }
+                }
+            )?
 
             #[cfg(side = "server")]
             $crate::reexports::octant_object::define_class! {

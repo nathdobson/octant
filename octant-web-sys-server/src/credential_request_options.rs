@@ -1,5 +1,6 @@
 use octant_reffed::rc::RcRef;
 use octant_runtime::{define_sys_class, define_sys_rpc};
+use octant_runtime::peer::AsNative;
 
 use crate::{
     object::Object, public_key_credential_request_options::PublicKeyCredentialRequestOptions,

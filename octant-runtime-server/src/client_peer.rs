@@ -10,6 +10,7 @@ use crate::{
     PeerNew,
 };
 use octant_object::class;
+use octant_object::class::Class;
 
 #[derive(Debug)]
 struct PeerInit {
@@ -61,4 +62,9 @@ impl PeerNew for PeerValue {
     fn peer_new(builder: Self::Builder) -> Self {
         PeerValue::new()
     }
+}
+
+pub trait AsNative: Class {
+    type Native;
+    fn native(&self) -> &Self::Native;
 }

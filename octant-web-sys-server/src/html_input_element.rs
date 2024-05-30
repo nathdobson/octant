@@ -5,6 +5,7 @@ use serde::Serialize;
 
 use octant_reffed::rc::RcRef;
 use octant_runtime::{define_sys_class, proto::UpMessage, runtime::Runtime};
+use octant_runtime::peer::AsNative;
 use octant_serde::{define_serde_impl, DeserializeWith};
 
 use crate::{event_listener::RcEventListener, html_element::HtmlElement};

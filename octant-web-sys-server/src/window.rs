@@ -15,6 +15,7 @@ use octant_runtime::{define_sys_class, define_sys_rpc, future_return::FutureRetu
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
+use octant_runtime::peer::AsNative;
 
 use crate::{
     document::{Document, RcDocument},

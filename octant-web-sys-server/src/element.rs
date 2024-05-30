@@ -1,18 +1,34 @@
-use octant_reffed::rc::RcRef;
-use octant_runtime::{define_sys_class, define_sys_rpc};
-
 use crate::node::Node;
+use octant_object::class;
+use octant_reffed::rc::RcRef;
+use octant_runtime::{define_sys_class, define_sys_rpc, DeserializePeer, PeerNew, SerializePeer};
+use crate::octant_runtime::peer::AsNative;
 
-define_sys_class! {
-    class Element;
-    extends Node;
-    wasm web_sys::Element;
-    new_client _;
-    new_server _;
-    server_fn {
-        fn set_attribute(self: &RcRef<Self>, key: &str, value: &str) {
-            set_attribute(self.runtime(),self.rc(),key.to_string(),value.to_string())
-        }
+#[class]
+#[derive(PeerNew, SerializePeer, DeserializePeer)]
+pub struct Element {
+    parent: dyn Node,
+    #[cfg(side = "client")]
+    wasm: web_sys::Element,
+}
+
+pub trait Element: AsElement {
+    #[cfg(side = "server")]
+    fn set_attribute(self: &RcRef<Self>, key: &str, value: &str);
+}
+
+impl<T> Element for T
+where
+    T: AsElement,
+{
+    #[cfg(side = "server")]
+    fn set_attribute(self: &RcRef<Self>, key: &str, value: &str) {
+        set_attribute(
+            self.runtime(),
+            self.rc(),
+            key.to_string(),
+            value.to_string(),
+        )
     }
 }
 

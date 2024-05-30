@@ -18,6 +18,7 @@ use web_sys::Event;
 use octant_object::cast::downcast_object;
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{define_sys_class, define_sys_rpc};
+use octant_runtime::peer::AsNative;
 
 use crate::{html_element::HtmlElement, html_input_element::RcHtmlInputElement};
 use crate::event_listener::RcEventListener;

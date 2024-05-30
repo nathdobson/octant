@@ -1,11 +1,16 @@
-use octant_runtime::define_sys_class;
+use octant_object::class;
+use octant_runtime::{define_sys_class, PeerNew};
 
 use crate::element::Element;
 
-define_sys_class! {
-    class HtmlElement;
-    extends Element;
-    wasm web_sys::HtmlElement;
-    new_client _;
-    new_server _;
+#[class]
+#[derive(PeerNew)]
+pub struct HtmlElement {
+    parent: dyn Element,
+    #[cfg(side = "client")]
+    wasm: web_sys::HtmlElement,
 }
+
+pub trait HtmlElement: AsHtmlElement {}
+
+impl<T> HtmlElement for T where T: AsHtmlElement {}

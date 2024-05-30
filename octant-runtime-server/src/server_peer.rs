@@ -4,6 +4,7 @@ use octant_object::{
     base::{Base, BaseValue},
     class,
 };
+use octant_object::class::Class;
 
 use crate::{
     handle::{RawHandle, TypedHandle},
@@ -57,3 +58,5 @@ impl PeerNew for PeerValue {
         peer
     }
 }
+
+pub trait AsNative: Class {}

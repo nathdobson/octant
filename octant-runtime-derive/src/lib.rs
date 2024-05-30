@@ -56,6 +56,12 @@ fn derive_peer_new_client_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                         }
                     }
                 }
+                impl ::octant_runtime_client::peer::AsNative for <#input_ident as ::octant_object::class::ClassValue>::Dyn {
+                    type Native = #native_type;
+                    fn native(&self)->&#native_type{
+                        &self.#native_field
+                    }
+                }
             };
         }
         Data::Enum(_) => todo!(),
@@ -112,5 +118,69 @@ fn derive_peer_new_server_impl(input: DeriveInput) -> syn::Result<TokenStream> {
         Data::Enum(_) => todo!(),
         Data::Union(_) => todo!(),
     }
+    Ok(output)
+}
+
+#[proc_macro_derive(SerializePeer)]
+pub fn derive_serialize_peer(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    proc_macro::TokenStream::from(
+        crate::derive_serialize_peer_impl(input).unwrap_or_else(syn::Error::into_compile_error),
+    )
+}
+
+fn derive_serialize_peer_impl(input: DeriveInput) -> syn::Result<TokenStream> {
+    let output: TokenStream;
+    let DeriveInput {
+        attrs: input_attrs,
+        vis: input_vis,
+        ident: input_ident,
+        generics: input_generics,
+        data: input_data,
+    } = &input;
+    let value = input_ident;
+    output = quote! {
+        impl octant_runtime::reexports::serde::Serialize for <#value as ::octant_object::class::ClassValue>::Dyn {
+            fn serialize<S>(&self, s: S) -> ::std::result::Result<S::Ok, S::Error>
+            where
+                S: ::serde::Serializer,
+            {
+                return self.raw_handle().serialize(s);
+            }
+        }
+    };
+    Ok(output)
+}
+
+#[proc_macro_derive(DeserializePeer)]
+pub fn derive_deserialize_peer(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    proc_macro::TokenStream::from(
+        crate::derive_deserialize_peer_impl(input).unwrap_or_else(syn::Error::into_compile_error),
+    )
+}
+
+fn derive_deserialize_peer_impl(input: DeriveInput) -> syn::Result<TokenStream> {
+    let output: TokenStream;
+    let DeriveInput {
+        attrs: input_attrs,
+        vis: input_vis,
+        ident: input_ident,
+        generics: input_generics,
+        data: input_data,
+    } = &input;
+    let value = input_ident;
+    output = quote! {
+        impl<'de> ::octant_serde::DeserializeRcWith<'de> for <#value as ::octant_object::class::ClassValue>::Dyn {
+            fn deserialize_rc_with<
+                D: ::serde::Deserializer<'de>
+            >(
+                ctx: &::octant_serde::DeserializeContext,
+                d: D
+            ) -> ::std::result::Result<::octant_reffed::rc::Rc2<Self>, D::Error>{
+                octant_runtime::deserialize_object_with(ctx, d)
+            }
+        }
+    };
     Ok(output)
 }

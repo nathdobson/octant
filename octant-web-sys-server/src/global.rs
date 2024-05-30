@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{define_sys_rpc, PeerNew, runtime::Runtime};
+use octant_runtime::peer::AsNative;
 use octant_serde::define_serde_impl;
 
 use crate::{

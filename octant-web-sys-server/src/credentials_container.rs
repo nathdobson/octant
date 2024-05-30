@@ -7,6 +7,7 @@ use octant_runtime::{
     define_sys_class, define_sys_rpc, future_return::DataReturn,
     octant_future::OctantFuture,
 };
+use octant_runtime::peer::AsNative;
 
 use crate::{
     credential_creation_options::RcCredentialCreationOptions, credential_data::CredentialData,
