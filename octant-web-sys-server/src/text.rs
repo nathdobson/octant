@@ -1,17 +1,15 @@
-use crate::credential::AsCredential;
-use octant_object::class;
+use octant_object::{class, DebugClass};
 use octant_runtime::{DeserializePeer, PeerNew, SerializePeer};
 
 use crate::{node::Node, object::Object};
+use crate::node::NodeValue;
 
-#[class]
-#[derive(PeerNew, SerializePeer, DeserializePeer)]
-pub struct Text {
-    parent: dyn Node,
+#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
+pub struct TextValue {
+    parent: NodeValue,
     #[cfg(side = "client")]
     any_value: web_sys::Text,
 }
 
-pub trait Text: AsText {}
-
-impl<T> Text for T where T: AsText {}
+#[class]
+pub trait Text: Node {}

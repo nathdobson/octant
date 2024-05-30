@@ -9,7 +9,7 @@ use crate::{
     runtime::RuntimeSink,
     PeerNew,
 };
-use octant_object::class;
+use octant_object::{class, DebugClass};
 use octant_object::class::Class;
 
 #[derive(Debug)]
@@ -18,15 +18,14 @@ struct PeerInit {
     sink: Rc<RuntimeSink>,
 }
 
-#[class]
-pub struct Peer {
-    parent: dyn Base,
+#[derive(DebugClass)]
+pub struct PeerValue {
+    parent: BaseValue,
     peer_init: OnceCell<PeerInit>,
 }
 
-pub trait Peer: AsPeer + Debug {}
-
-impl<T> Peer for T where T: AsPeer + Debug {}
+#[class]
+pub trait Peer: Base + Debug {}
 
 impl PeerValue {
     pub fn new() -> Self {

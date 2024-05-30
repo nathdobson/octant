@@ -1,35 +1,23 @@
 use std::{cell::RefCell, collections::HashSet};
 
 use by_address::ByAddress;
-use octant_object::class;
+use octant_object::{class, DebugClass};
 
-use crate::credential::AsCredential;
 use octant_reffed::rc::RcRef;
 use octant_runtime::{define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer};
 
-use crate::object::Object;
+use crate::object::{Object, ObjectValue};
 
-#[class]
-#[derive(PeerNew, SerializePeer, DeserializePeer)]
-pub struct Node {
-    parent: dyn Object,
+#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
+pub struct NodeValue {
+    parent: ObjectValue,
     #[cfg(side = "client")]
     any_value: web_sys::Node,
     children: RefCell<HashSet<ByAddress<RcNode>>>,
 }
 
-pub trait Node: AsNode {
-    fn children(self: &RcRef<Self>) -> Vec<RcNode>;
-    #[cfg(side = "server")]
-    fn append_child(self: &RcRef<Self>, e: RcNode);
-    #[cfg(side = "server")]
-    fn remove_child(self: &RcRef<Self>, e: RcNode);
-}
-
-impl<T> Node for T
-where
-    T: AsNode,
-{
+#[class]
+pub trait Node: Object {
     fn children(self: &RcRef<Self>) -> Vec<RcNode> {
         self.node()
             .children

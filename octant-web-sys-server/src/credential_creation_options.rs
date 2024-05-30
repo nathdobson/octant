@@ -1,4 +1,4 @@
-use octant_object::class;
+use octant_object::{class, DebugClass};
 use octant_reffed::rc::RcRef;
 use octant_runtime::{define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer};
 
@@ -7,24 +7,17 @@ use crate::export::Export;
 use crate::{
     object::Object, public_key_credential_creation_options::PublicKeyCredentialCreationOptions,
 };
+use crate::object::ObjectValue;
 
-#[class]
-#[derive(PeerNew, SerializePeer, DeserializePeer)]
-pub struct CredentialCreationOptions {
-    parent: dyn Object,
+#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
+pub struct CredentialCreationOptionsValue {
+    parent: ObjectValue,
     #[cfg(side = "client")]
     any_value: web_sys::CredentialCreationOptions,
 }
 
-pub trait CredentialCreationOptions: AsCredentialCreationOptions {
-    #[cfg(side = "server")]
-    fn public_key(self: &RcRef<Self>, options: PublicKeyCredentialCreationOptions);
-}
-
-impl<T> CredentialCreationOptions for T
-where
-    T: AsCredentialCreationOptions,
-{
+#[class]
+pub trait CredentialCreationOptions: Object {
     #[cfg(side = "server")]
     fn public_key(self: &RcRef<Self>, options: PublicKeyCredentialCreationOptions) {
         public_key(self.runtime(), self.rc(), options)

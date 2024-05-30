@@ -1,21 +1,19 @@
-use crate::any_value::{AnyValueValue, AsAnyValue};
-use octant_object::class;
+use crate::any_value::AnyValueValue;
+use octant_object::{class, DebugClass};
 use octant_runtime::{
     peer::{Peer, PeerValue},
     DeserializePeer, PeerNew, SerializePeer,
 };
 
-#[class]
-#[derive(SerializePeer, DeserializePeer)]
-pub struct JsValue {
-    parent: dyn Peer,
+#[derive(DebugClass, SerializePeer, DeserializePeer)]
+pub struct JsValueValue {
+    parent: PeerValue,
     #[cfg(side = "client")]
     any_value: wasm_bindgen::JsValue,
 }
 
-pub trait JsValue: AsJsValue {}
-
-impl<T> JsValue for T where T: AsJsValue {}
+#[class]
+pub trait JsValue: Peer {}
 
 #[cfg(side = "client")]
 impl PeerNew for JsValueValue {

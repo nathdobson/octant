@@ -9,21 +9,16 @@
 use std::rc::Rc;
 
 use octant_object::{base, base::Base, cast::downcast_object};
+use octant_object::base::BaseValue;
 use octant_object_derive::class;
 
-#[class]
-struct A {
-    parent: dyn Base,
+pub struct AValue {
+    parent: BaseValue,
     x: u32,
 }
-pub trait A: AsA + Sync + Send {
-    fn get_x(&self) -> &u32;
-}
 
-impl<T> A for T
-where
-    T: AsA + Sync + Send,
-{
+#[class]
+pub trait A: Base + Sync + Send {
     fn get_x(&self) -> &u32 {
         &self.a().x
     }
@@ -38,19 +33,13 @@ impl AValue {
     }
 }
 
-#[class]
-struct B {
-    parent: dyn A,
+pub struct BValue {
+    parent: AValue,
     y: u32,
 }
-pub trait B: AsB {
-    fn get_y(&self) -> &u32;
-}
 
-impl<T> B for T
-where
-    T: AsB,
-{
+#[class]
+pub trait B: A {
     fn get_y(&self) -> &u32 {
         &self.b().y
     }
@@ -65,19 +54,13 @@ impl BValue {
     }
 }
 
-#[class]
-struct C {
-    parent: dyn B,
+pub struct CValue {
+    parent: BValue,
     z: u32,
 }
-pub trait C: AsC {
-    fn get_z(&self) -> &u32;
-}
 
-impl<T> C for T
-where
-    T: AsC,
-{
+#[class]
+pub trait C: B {
     fn get_z(&self) -> &u32 {
         &self.c().z
     }
@@ -92,23 +75,18 @@ impl CValue {
     }
 }
 
-#[class]
-struct D {
-    parent: dyn C,
+pub struct DValue {
+    parent: CValue,
     w: u32,
 }
-pub trait D: AsD {
-    fn get_w(&self) -> &u32;
-}
 
-impl<T> D for T
-where
-    T: AsD,
-{
+#[class]
+pub trait D: C {
     fn get_w(&self) -> &u32 {
         &self.d().w
     }
 }
+
 
 impl DValue {
     pub fn new(x: u32, y: u32, z: u32, w: u32) -> DValue {

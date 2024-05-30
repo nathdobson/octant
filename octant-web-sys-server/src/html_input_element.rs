@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use octant_object::class;
+use octant_object::{class, DebugClass};
 use serde::Serialize;
 
 use octant_reffed::rc::RcRef;
@@ -9,35 +9,22 @@ use octant_runtime::{
 };
 use octant_serde::{define_serde_impl, DeserializeWith};
 
-use crate::{
-    credential::AsCredential, event_listener::RcEventListener, html_element::HtmlElement,
-    object::Object,
-};
+use crate::{event_listener::RcEventListener, html_element::HtmlElement, object::Object};
+use crate::html_element::HtmlElementValue;
 
-#[class]
-#[derive(PeerNew, SerializePeer, DeserializePeer)]
-pub struct HtmlInputElement {
-    parent: dyn HtmlElement,
+#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
+pub struct HtmlInputElementValue {
+    parent: HtmlElementValue,
     #[cfg(side = "client")]
     any_value: web_sys::HtmlInputElement,
     #[cfg(side = "server")]
     value: RefCell<Rc<String>>,
 }
-
-pub trait HtmlInputElement: AsHtmlInputElement {
-    #[cfg(side = "client")]
-    fn update_value(self: &RcRef<Self>);
-    #[cfg(side = "server")]
-    fn input_value(&self) -> Rc<String>;
-}
-
-impl<T> HtmlInputElement for T
-where
-    T: AsHtmlInputElement,
-{
+#[class]
+pub trait HtmlInputElement: HtmlElement {
     #[cfg(side = "client")]
     fn update_value(self: &RcRef<Self>) {
-        let this = self as &RcRef<dyn HtmlInputElement>;
+        let this = self as &RcRef<dyn crate::html_input_element::HtmlInputElement>;
         this.sink().send(Box::<SetInput>::new(SetInput {
             element: self.rc(),
             value: this.native().value(),

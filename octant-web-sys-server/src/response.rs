@@ -1,6 +1,5 @@
-use crate::credential::AsCredential;
 use octant_error::OctantError;
-use octant_object::class;
+use octant_object::{class, DebugClass};
 use octant_reffed::rc::RcRef;
 use octant_runtime::{
     define_sys_rpc, future_return::DataReturn, octant_future::OctantFuture, peer::AsNative,
@@ -9,19 +8,17 @@ use octant_runtime::{
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
 
-use crate::object::Object;
+use crate::object::{Object, ObjectValue};
 
-#[class]
-#[derive(PeerNew, SerializePeer, DeserializePeer)]
-pub struct Response {
-    parent: dyn Object,
+#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
+pub struct ResponseValue {
+    parent: ObjectValue,
     #[cfg(side = "client")]
     any_value: web_sys::Response,
 }
 
-pub trait Response: AsResponse {}
-
-impl<T> Response for T where T: AsResponse {}
+#[class]
+pub trait Response: Object {}
 
 #[cfg(side = "server")]
 impl dyn Response {

@@ -5,108 +5,56 @@
 extern crate proc_macro;
 
 use convert_case::{Case, Casing};
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{
-    parse_macro_input, spanned::Spanned, Data, DataStruct, DeriveInput, Field, Fields,
-    GenericArgument, ItemStruct, Path, PathArguments, Token, Type, TypeParamBound,
+    parse_macro_input, spanned::Spanned, Attribute, Data, DataStruct, DeriveInput, Field, Fields,
+    GenericArgument, Item, ItemStruct, ItemTrait, Path, PathArguments, Token, TraitItem,
+    TraitItemFn, Type, TypeParamBound,
 };
+
+struct Args {}
 
 #[proc_macro_attribute]
 pub fn class(
-    attr: proc_macro::TokenStream,
+    args: proc_macro::TokenStream,
     input: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    let input = parse_macro_input!(input as ItemStruct);
+    let parser = syn::meta::parser(|meta| Err(syn::Error::new(meta.path.span(), "No parameters expected")));
+    parse_macro_input!(args with parser);
+    let args = Args {};
+    let input = parse_macro_input!(input as ItemTrait);
     proc_macro::TokenStream::from(
-        derive_class_impl(input).unwrap_or_else(syn::Error::into_compile_error),
+        derive_class_impl(args, &input).unwrap_or_else(syn::Error::into_compile_error),
     )
 }
-fn derive_class_impl(input: ItemStruct) -> syn::Result<TokenStream> {
+
+fn derive_class_impl(args: Args, input: &ItemTrait) -> syn::Result<TokenStream> {
     let output: TokenStream;
-    let ItemStruct {
+    let ItemTrait {
         attrs,
         vis,
-        struct_token,
-        ident: class,
+        unsafety,
+        auto_token,
+        restriction,
+        trait_token,
+        ident,
         generics,
-        fields,
-        semi_token,
-    } = &input;
+        colon_token,
+        supertraits,
+        brace_token,
+        items,
+    } = input;
 
-    let parent: &Type;
-    let field_defs: Vec<&Field>;
-    let field_names: Vec<&Ident>;
-    match fields {
-        Fields::Named(struct_fields) => {
-            let parent_token = &struct_fields.named[0].ident.as_ref().unwrap();
-            if parent_token.to_string() != "parent" {
-                return Err(syn::Error::new(
-                    parent_token.span(),
-                    "first field must be named `parent'",
-                ));
-            }
-            parent = &struct_fields.named[0].ty;
-            field_defs = struct_fields.named.iter().skip(1).collect();
-            field_names = fields.iter().map(|x| x.ident.as_ref().unwrap()).collect();
-        }
-        Fields::Unnamed(_) => todo!("tuple struct"),
-        Fields::Unit => todo!("unit struct"),
+    let parent = match supertraits.iter().next().unwrap() {
+        TypeParamBound::Trait(x) => &x.path,
+        _ => todo!(),
     };
-    let parent = match parent {
-        Type::TraitObject(x) => {
-            if x.bounds.len() != 1 {
-                return Err(syn::Error::new(
-                    parent.span(),
-                    "parent must be a trait object with one bound",
-                ));
-            }
-            match &x.bounds[0] {
-                TypeParamBound::Trait(x) => &x.path,
-                _ => {
-                    return Err(syn::Error::new(
-                        parent.span(),
-                        "parent must be a trait object with one bound for the parent class",
-                    ));
-                }
-            }
-        }
-        _ => {
-            return Err(syn::Error::new(
-                parent.span(),
-                "parent must be a trait object",
-            ))
-        }
-    };
-    // let mut class: Option<Path> = None;
-    // let mut parent: Option<Path> = None;
-    // for attr in &input_attrs {
-    //     if attr.path().is_ident("octant") {
-    //         attr.parse_nested_meta(|meta| {
-    //             if meta.path.is_ident("class") {
-    //                 meta.input.parse::<Token![=]>()?;
-    //                 class = Some(meta.input.parse()?);
-    //             } else if meta.path.is_ident("extends") {
-    //                 meta.input.parse::<Token![=]>()?;
-    //                 parent = Some(meta.input.parse()?);
-    //             } else {
-    //                 return Err(syn::Error::new(
-    //                     meta.path.span(),
-    //                     "expected `class' or `extends'",
-    //                 ));
-    //             }
-    //
-    //             Ok(())
-    //         })?;
-    //     }
-    // }
-    // let class = class.ok_or_else(|| {
-    //     syn::Error::new(input_ident.span(), "missing #[octant(class=...)]")
-    // })?;
 
-    let rc_class = format_ident!("Rc{}", class);
-    let as_class = format_ident!("As{}", class);
+    let class = ident;
+    let rc_class = format_ident!("Rc{}", ident);
     let value = format_ident!("{}Value", class);
+
     let get_ref = format_ident!(
         "{}",
         class
@@ -116,20 +64,35 @@ fn derive_class_impl(input: ItemStruct) -> syn::Result<TokenStream> {
         span = class.span()
     );
     let get_mut = format_ident!("{}_mut", get_ref);
-    output = quote! {
-        #[derive(::octant_object::DebugClass)]
-        #( #attrs )*
-        pub struct #value {
-            parent: <dyn #parent as ::octant_object::class::Class>::Value,
-            #(#field_defs),*
-        }
-        pub trait #as_class : #parent {
+
+    let signatures: Vec<_> = items
+        .iter()
+        .map(|i| match i {
+            TraitItem::Fn(f) => {
+                let TraitItemFn {
+                    attrs,
+                    sig,
+                    default,
+                    semi_token,
+                } = f;
+                quote! {
+                    #(#attrs)*
+                    #sig ;
+                }
+            }
+            _ => todo!(),
+        })
+        .collect();
+    let output = quote! {
+        #(#attrs)*
+        #vis #unsafety #auto_token #trait_token #ident #generics #colon_token #supertraits {
             fn #get_ref(&self) -> &#value;
             fn #get_mut(&mut self) -> &mut #value;
+            #(#signatures)*
         }
         pub type #rc_class = ::octant_object::reexports::octant_reffed::rc::Rc2<dyn 'static + #class>;
-        impl<__super_secret__T> #as_class for __super_secret__T where
-            __super_secret__T: #parent,
+        impl<__super_secret__T> #unsafety #class #generics for __super_secret__T where
+            __super_secret__T: #supertraits,
             __super_secret__T: octant_object::class::Ranked,
             __super_secret__T: octant_object::class::DerefRanked<
                 __super_secret__T::Rank,
@@ -141,6 +104,7 @@ fn derive_class_impl(input: ItemStruct) -> syn::Result<TokenStream> {
             fn #get_mut(&mut self) -> &mut #value{
                 self.deref_mut_ranked()
             }
+            #(#items)*
         }
         impl ::std::ops::Deref for dyn #class {
             type Target = #value;
@@ -175,13 +139,6 @@ fn derive_class_impl(input: ItemStruct) -> syn::Result<TokenStream> {
         }
         impl octant_object::class::Ranked for #value {
             type Rank = ::octant_object::class::Succ<<<dyn #parent as ::octant_object::class::Class>::Value as octant_object::class::Ranked>::Rank>;
-        }
-        impl ::std::fmt::Debug for #value {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                let mut f = f.debug_struct(::std::stringify!(#class));
-                ::octant_object::class::DebugClass::fmt_class(self, &mut f);
-                f.finish()
-            }
         }
     };
     Ok(output)
@@ -221,6 +178,14 @@ fn derive_debug_class_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                         )*
                     }
                 }
+                impl ::std::fmt::Debug for #input_ident {
+                    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+                        let mut f = f.debug_struct(::std::stringify!(#input_ident));
+                        ::octant_object::class::DebugClass::fmt_class(self, &mut f);
+                        f.finish()
+                    }
+                }
+
             };
         }
         Data::Enum(_) => todo!(),

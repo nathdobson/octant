@@ -1,25 +1,17 @@
 use crate::{node::Node, octant_runtime::peer::AsNative};
-use octant_object::class;
+use octant_object::{class, DebugClass};
 use octant_reffed::rc::RcRef;
 use octant_runtime::{define_sys_rpc, DeserializePeer, PeerNew, SerializePeer};
+use crate::node::NodeValue;
 
-#[class]
-#[derive(PeerNew, SerializePeer, DeserializePeer)]
-pub struct Element {
-    parent: dyn Node,
+#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
+pub struct ElementValue {
+    parent: NodeValue,
     #[cfg(side = "client")]
     wasm: web_sys::Element,
 }
-
-pub trait Element: AsElement {
-    #[cfg(side = "server")]
-    fn set_attribute(self: &RcRef<Self>, key: &str, value: &str);
-}
-
-impl<T> Element for T
-where
-    T: AsElement,
-{
+#[class]
+pub trait Element: Node {
     #[cfg(side = "server")]
     fn set_attribute(self: &RcRef<Self>, key: &str, value: &str) {
         set_attribute(

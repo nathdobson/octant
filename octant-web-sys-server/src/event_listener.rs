@@ -5,10 +5,10 @@ use std::{
     rc::Rc,
 };
 
-use octant_object::class;
+use octant_object::{class, DebugClass};
 use serde::Serialize;
 
-use crate::{credential::AsCredential, object::Object};
+use crate::object::Object;
 use octant_reffed::rc::RcRef;
 #[cfg(side = "client")]
 use octant_runtime::runtime::RuntimeSink;
@@ -48,10 +48,9 @@ impl EventHandler {
     }
 }
 
-#[class]
-#[derive(SerializePeer, DeserializePeer)]
-pub struct EventListener {
-    parent: dyn Peer,
+#[derive(DebugClass, SerializePeer, DeserializePeer)]
+pub struct EventListenerValue {
+    parent: PeerValue,
     #[cfg(side = "server")]
     handler: OnceCell<EventHandler>,
 }
@@ -77,9 +76,7 @@ impl PeerNew for EventListenerValue {
     }
 }
 
-pub trait EventListener: AsEventListener {}
-
-impl<T> EventListener for T where T: AsEventListener {}
+#[class] pub trait EventListener: Peer {}
 
 #[cfg(side = "server")]
 impl dyn EventListener {

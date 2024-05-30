@@ -1,20 +1,18 @@
-use octant_object::class;
+use octant_object::{class, DebugClass};
 use octant_runtime::{
     peer::{Peer, PeerValue},
     DeserializePeer, PeerNew, SerializePeer,
 };
 
-#[class]
-#[derive(SerializePeer, DeserializePeer)]
-pub struct AnyValue {
-    parent: dyn Peer,
+#[derive(DebugClass, SerializePeer, DeserializePeer)]
+pub struct AnyValueValue {
+    parent: PeerValue,
     #[cfg(side = "client")]
     any_value: wasm_bindgen::JsValue,
 }
 
-pub trait AnyValue: AsAnyValue {}
-
-impl<T> AnyValue for T where T: AsAnyValue {}
+#[class]
+pub trait AnyValue: Peer {}
 
 #[cfg(side = "client")]
 impl PeerNew for AnyValueValue {

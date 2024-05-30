@@ -12,19 +12,19 @@ use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use web_sys::Event;
 
-use octant_object::{cast::downcast_object, class};
+use octant_object::{cast::downcast_object, class, DebugClass};
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer};
 
 use crate::{
-    credential::AsCredential, event_listener::RcEventListener, html_element::HtmlElement,
+    event_listener::RcEventListener, html_element::HtmlElement,
     html_input_element::RcHtmlInputElement, node::Node, object::Object,
 };
+use crate::html_element::HtmlElementValue;
 
-#[class]
-#[derive(PeerNew, SerializePeer, DeserializePeer)]
-pub struct HtmlFormElement {
-    parent: dyn HtmlElement,
+#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
+pub struct HtmlFormElementValue {
+    parent: HtmlElementValue,
     #[cfg(side = "client")]
     any_value: web_sys::HtmlFormElement,
     #[cfg(side = "client")]
@@ -33,15 +33,8 @@ pub struct HtmlFormElement {
     listener: OnceCell<RcEventListener>,
 }
 
-pub trait HtmlFormElement: AsHtmlFormElement {
-    #[cfg(side = "server")]
-    fn set_listener(self: &RcRef<Self>, listener: RcEventListener);
-}
-
-impl<T> HtmlFormElement for T
-where
-    T: AsHtmlFormElement,
-{
+#[class]
+pub trait HtmlFormElement: HtmlElement {
     #[cfg(side = "server")]
     fn set_listener(self: &RcRef<Self>, listener: RcEventListener) {
         self.html_form_element()

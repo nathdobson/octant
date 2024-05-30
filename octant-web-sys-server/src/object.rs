@@ -1,17 +1,14 @@
-use crate::credential::AsCredential;
-use octant_object::class;
+use octant_object::{class, DebugClass};
 use octant_runtime::{DeserializePeer, PeerNew, SerializePeer};
 
-use crate::js_value::JsValue;
+use crate::js_value::{JsValue, JsValueValue};
 
-#[class]
-#[derive(PeerNew, SerializePeer, DeserializePeer)]
-pub struct Object {
-    parent: dyn JsValue,
+#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
+pub struct ObjectValue {
+    parent: JsValueValue,
     #[cfg(side = "client")]
     any_value: js_sys::Object,
 }
 
-pub trait Object: AsObject {}
-
-impl<T> Object for T where T: AsObject {}
+#[class]
+pub trait Object: JsValue {}

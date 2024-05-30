@@ -1,16 +1,13 @@
-use octant_object::class;
+use octant_object::{class, DebugClass};
 use octant_runtime::{DeserializePeer, PeerNew, SerializePeer};
 
-use crate::element::Element;
+use crate::element::{Element, ElementValue};
 
-#[class]
-#[derive(PeerNew, SerializePeer, DeserializePeer)]
-pub struct HtmlElement {
-    parent: dyn Element,
+#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
+pub struct HtmlElementValue {
+    parent: ElementValue,
     #[cfg(side = "client")]
     wasm: web_sys::HtmlElement,
 }
-
-pub trait HtmlElement: AsHtmlElement {}
-
-impl<T> HtmlElement for T where T: AsHtmlElement {}
+#[class]
+pub trait HtmlElement: Element {}

@@ -1,36 +1,27 @@
-use octant_object::class;
+use octant_object::{class, DebugClass};
 use safe_once::cell::OnceCell;
 
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer};
 
 use crate::{
-    credential::AsCredential,
     credentials_container::{
         CredentialsContainer, CredentialsContainerValue, RcCredentialsContainer,
     },
-    object::Object,
+    object::{Object, ObjectValue},
 };
 
-#[class]
-#[derive(PeerNew, SerializePeer, DeserializePeer)]
-pub struct Navigator {
-    parent: dyn Object,
+#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
+pub struct NavigatorValue {
+    parent: ObjectValue,
     #[cfg(side = "client")]
     any_value: web_sys::Navigator,
     #[cfg(side = "server")]
     credentials_container: OnceCell<RcCredentialsContainer>,
 }
 
-pub trait Navigator: AsNavigator {
-    #[cfg(side = "server")]
-    fn credentials<'a>(self: &'a RcRef<Self>) -> &'a RcCredentialsContainer;
-}
-
-impl<T> Navigator for T
-where
-    T: AsNavigator,
-{
+#[class]
+pub trait Navigator: Object {
     #[cfg(side = "server")]
     fn credentials<'a>(self: &'a RcRef<Self>) -> &'a RcCredentialsContainer {
         self.navigator()

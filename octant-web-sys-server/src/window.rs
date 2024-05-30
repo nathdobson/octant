@@ -9,7 +9,7 @@ use safe_once::cell::OnceCell;
 use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serializer};
 
 use octant_error::OctantError;
-use octant_object::class;
+use octant_object::{class, DebugClass};
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{
     define_sys_rpc, future_return::FutureReturn, octant_future::OctantFuture, peer::AsNative,
@@ -21,18 +21,17 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 
 use crate::{
-    credential::AsCredential,
     document::{Document, DocumentValue, RcDocument},
     navigator::{Navigator, NavigatorValue, RcNavigator},
     object::Object,
     request::{RcRequest, Request},
     response::{RcResponse, ResponseValue},
 };
+use crate::object::ObjectValue;
 
-#[class]
-#[derive(PeerNew, SerializePeer, DeserializePeer)]
-pub struct Window {
-    parent: dyn Object,
+#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
+pub struct WindowValue {
+    parent: ObjectValue,
     #[cfg(side = "client")]
     any_value: web_sys::Window,
     #[cfg(side = "server")]
@@ -41,9 +40,8 @@ pub struct Window {
     navigator: OnceCell<RcNavigator>,
 }
 
-pub trait Window: AsWindow {}
-
-impl<T> Window for T where T: AsWindow {}
+#[class]
+pub trait Window: Object {}
 
 #[cfg(side = "server")]
 impl dyn Window {

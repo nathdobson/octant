@@ -1,5 +1,5 @@
 use crate::octant_runtime::PeerNew;
-use octant_object::{class, define_class};
+use octant_object::{class, DebugClass, define_class};
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{
     define_sys_rpc,
@@ -20,7 +20,6 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
 
 use crate::{
-    credential::AsCredential,
     element::{ElementValue, RcElement},
     html_div_element::{HtmlDivElement, HtmlDivElementValue, RcHtmlDivElement},
     html_element::{HtmlElement, HtmlElementValue, RcHtmlElement},
@@ -31,19 +30,17 @@ use crate::{
     text::{RcText, Text, TextValue},
 };
 
-#[class]
-#[derive(PeerNew, SerializePeer, DeserializePeer)]
-pub struct Document {
-    parent: dyn Node,
+#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
+pub struct DocumentValue {
+    parent: NodeValue,
     #[cfg(side = "client")]
     any_value: web_sys::Document,
     #[cfg(side = "server")]
     body: OnceCell<RcHtmlElement>,
 }
 
-pub trait Document: AsDocument {}
-
-impl<T> Document for T where T: AsDocument {}
+#[class]
+pub trait Document: Node {}
 
 #[cfg(side = "server")]
 impl dyn Document {
