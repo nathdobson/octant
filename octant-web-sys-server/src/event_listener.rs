@@ -1,16 +1,24 @@
-use std::{
-    any::{Any, type_name},
-    fmt::{Debug, Formatter},
-};
-use std::rc::Rc;
 use safe_once::cell::OnceCell;
+use std::{
+    any::{type_name, Any},
+    fmt::{Debug, Formatter},
+    rc::Rc,
+};
 
+use octant_object::class;
 use serde::Serialize;
 
+use crate::{credential::AsCredential, object::Object};
 use octant_reffed::rc::RcRef;
-use octant_runtime::{define_sys_class, peer::Peer, proto::UpMessage, runtime::Runtime};
 #[cfg(side = "client")]
 use octant_runtime::runtime::RuntimeSink;
+use octant_runtime::{
+    define_sys_class,
+    peer::{Peer, PeerValue},
+    proto::UpMessage,
+    runtime::Runtime,
+    DeserializePeer, PeerNew, SerializePeer,
+};
 use octant_serde::{define_serde_impl, DeserializeWith};
 
 #[cfg(side = "server")]
@@ -41,13 +49,38 @@ impl EventHandler {
     }
 }
 
-define_sys_class! {
-    class EventListener;
-    extends Peer;
-    new_client _;
-    new_server _;
-    server_field handler: OnceCell<EventHandler>;
+#[class]
+#[derive(SerializePeer, DeserializePeer)]
+pub struct EventListener {
+    parent: dyn Peer,
+    #[cfg(side = "server")]
+    handler: OnceCell<EventHandler>,
 }
+
+#[cfg(side = "server")]
+impl PeerNew for EventListenerValue {
+    type Builder = PeerValue;
+    fn peer_new(builder: Self::Builder) -> Self {
+        EventListenerValue {
+            parent: builder,
+            handler: Default::default(),
+        }
+    }
+}
+
+#[cfg(side = "client")]
+impl PeerNew for EventListenerValue {
+    type Builder = ();
+    fn peer_new(builder: Self::Builder) -> Self {
+        EventListenerValue {
+            parent: PeerValue::new(),
+        }
+    }
+}
+
+pub trait EventListener: AsEventListener {}
+
+impl<T> EventListener for T where T: AsEventListener {}
 
 #[cfg(side = "server")]
 impl dyn EventListener {

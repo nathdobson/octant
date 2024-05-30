@@ -1,10 +1,10 @@
 use octant_object::class;
-use octant_runtime::{define_sys_class, PeerNew};
+use octant_runtime::{define_sys_class, DeserializePeer, PeerNew, SerializePeer};
 
 use crate::element::Element;
 
 #[class]
-#[derive(PeerNew)]
+#[derive(PeerNew, SerializePeer, DeserializePeer)]
 pub struct HtmlElement {
     parent: dyn Element,
     #[cfg(side = "client")]

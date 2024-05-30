@@ -1,12 +1,9 @@
 use std::{
-    any::{Any, type_name},
+    any::{type_name, Any},
     fmt::{Debug, Formatter},
 };
 
-use safe_once::{
-    api::once::OnceEntry,
-    cell::OnceCell,
-};
+use safe_once::{api::once::OnceEntry, cell::OnceCell};
 use serde::Serialize;
 #[cfg(side = "client")]
 use wasm_bindgen::closure::Closure;
@@ -15,27 +12,45 @@ use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use web_sys::Event;
 
-use octant_object::cast::downcast_object;
+use octant_object::{cast::downcast_object, class};
 use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::{define_sys_class, define_sys_rpc};
-use octant_runtime::peer::AsNative;
+use octant_runtime::{
+    define_sys_class, define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer,
+};
 
-use crate::{html_element::HtmlElement, html_input_element::RcHtmlInputElement};
-use crate::event_listener::RcEventListener;
+use crate::{
+    credential::AsCredential, event_listener::RcEventListener, html_element::HtmlElement,
+    html_input_element::RcHtmlInputElement, object::Object,
+};
+use crate::node::Node;
 
-define_sys_class! {
-    class HtmlFormElement;
-    extends HtmlElement;
-    wasm web_sys::HtmlFormElement;
-    new_client _;
-    new_server _;
-    client_field closure: OnceCell<Closure<dyn Fn(Event)>> ;
-    server_field listener: OnceCell<RcEventListener>;
-    server_fn {
-        fn set_listener(self: &RcRef<Self>, listener: RcEventListener){
-            self.html_form_element().listener.get_or_init(||listener.clone());
-            set_listener(self.runtime(),self.rc(),listener);
-        }
+#[class]
+#[derive(PeerNew, SerializePeer, DeserializePeer)]
+pub struct HtmlFormElement {
+    parent: dyn HtmlElement,
+    #[cfg(side = "client")]
+    any_value: web_sys::HtmlFormElement,
+    #[cfg(side = "client")]
+    closure: OnceCell<Closure<dyn Fn(Event)>>,
+    #[cfg(side = "server")]
+    listener: OnceCell<RcEventListener>,
+}
+
+pub trait HtmlFormElement: AsHtmlFormElement {
+    #[cfg(side = "server")]
+    fn set_listener(self: &RcRef<Self>, listener: RcEventListener);
+}
+
+impl<T> HtmlFormElement for T
+where
+    T: AsHtmlFormElement,
+{
+    #[cfg(side = "server")]
+    fn set_listener(self: &RcRef<Self>, listener: RcEventListener) {
+        self.html_form_element()
+            .listener
+            .get_or_init(|| listener.clone());
+        set_listener(self.runtime(), self.rc(), listener);
     }
 }
 

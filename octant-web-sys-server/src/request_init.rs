@@ -1,11 +1,16 @@
-use octant_runtime::define_sys_class;
+use octant_object::class;
+use octant_runtime::{define_sys_class, DeserializePeer, PeerNew, SerializePeer};
 
 use crate::object::Object;
 
-define_sys_class! {
-    class RequestInit;
-    extends Object;
-    wasm web_sys::RequestInit;
-    new_client _;
-    new_server _;
+#[class]
+#[derive(PeerNew, SerializePeer, DeserializePeer)]
+pub struct RequestInit {
+    parent: dyn Object,
+    #[cfg(side = "client")]
+    any_value: web_sys::RequestInit,
 }
+
+pub trait RequestInit: AsRequestInit {}
+
+impl<T> RequestInit for T where T: AsRequestInit {}

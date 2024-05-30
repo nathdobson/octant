@@ -2,28 +2,32 @@
 use wasm_bindgen_futures::JsFuture;
 
 use octant_error::OctantError;
+use octant_object::class;
 use octant_reffed::rc::Rc2;
 use octant_runtime::{
-    define_sys_class, define_sys_rpc, future_return::DataReturn,
-    octant_future::OctantFuture,
+    define_sys_class, define_sys_rpc, future_return::DataReturn, octant_future::OctantFuture,
+    peer::AsNative, DeserializePeer, PeerNew, SerializePeer,
 };
-use octant_runtime::peer::AsNative;
 
-use crate::{
-    credential_creation_options::RcCredentialCreationOptions, credential_data::CredentialData,
-    credential_request_options::RcCredentialRequestOptions,
-};
 #[cfg(side = "client")]
 use crate::import::Import;
-use crate::object::Object;
+use crate::{
+    credential::AsCredential, credential_creation_options::RcCredentialCreationOptions,
+    credential_data::CredentialData, credential_request_options::RcCredentialRequestOptions,
+    object::Object,
+};
 
-define_sys_class! {
-    class CredentialsContainer;
-    extends Object;
-    wasm web_sys::CredentialsContainer;
-    new_client _;
-    new_server _;
+#[class]
+#[derive(PeerNew, SerializePeer, DeserializePeer)]
+pub struct CredentialsContainer {
+    parent: dyn Object,
+    #[cfg(side = "client")]
+    any_value: web_sys::CredentialsContainer,
 }
+
+pub trait CredentialsContainer: AsCredentialsContainer {}
+
+impl<T> CredentialsContainer for T where T: AsCredentialsContainer {}
 
 #[cfg(side = "server")]
 impl dyn CredentialsContainer {

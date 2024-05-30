@@ -1,67 +1,74 @@
-use safe_once::cell::OnceCell;
-use serde::Serialize;
 use crate::octant_runtime::PeerNew;
-use octant_object::define_class;
+use octant_object::{class, define_class};
 use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::octant_future::OctantFuture;
 use octant_runtime::{
-    // octant_future::Completable,
-    define_sys_class,
-    define_sys_rpc,
+    define_sys_class, define_sys_rpc,
     handle::TypedHandle,
     immediate_return::AsTypedHandle,
-    peer::{Peer, PeerValue},
+    octant_future::OctantFuture,
+    peer::{AsNative, Peer, PeerValue},
     proto::{DownMessage, UpMessage},
     runtime::Runtime,
+    DeserializePeer, SerializePeer,
 };
 use octant_serde::{define_serde_impl, DeserializeWith};
+use safe_once::cell::OnceCell;
+use serde::Serialize;
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use wasm_bindgen_futures::spawn_local;
-use octant_runtime::peer::AsNative;
 
 use crate::{
+    credential::AsCredential,
     element::{ElementValue, RcElement},
     html_div_element::{HtmlDivElement, HtmlDivElementValue, RcHtmlDivElement},
     html_element::{HtmlElement, HtmlElementValue, RcHtmlElement},
     html_form_element::{HtmlFormElementValue, RcHtmlFormElement},
     html_input_element::{HtmlInputElementValue, RcHtmlInputElement},
     node::{Node, NodeValue, RcNode},
+    object::Object,
     text::{RcText, Text, TextValue},
 };
 
-define_sys_class! {
-    class Document;
-    extends Node;
-    wasm web_sys::Document;
-    new_client _;
-    new_server _;
-    server_field body: OnceCell<RcHtmlElement>;
-    server_fn {
-        fn create_div(self: &RcRef<Self>) -> RcHtmlDivElement{
-            create_div(self.runtime(), self.rc())
-        }
-        fn create_form_element(self: &RcRef<Self>) -> RcHtmlFormElement {
-            create_form_element(self.runtime(), self.rc())
-        }
-        fn create_element(self: &RcRef<Self>, tag: &str) -> RcElement {
-            create_element(self.runtime(), self.rc(), tag.to_string())
-        }
-        fn create_text_node(self: &RcRef<Self>, text: String) -> RcText{
-            create_text_node(self.runtime(),self.rc(),text)
-        }
-        fn create_input_element(self: &RcRef<Self>) -> RcHtmlInputElement{
-            create_input_element(self.runtime(), self.rc())
-        }
-        fn location(self: &RcRef<Self>) -> OctantFuture<String>{
-            location(self.runtime(), self.rc())
-        }
-        fn body<'a> (self: &'a RcRef<Self>) -> &'a RcRef<dyn HtmlElement>{
-            self.document().body.get_or_init(||{
-                body(self.runtime(),self.rc())
-            })
-        }
+#[class]
+#[derive(PeerNew, SerializePeer, DeserializePeer)]
+pub struct Document {
+    parent: dyn Node,
+    #[cfg(side = "client")]
+    any_value: web_sys::Document,
+    #[cfg(side = "server")]
+    body: OnceCell<RcHtmlElement>,
+}
+
+pub trait Document: AsDocument {}
+
+impl<T> Document for T where T: AsDocument {}
+
+#[cfg(side="server")]
+impl dyn Document {
+    pub fn create_div(self: &RcRef<Self>) -> RcHtmlDivElement {
+        create_div(self.runtime(), self.rc())
+    }
+    pub fn create_form_element(self: &RcRef<Self>) -> RcHtmlFormElement {
+        create_form_element(self.runtime(), self.rc())
+    }
+    pub fn create_element(self: &RcRef<Self>, tag: &str) -> RcElement {
+        create_element(self.runtime(), self.rc(), tag.to_string())
+    }
+    pub fn create_text_node(self: &RcRef<Self>, text: String) -> RcText {
+        create_text_node(self.runtime(), self.rc(), text)
+    }
+    pub fn create_input_element(self: &RcRef<Self>) -> RcHtmlInputElement {
+        create_input_element(self.runtime(), self.rc())
+    }
+    pub fn location(self: &RcRef<Self>) -> OctantFuture<String> {
+        location(self.runtime(), self.rc())
+    }
+    pub fn body<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn HtmlElement> {
+        self.document()
+            .body
+            .get_or_init(|| body(self.runtime(), self.rc()))
     }
 }
 

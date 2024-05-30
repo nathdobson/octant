@@ -102,7 +102,7 @@ fn derive_peer_new_server_impl(input: DeriveInput) -> syn::Result<TokenStream> {
                 .as_ref()
                 .unwrap();
             let parent_type = &fields.iter().nth(0).expect("first field").ty;
-            let field_names: Vec<_> = fields.iter().skip(2).map(|x| &x.ident).collect();
+            let field_names: Vec<_> = fields.iter().skip(1).map(|x| &x.ident).collect();
             output = quote! {
                 impl ::octant_runtime_server::PeerNew for #input_ident {
                     type Builder = ::octant_runtime::peer::PeerValue;

@@ -1,43 +1,54 @@
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
+use octant_object::class;
 use serde::Serialize;
 
 use octant_reffed::rc::RcRef;
-use octant_runtime::{define_sys_class, proto::UpMessage, runtime::Runtime};
-use octant_runtime::peer::AsNative;
+use octant_runtime::{
+    define_sys_class, peer::AsNative, proto::UpMessage, runtime::Runtime, DeserializePeer, PeerNew,
+    SerializePeer,
+};
 use octant_serde::{define_serde_impl, DeserializeWith};
 
-use crate::{event_listener::RcEventListener, html_element::HtmlElement};
+use crate::{
+    credential::AsCredential, event_listener::RcEventListener, html_element::HtmlElement,
+    object::Object,
+};
 
-define_sys_class! {
-    class HtmlInputElement;
-    extends HtmlElement;
-    wasm web_sys::HtmlInputElement;
-    new_client _;
-    new_server _;
-    server_field value: RefCell<Rc<String>>;
-    client_fn{
-        fn update_value(self:&RcRef<Self>){
-            let this=self as &RcRef<dyn HtmlInputElement>;
-            this.sink().send(Box::<SetInput>::new(SetInput{
-                element: self.rc(),
-                value: this.native().value()
-            }));
-        }
-    }
-    server_fn{
-        fn input_value(&self) -> Rc<String> {
-            self.html_input_element().value.borrow_mut().clone()
-        }
-    }
+#[class]
+#[derive(PeerNew, SerializePeer, DeserializePeer)]
+pub struct HtmlInputElement {
+    parent: dyn HtmlElement,
+    #[cfg(side = "client")]
+    any_value: web_sys::HtmlInputElement,
+    #[cfg(side = "server")]
+    value: RefCell<Rc<String>>,
 }
 
-#[cfg(side = "server")]
-impl HtmlInputElementValue {}
+pub trait HtmlInputElement: AsHtmlInputElement {
+    #[cfg(side = "client")]
+    fn update_value(self: &RcRef<Self>);
+    #[cfg(side = "server")]
+    fn input_value(&self) -> Rc<String>;
+}
 
-#[cfg(side = "client")]
-impl HtmlInputElementValue {}
+impl<T> HtmlInputElement for T
+where
+    T: AsHtmlInputElement,
+{
+    #[cfg(side = "client")]
+    fn update_value(self: &RcRef<Self>) {
+        let this = self as &RcRef<dyn HtmlInputElement>;
+        this.sink().send(Box::<SetInput>::new(SetInput {
+            element: self.rc(),
+            value: this.native().value(),
+        }));
+    }
+    #[cfg(side = "server")]
+    fn input_value(&self) -> Rc<String> {
+        self.html_input_element().value.borrow_mut().clone()
+    }
+}
 
 #[derive(Serialize, Debug, DeserializeWith)]
 struct SetInput {

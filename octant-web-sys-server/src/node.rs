@@ -1,35 +1,60 @@
 use std::{cell::RefCell, collections::HashSet};
 
 use by_address::ByAddress;
+use octant_object::class;
 
+use crate::credential::AsCredential;
 use octant_reffed::rc::RcRef;
-use octant_runtime::{define_sys_class, define_sys_rpc};
-use octant_runtime::peer::AsNative;
+use octant_runtime::{
+    define_sys_class, define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer,
+};
 
 use crate::object::Object;
 
-define_sys_class! {
-    class Node;
-    extends Object;
-    wasm web_sys::Node;
-    new_client _;
-    new_server _;
-    client_field children: RefCell<HashSet<ByAddress<RcNode>>>;
-    server_field children: RefCell<HashSet<ByAddress<RcNode>>>;
-    client_fn {
-        fn children(self:&RcRef<Self>)->Vec<RcNode>{
-            self.node().children.borrow().iter().map(|x|x.0.clone()).collect()
-        }
+#[class]
+#[derive(PeerNew, SerializePeer, DeserializePeer)]
+pub struct Node {
+    parent: dyn Object,
+    #[cfg(side = "client")]
+    any_value: web_sys::Node,
+    children: RefCell<HashSet<ByAddress<RcNode>>>,
+}
+
+pub trait Node: AsNode {
+    fn children(self: &RcRef<Self>) -> Vec<RcNode>;
+    #[cfg(side = "server")]
+    fn append_child(self: &RcRef<Self>, e: RcNode);
+    #[cfg(side = "server")]
+    fn remove_child(self: &RcRef<Self>, e: RcNode);
+}
+
+impl<T> Node for T
+where
+    T: AsNode,
+{
+    fn children(self: &RcRef<Self>) -> Vec<RcNode> {
+        self.node()
+            .children
+            .borrow()
+            .iter()
+            .map(|x| x.0.clone())
+            .collect()
     }
-    server_fn {
-        fn append_child(self: &RcRef<Self>, e:RcNode){
-            self.node().children.borrow_mut().insert(ByAddress(e.clone()));
-            append_child(self.runtime(), self.rc(), e);
-        }
-        fn remove_child(self: &RcRef<Self>, e:RcNode){
-            self.node().children.borrow_mut().remove(&ByAddress(e.clone()));
-            remove_child(self.runtime(), self.rc(), e);
-        }
+    #[cfg(side = "server")]
+    fn append_child(self: &RcRef<Self>, e: RcNode) {
+        self.node()
+            .children
+            .borrow_mut()
+            .insert(ByAddress(e.clone()));
+        append_child(self.runtime(), self.rc(), e);
+    }
+    #[cfg(side = "server")]
+    fn remove_child(self: &RcRef<Self>, e: RcNode) {
+        self.node()
+            .children
+            .borrow_mut()
+            .remove(&ByAddress(e.clone()));
+        remove_child(self.runtime(), self.rc(), e);
     }
 }
 

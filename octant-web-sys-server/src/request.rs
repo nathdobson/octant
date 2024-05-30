@@ -1,11 +1,17 @@
-use octant_runtime::define_sys_class;
+use crate::credential::AsCredential;
+use octant_object::class;
+use octant_runtime::{define_sys_class, DeserializePeer, PeerNew, SerializePeer};
 
 use crate::object::Object;
 
-define_sys_class! {
-    class Request;
-    extends Object;
-    wasm web_sys::Request;
-    new_client _;
-    new_server _;
+#[class]
+#[derive(PeerNew, SerializePeer, DeserializePeer)]
+pub struct Request {
+    parent: dyn Object,
+    #[cfg(side = "client")]
+    any_value: web_sys::Request,
 }
+
+pub trait Request: AsRequest {}
+
+impl<T> Request for T where T: AsRequest {}

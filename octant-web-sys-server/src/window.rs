@@ -9,8 +9,9 @@ use safe_once::cell::OnceCell;
 use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serializer};
 
 use octant_error::OctantError;
+use octant_object::class;
 use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::{define_sys_class, define_sys_rpc, future_return::FutureReturn, octant_future::OctantFuture, PeerNew, runtime::Runtime};
+use octant_runtime::{define_sys_class, define_sys_rpc, DeserializePeer, future_return::FutureReturn, octant_future::OctantFuture, PeerNew, runtime::Runtime, SerializePeer};
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
@@ -24,28 +25,25 @@ use crate::{
     request::{RcRequest, Request},
     response::{RcResponse, ResponseValue},
 };
+use crate::credential::AsCredential;
 use crate::document::DocumentValue;
 
-define_sys_class! {
-    class Window;
-    extends Object;
-    wasm web_sys::Window;
-    new_client _;
-    new_server _;
-    server_field document : OnceCell<RcDocument>;
-    server_field navigator : OnceCell<RcNavigator>;
-    server_fn {
-        fn document<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Document> {
-            self.window().document.get_or_init(|| document(self.runtime(), self.rc()))
-        }
-        fn navigator<'a>(self: &'a RcRef<Self>) -> &'a RcRef< dyn Navigator> {
-            self.window().navigator.get_or_init(|| navigator(self.runtime(),self.rc()))
-        }
-        fn alert(self: & RcRef<Self>, message: String) {
-            alert(self.runtime(), self.rc(), message);
-        }
-    }
+
+#[class]
+#[derive(PeerNew, SerializePeer, DeserializePeer)]
+pub struct Window {
+    parent: dyn Object,
+    #[cfg(side = "client")]
+    any_value: web_sys::Window,
+    #[cfg(side="server")]
+    document : OnceCell<RcDocument>,
+    #[cfg(side="server")]
+    navigator : OnceCell<RcNavigator>,
 }
+
+pub trait Window: AsWindow {}
+
+impl<T> Window for T where T: AsWindow {}
 
 #[cfg(side = "server")]
 impl dyn Window {
@@ -54,6 +52,15 @@ impl dyn Window {
         request: RcRequest,
     ) -> impl 'a + Future<Output = anyhow::Result<RcResponse>> {
         async move { Ok(fetch_wrap(self.runtime(), self.rc(), request).await??) }
+    }
+    pub fn document<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Document> {
+        self.window().document.get_or_init(|| document(self.runtime(), self.rc()))
+    }
+    pub fn navigator<'a>(self: &'a RcRef<Self>) -> &'a RcRef< dyn Navigator> {
+        self.window().navigator.get_or_init(|| navigator(self.runtime(),self.rc()))
+    }
+    pub fn alert(self: & RcRef<Self>, message: String) {
+        alert(self.runtime(), self.rc(), message);
     }
 }
 
@@ -84,3 +91,4 @@ define_sys_rpc! {
         }))
     }
 }
+

@@ -1,23 +1,35 @@
+use octant_object::class;
 use octant_reffed::rc::RcRef;
-use octant_runtime::{define_sys_class, define_sys_rpc};
-use octant_runtime::peer::AsNative;
+use octant_runtime::{
+    define_sys_class, define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer,
+};
 
+#[cfg(side = "client")]
+use crate::export::Export;
 use crate::{
     object::Object, public_key_credential_creation_options::PublicKeyCredentialCreationOptions,
 };
-#[cfg(side = "client")]
-use crate::export::Export;
 
-define_sys_class! {
-    class CredentialCreationOptions;
-    extends Object;
-    wasm web_sys::CredentialCreationOptions;
-    new_client _;
-    new_server _;
-    server_fn {
-        fn public_key(self: &RcRef<Self>, options: PublicKeyCredentialCreationOptions) {
-            public_key(self.runtime(), self.rc(), options)
-        }
+#[class]
+#[derive(PeerNew, SerializePeer, DeserializePeer)]
+pub struct CredentialCreationOptions {
+    parent: dyn Object,
+    #[cfg(side = "client")]
+    any_value: web_sys::CredentialCreationOptions,
+}
+
+pub trait CredentialCreationOptions: AsCredentialCreationOptions {
+    #[cfg(side = "server")]
+    fn public_key(self: &RcRef<Self>, options: PublicKeyCredentialCreationOptions);
+}
+
+impl<T> CredentialCreationOptions for T
+where
+    T: AsCredentialCreationOptions,
+{
+    #[cfg(side = "server")]
+    fn public_key(self: &RcRef<Self>, options: PublicKeyCredentialCreationOptions) {
+        public_key(self.runtime(), self.rc(), options)
     }
 }
 

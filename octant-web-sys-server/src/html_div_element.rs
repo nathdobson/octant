@@ -1,12 +1,12 @@
 use octant_object::class;
 use serde::Serialize;
 
-use octant_runtime::{define_sys_class, peer::PeerValue, PeerNew};
+use octant_runtime::{define_sys_class, DeserializePeer, peer::PeerValue, PeerNew, SerializePeer};
 
 use crate::html_element::{HtmlElement, HtmlElementValue};
 
 #[class]
-#[derive(PeerNew)]
+#[derive(PeerNew, SerializePeer, DeserializePeer)]
 pub struct HtmlDivElement {
     parent: dyn HtmlElement,
     #[cfg(side = "client")]

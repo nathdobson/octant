@@ -1,14 +1,16 @@
-use octant_runtime::define_sys_class;
+use octant_object::class;
+use octant_runtime::{define_sys_class, DeserializePeer, PeerNew, SerializePeer};
 
 use crate::object::Object;
 
-define_sys_class! {
-    class Credential;
-    extends Object;
-    wasm web_sys::Credential;
-    new_client _;
-    new_server _;
+#[class]
+#[derive(PeerNew, SerializePeer, DeserializePeer)]
+pub struct Credential {
+    parent: dyn Object,
+    #[cfg(side = "client")]
+    any_value: web_sys::Credential,
 }
 
-#[cfg(side = "server")]
-impl dyn Credential {}
+pub trait Credential: AsCredential {}
+
+impl<T> Credential for T where T: AsCredential {}
