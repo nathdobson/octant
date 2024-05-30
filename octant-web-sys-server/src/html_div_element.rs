@@ -1,13 +1,18 @@
+use octant_object::class;
 use serde::Serialize;
 
-use octant_runtime::define_sys_class;
+use octant_runtime::{define_sys_class, peer::PeerValue, PeerNew};
 
-use crate::html_element::HtmlElement;
+use crate::html_element::{HtmlElement, HtmlElementValue};
 
-define_sys_class! {
-    class HtmlDivElement;
-    extends HtmlElement;
-    wasm web_sys::HtmlDivElement;
-    new_client _;
-    new_server _;
+#[class]
+#[derive(PeerNew)]
+pub struct HtmlDivElement {
+    parent: dyn HtmlElement,
+    #[cfg(side = "client")]
+    wasm: web_sys::HtmlDivElement,
 }
+
+pub trait HtmlDivElement: AsHtmlDivElement {}
+
+impl<T> HtmlDivElement for T where T: AsHtmlDivElement {}

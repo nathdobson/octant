@@ -118,6 +118,7 @@ fn derive_class_impl(input: ItemStruct) -> syn::Result<TokenStream> {
     let get_mut = format_ident!("{}_mut", get_ref);
     output = quote! {
         #[derive(::octant_object::DebugClass)]
+        #( #attrs )*
         pub struct #value {
             parent: <dyn #parent as ::octant_object::class::Class>::Value,
             #(#field_defs),*

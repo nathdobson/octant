@@ -8,6 +8,7 @@ use octant_object::{
 use crate::{
     handle::{RawHandle, TypedHandle},
     runtime::Runtime,
+    PeerNew,
 };
 
 #[class]
@@ -36,9 +37,6 @@ impl PeerValue {
     pub fn raw_handle(&self) -> RawHandle {
         self.handle
     }
-    // pub fn runtime(&self) -> &Arc<Runtime> {
-    //     &self.runtime
-    // }
 }
 
 impl dyn Peer {
@@ -50,5 +48,12 @@ impl dyn Peer {
 impl Drop for PeerValue {
     fn drop(&mut self) {
         self.runtime().delete(self.handle);
+    }
+}
+
+impl PeerNew for PeerValue {
+    type Builder = PeerValue;
+    fn peer_new(peer: PeerValue) -> Self {
+        peer
     }
 }

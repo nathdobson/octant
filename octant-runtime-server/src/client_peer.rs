@@ -7,6 +7,7 @@ use octant_object::base::{Base, BaseValue};
 use crate::{
     handle::{RawHandle, TypedHandle},
     runtime::RuntimeSink,
+    PeerNew,
 };
 use octant_object::class;
 
@@ -52,5 +53,12 @@ impl PeerValue {
 impl dyn Peer {
     pub fn typed_handle(&self) -> TypedHandle<dyn Peer> {
         TypedHandle::new(self.raw_handle())
+    }
+}
+
+impl PeerNew for PeerValue {
+    type Builder = ();
+    fn peer_new(builder: Self::Builder) -> Self {
+        PeerValue::new()
     }
 }

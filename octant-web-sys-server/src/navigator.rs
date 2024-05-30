@@ -1,7 +1,7 @@
 use safe_once::cell::OnceCell;
 
 use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::{define_sys_class, define_sys_rpc};
+use octant_runtime::{define_sys_class, define_sys_rpc, PeerNew};
 
 use crate::{credentials_container::RcCredentialsContainer, object::Object};
 use crate::credentials_container::{CredentialsContainer, CredentialsContainerValue};
@@ -22,6 +22,6 @@ define_sys_class! {
 
 define_sys_rpc! {
     fn credentials(_runtime:_, navigator:RcNavigator) -> RcCredentialsContainer{
-        Ok(Rc2::new(CredentialsContainerValue::new(navigator.native().credentials())))
+        Ok(Rc2::new(CredentialsContainerValue::peer_new(navigator.native().credentials())))
     }
 }

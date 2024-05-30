@@ -6,8 +6,10 @@
 
 extern crate core;
 
-use std::fmt::{Display, Formatter};
-use std::rc::Rc;
+use std::{
+    fmt::{Display, Formatter},
+    rc::Rc,
+};
 
 use serde::{de::Error, Deserialize, Deserializer};
 
@@ -35,19 +37,25 @@ pub mod reexports {
     pub use octant_serde;
 }
 
+#[cfg(side = "client")]
+pub use octant_runtime_derive::PeerNewClient as PeerNew;
+#[cfg(side = "server")]
+pub use octant_runtime_derive::PeerNewServer as PeerNew;
+pub use octant_runtime_derive::*;
+
 #[cfg_attr(side = "client", path = "client_runtime.rs")]
 #[cfg_attr(side = "server", path = "server_runtime.rs")]
 pub mod runtime;
 
 mod delete;
+pub mod error;
+pub mod future_return;
+pub mod immediate_return;
+pub mod octant_future;
 #[cfg_attr(side = "client", path = "client_peer.rs")]
 #[cfg_attr(side = "server", path = "server_peer.rs")]
 pub mod peer;
 pub mod proto;
-pub mod octant_future;
-pub mod immediate_return;
-pub mod future_return;
-pub mod error;
 
 pub fn deserialize_object_with<'de, T: ?Sized + Class, D: Deserializer<'de>>(
     ctx: &DeserializeContext,
@@ -70,4 +78,9 @@ impl Display for LookupError {
             LookupError::DowncastFailed => write!(f, "object downcast failed"),
         }
     }
+}
+
+pub trait PeerNew {
+    type Builder;
+    fn peer_new(builder: Self::Builder) -> Self;
 }

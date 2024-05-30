@@ -6,7 +6,7 @@ use safe_once::cell::OnceCell;
 use serde::{Deserialize, Serialize};
 
 use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::{define_sys_rpc, runtime::Runtime};
+use octant_runtime::{define_sys_rpc, PeerNew, runtime::Runtime};
 use octant_serde::define_serde_impl;
 
 use crate::{
@@ -64,36 +64,21 @@ impl Global {
 
 define_sys_rpc! {
     fn window(_runtime:_) -> RcWindow {
-        Ok(Rc2::new(WindowValue::new(web_sys::window().unwrap())))
+        Ok(Rc2::new(WindowValue::peer_new(web_sys::window().unwrap())))
     }
-}
-
-define_sys_rpc! {
     fn new_request_init(_runtime:_) -> RcRequestInit {
-        Ok(Rc2::new(RequestInitValue::new(web_sys::RequestInit::new())))
+        Ok(Rc2::new(RequestInitValue::peer_new(web_sys::RequestInit::new())))
     }
-}
-
-define_sys_rpc! {
     fn new_request(_runtime:_, url:String, init:RcRequestInit) -> RcRequest {
-        Ok(Rc2::new(RequestValue::new(web_sys::Request::new_with_str_and_init(&url, init.native()).unwrap())))
+        Ok(Rc2::new(RequestValue::peer_new(web_sys::Request::new_with_str_and_init(&url, init.native()).unwrap())))
     }
-}
-
-define_sys_rpc! {
     fn new_credential_request_options(_runtime:_) -> RcCredentialRequestOptions {
-        Ok(Rc2::new(CredentialRequestOptionsValue::new(web_sys::CredentialRequestOptions::new())))
+        Ok(Rc2::new(CredentialRequestOptionsValue::peer_new(web_sys::CredentialRequestOptions::new())))
     }
-}
-
-define_sys_rpc! {
     fn new_credential_creation_options(_runtime:_) -> RcCredentialCreationOptions {
-        Ok(Rc2::new(CredentialCreationOptionsValue::new(web_sys::CredentialCreationOptions::new())))
+        Ok(Rc2::new(CredentialCreationOptionsValue::peer_new(web_sys::CredentialCreationOptions::new())))
     }
-}
-
-define_sys_rpc! {
     fn new_event_listener(_runtime:_) -> RcEventListener {
-        Ok(Rc2::new(EventListenerValue::new()))
+        Ok(Rc2::new(EventListenerValue::peer_new(())))
     }
 }

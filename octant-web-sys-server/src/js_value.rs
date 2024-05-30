@@ -1,5 +1,8 @@
-use octant_runtime::define_sys_class;
-use octant_runtime::peer::{Peer, PeerValue};
+use octant_runtime::{
+    define_sys_class,
+    peer::{Peer, PeerValue},
+    PeerNew,
+};
 
 define_sys_class! {
     class JsValue;
@@ -8,15 +11,17 @@ define_sys_class! {
 }
 
 #[cfg(side = "server")]
-impl From<PeerValue> for JsValueValue {
-    fn from(handle: PeerValue) -> Self {
+impl PeerNew for JsValueValue {
+    type Builder = PeerValue;
+    fn peer_new(handle: PeerValue) -> Self {
         JsValueValue { parent: handle }
     }
 }
 
 #[cfg(side = "client")]
-impl JsValueValue {
-    pub fn new(js_value: wasm_bindgen::JsValue) -> JsValueValue {
+impl PeerNew for JsValueValue {
+    type Builder = wasm_bindgen::JsValue;
+    fn peer_new(js_value: wasm_bindgen::JsValue) -> JsValueValue {
         JsValueValue {
             parent: PeerValue::new(),
             js_value,

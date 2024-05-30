@@ -21,6 +21,7 @@ wasm-bindgen-futures = {workspace=true}
 octant-reffed = {workspace=true}
 cfg-if = {workspace=true}
 octant-error = {workspace=true, features=["wasm"]}
+octant-runtime-derive = {workspace=true}
 
 [build-dependencies]
 octant-sys-build = { workspace = true }

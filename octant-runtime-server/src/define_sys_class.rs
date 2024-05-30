@@ -23,13 +23,14 @@ macro_rules! define_sys_class {
 
             #[cfg(any($(all() ${ignore($new_client_dummy)} )?))]
             #[cfg(side = "client")]
-            impl [< $class Value >] {
-                pub fn new(
-                    $( [< $class:snake >]: $wasm )?
+            impl $crate::PeerNew for [< $class Value >] {
+                type Builder = ($($wasm)?);
+                fn peer_new(
+                    [< $class:snake >]:($(  $wasm )?)
                 ) -> [< $class Value >]  {
                     [< $class Value >] {
-                        parent: <dyn $parent as $crate::reexports::octant_object::class::Class>::Value::new(
-                            $( ${ignore($wasm)} ::std::clone::Clone::clone(&[< $class:snake >]).into() )?
+                        parent: <<dyn $parent as $crate::reexports::octant_object::class::Class>::Value as $crate::PeerNew>::peer_new(
+                            ( $( ${ignore($wasm)} ::std::clone::Clone::clone(&[< $class:snake >]).into() )? )
                         ),
                         $( ${ignore($wasm)} [< $class:snake >], )?
                         $($client_field : ::std::default::Default::default(), )*
@@ -56,10 +57,11 @@ macro_rules! define_sys_class {
 
             #[cfg(any($(all() ${ignore($new_server_dummy)} )?))]
             #[cfg(side = "server")]
-            impl From<$crate::peer::PeerValue> for [< $class Value >] {
-                fn from(handle: $crate::peer::PeerValue) -> Self {
+            impl $crate::PeerNew for [< $class Value >] {
+                type Builder = $crate::peer::PeerValue;
+                fn peer_new(handle: $crate::peer::PeerValue) -> Self {
                     [< $class Value >] {
-                        parent: <dyn $parent as $crate::reexports::octant_object::class::Class>::Value::from(handle),
+                        parent: <<dyn $parent as $crate::reexports::octant_object::class::Class>::Value as $crate::PeerNew>::peer_new(handle),
                         $($server_field : ::std::default::Default::default(), )*
                     }
                 }

@@ -10,10 +10,7 @@ use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serialize
 
 use octant_error::OctantError;
 use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::{
-    define_sys_class, define_sys_rpc, future_return::FutureReturn, octant_future::OctantFuture,
-    runtime::Runtime,
-};
+use octant_runtime::{define_sys_class, define_sys_rpc, future_return::FutureReturn, octant_future::OctantFuture, PeerNew, runtime::Runtime};
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
@@ -74,15 +71,15 @@ define_sys_rpc! {
         Ok(())
     }
     fn document(_runtime:_, window: RcWindow) -> RcDocument {
-        Ok(Rc2::new(DocumentValue::new(window.native().document().unwrap())))
+        Ok(Rc2::new(DocumentValue::peer_new(window.native().document().unwrap())))
     }
     fn navigator(_runtime:_,window:RcWindow)->RcNavigator{
-        Ok(Rc2::new(NavigatorValue::new(window.native().navigator())))
+        Ok(Rc2::new(NavigatorValue::peer_new(window.native().navigator())))
     }
     fn fetch(runtime: _, window:RcWindow, req:RcRequest) -> OctantFuture<Result<RcResponse, OctantError>>{
         let fetch = window.native().fetch_with_request(req.native());
         Ok(OctantFuture::spawn(runtime, async move{
-            Ok(Rc2::new(ResponseValue::new(JsFuture::from(fetch).await.map_err(OctantError::from)?.dyn_into().map_err(OctantError::from)?)) as RcResponse)
+            Ok(Rc2::new(ResponseValue::peer_new(JsFuture::from(fetch).await.map_err(OctantError::from)?.dyn_into().map_err(OctantError::from)?)) as RcResponse)
         }))
     }
 }

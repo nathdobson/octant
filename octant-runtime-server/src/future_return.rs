@@ -1,5 +1,4 @@
-use std::{fmt::Debug, marker::Unsize};
-use std::rc::Rc;
+use std::{fmt::Debug, marker::Unsize, rc::Rc};
 
 use serde::Serialize;
 
@@ -8,12 +7,11 @@ use octant_object::class::Class;
 use octant_reffed::rc::Rc2;
 use octant_serde::DeserializeWith;
 
-use crate::{
-    handle::TypedHandle, immediate_return::ImmediateReturn, peer::Peer,
-    runtime::Runtime,
-};
 #[cfg(side = "server")]
 use crate::peer::PeerValue;
+#[cfg(side = "server")]
+use crate::PeerNew;
+use crate::{handle::TypedHandle, immediate_return::ImmediateReturn, peer::Peer, runtime::Runtime};
 
 pub trait FutureReturn: 'static {
     type Down: 'static + Serialize + for<'de> DeserializeWith<'de> + Debug;
@@ -31,7 +29,7 @@ pub trait FutureReturn: 'static {
 #[cfg(side = "server")]
 impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Rc2<T>
 where
-    T::Value: Peer + From<PeerValue> + Unsize<T>,
+    T::Value: Peer + PeerNew<Builder = PeerValue> + Unsize<T>,
 {
     type Down = TypedHandle<T>;
     type Up = ();

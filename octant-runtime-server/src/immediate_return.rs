@@ -1,5 +1,4 @@
-use std::marker::Unsize;
-use std::rc::Rc;
+use std::{marker::Unsize, rc::Rc};
 
 use serde::Serialize;
 
@@ -7,13 +6,11 @@ use octant_object::class::Class;
 use octant_reffed::rc::Rc2;
 use octant_serde::DeserializeWith;
 
-use crate::{
-    handle::TypedHandle,
-    peer::Peer,
-    runtime::Runtime,
-};
-#[cfg(side="server")]
+#[cfg(side = "server")]
 use crate::peer::PeerValue;
+#[cfg(side = "server")]
+use crate::PeerNew;
+use crate::{handle::TypedHandle, peer::Peer, runtime::Runtime};
 
 pub trait AsTypedHandle: Class {
     fn typed_handle(&self) -> TypedHandle<Self>;
@@ -33,25 +30,24 @@ pub trait ImmediateReturn: Sized {
     fn immediate_return(self, runtime: &Rc<Runtime>, down: Self::Down);
 }
 
-#[cfg(side="server")]
+#[cfg(side = "server")]
 impl<T: ?Sized + Class + Unsize<dyn Peer>> ImmediateReturn for Rc2<T>
 where
-    T::Value: Peer + From<PeerValue> + Unsize<T>,
+    T::Value: Peer + PeerNew<Builder = PeerValue> + Unsize<T>,
 {
     type Down = TypedHandle<T>;
     #[cfg(side = "server")]
     fn immediate_new(runtime: &Rc<Runtime>) -> (Self, Self::Down) {
-        let peer: Rc2<T> = runtime.add::<T::Value>(T::Value::from(runtime.add_uninit()));
+        let peer: Rc2<T> = runtime.add::<T::Value>(T::Value::peer_new(runtime.add_uninit()));
         let handle = (*peer).typed_handle();
         (peer, handle)
     }
-
 }
 
-#[cfg(side="client")]
+#[cfg(side = "client")]
 impl<T: ?Sized + Class + Unsize<dyn Peer>> ImmediateReturn for Rc2<T>
-    where
-        T::Value: Peer + Unsize<T>,
+where
+    T::Value: Peer + Unsize<T>,
 {
     type Down = TypedHandle<T>;
 
