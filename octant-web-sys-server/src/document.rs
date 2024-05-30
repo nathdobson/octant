@@ -1,5 +1,5 @@
 use crate::octant_runtime::PeerNew;
-use octant_object::{class, DebugClass, define_class};
+use octant_object::{class, DebugClass};
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{
     define_sys_rpc,

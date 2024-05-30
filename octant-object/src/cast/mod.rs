@@ -5,22 +5,25 @@
 //! object to a subclass, even if that subclass is a superclass of the actual object.
 //! ```
 //! # use std::sync::Arc;
-//! # use octant_object::define_class;
-//! # use octant_object::base::Base;
-//! define_class! {
-//!     #[derive(Default)]
-//!     pub class AbstractBase extends Base {}
-//! }
-//! define_class! {
-//!     #[derive(Default)]
-//!     pub class Concrete extends AbstractBase {}
-//! }
-//! define_class! {
-//!     #[derive(Default)]
-//!     pub class Other extends AbstractBase {}
-//! }
+//! # use octant_object::base::{Base, BaseValue};
+//! #[derive(Default)]
+//! pub struct AbstractBaseValue { parent: BaseValue }
+//! #[class]
+//! pub trait AbstractBase: Base{}
+//!
+//! #[derive(Default)]
+//! pub struct ConcreteValue { parent: AbstractBaseValue }
+//! #[class]
+//! pub trait Concrete: AbstractBase{}
+//!
+//! #[derive(Default)]
+//! pub struct OtherValue { parent: AbstractBaseValue }
+//! #[class]
+//! pub trait Other: AbstractBase{}
+//!
 //!
 //! use octant_object::cast::{downcast_object};
+//! use octant_object_derive::class;
 //! {
 //!     // Cast to the concrete class
 //!     let base: Arc<dyn Base> = Arc::new(ConcreteValue::default());
@@ -77,15 +80,18 @@ pub mod smart_pointer;
 /// # #![feature(trait_upcasting)]
 /// # use std::any::Any;
 /// # use std::sync::Arc;
-/// # use octant_object::base::Base;
+/// # use octant_object::base::{Base, BaseValue};
 /// # use octant_object::cast::BoxCastObject;
 /// # use octant_object::cast::inlinebox::InlineBox;
-/// # use octant_object::define_class;
+/// use octant_object::cast::repr::PtrRepr;
 /// # use octant_object::cast::smart_pointer::SmartPointer;
-/// define_class! {
-///     #[derive(Default)]
-///     pub class Foo extends Base {}
+/// use octant_object_derive::class;
+/// #[derive(Default)]
+/// struct FooValue{
+///     parent: BaseValue
 /// }
+/// #[class]
+/// trait Foo: Base{}
 /// let ptr: Arc<dyn Base> = Arc::new(FooValue::default());
 /// let ptr: SmartPointer<dyn Base> = SmartPointer::new(ptr);
 /// let ptr: BoxCastObject = (ptr.into_leaf())(ptr);
@@ -123,15 +129,17 @@ where
 /// ```
 /// # use std::any::Any;
 /// # use std::sync::Arc;
-/// # use octant_object::define_class;
-/// # use octant_object::base::Base;
+/// # use octant_object::base::{Base, BaseValue};
 /// # use octant_object::cast::BoxCastObject;
 /// # use octant_object::cast::inlinebox::InlineBox;
 /// # use octant_object::cast::smart_pointer::SmartPointer;
-/// define_class! {
-///     #[derive(Default)]
-///     pub class Foo extends Base {}
+/// # use octant_object_derive::class;
+/// #[derive(Default)]
+/// struct FooValue {
+///     parent: BaseValue,
 /// }
+/// #[class]
+/// trait Foo : Base {}
 /// let ptr: Arc<dyn Foo> = Arc::new(FooValue::default());
 /// let ptr: SmartPointer<dyn Foo> = SmartPointer::new(ptr);
 /// let ptr: BoxCastObject = InlineBox::new(ptr).unsize();
@@ -209,7 +217,8 @@ where
     P1: IsSmartPointer,
     P1::SmartTarget: CastValue + Unsize<dyn Any>,
     P2: IsSmartPointer<Kind = P1::Kind>,
-    <P1 as IsSmartPointer>::SmartTarget: Pointee<Metadata = DynMetadata<<P1 as IsSmartPointer>::SmartTarget>>,
+    <P1 as IsSmartPointer>::SmartTarget:
+        Pointee<Metadata = DynMetadata<<P1 as IsSmartPointer>::SmartTarget>>,
 {
     let ptr = SmartPointer::new(ptr);
     match downcast_object_impl::<P1::SmartTarget, P2::SmartTarget>(ptr) {

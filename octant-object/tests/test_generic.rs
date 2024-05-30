@@ -1,29 +1,38 @@
 #![feature(unsize)]
 
-use std::{fmt::Debug, hash::Hash};
+use std::fmt::Debug;
 
 use octant_object::{
     base::{Base, BaseValue},
-    define_class,
 };
+use octant_object_derive::{class, DebugClass};
 
-define_class! {
-    pub class A<T1> extends Base where [T1: Debug] {
-        field x:T1;
-    }
+#[derive(DebugClass)]
+pub struct AValue<T1: 'static + Debug> {
+    parent: BaseValue,
+    x: T1,
 }
 
-define_class! {
-    pub class B<T2> extends A<T2> where [T2: Debug + Hash] {
-        field y:T2;
-    }
+#[class]
+pub trait A<T1: 'static + Debug>: Base {}
+
+#[derive(DebugClass)]
+pub struct BValue<T2: 'static + Debug> {
+    parent: AValue<T2>,
+    y: T2,
 }
 
-define_class! {
-    pub class C extends B<u32> {
-        field z:u32;
-    }
+#[class]
+pub trait B<T2: 'static + Debug>: A<T2> {}
+
+#[derive(DebugClass)]
+pub struct CValue {
+    parent: BValue<u32>,
+    z: u32,
 }
+
+#[class]
+pub trait C: B<u32> {}
 
 #[test]
 fn test() {
