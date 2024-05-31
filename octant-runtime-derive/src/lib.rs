@@ -5,7 +5,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
     parse_macro_input, spanned::Spanned, Data, DataStruct, DeriveInput, FnArg, ImplItem,
-    ImplItemFn, Item, ItemFn, ItemImpl, ReturnType, Signature, Token, Type,
+    ImplItemFn, Item, ItemFn, ItemImpl, Pat, ReturnType, Signature, Token, Type,
 };
 
 #[proc_macro_derive(PeerNewClient)]
@@ -298,9 +298,17 @@ fn rpc_fn(args: &RpcArgs, input: &ItemFn) -> syn::Result<TokenStream> {
                         });
                     }
                 } else {
-                    let ident = format_ident!("_param_{}", i, span = pat_type.pat.span());
-                    server_params.push(quote! { #ident #colon #ty });
-                    param_names.push(quote! {#ident});
+                    let param_name;
+                    match &*pat_type.pat {
+                        Pat::Ident(ident) => {
+                            param_name = format_ident!("_param_{}", ident.ident);
+                        }
+                        _ => {
+                            param_name = format_ident!("_param_{}", i, span = pat_type.pat.span());
+                        }
+                    }
+                    server_params.push(quote! { #param_name #colon #ty });
+                    param_names.push(quote! {#param_name});
                 }
             }
         };
