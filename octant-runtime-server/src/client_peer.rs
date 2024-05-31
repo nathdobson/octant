@@ -9,8 +9,8 @@ use crate::{
     runtime::RuntimeSink,
     PeerNew,
 };
-use octant_object::{class, DebugClass};
-use octant_object::class::Class;
+use octant_object::{class, class::Class, DebugClass};
+use octant_runtime_derive::{DeserializePeer, SerializePeer};
 
 #[derive(Debug)]
 struct PeerInit {
@@ -18,7 +18,7 @@ struct PeerInit {
     sink: Rc<RuntimeSink>,
 }
 
-#[derive(DebugClass)]
+#[derive(DebugClass, SerializePeer, DeserializePeer)]
 pub struct PeerFields {
     parent: BaseFields,
     peer_init: OnceCell<PeerInit>,

@@ -50,8 +50,7 @@ pub trait Window: Object {
     }
     #[cfg(side = "server")]
     fn document<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Document> {
-        self.document
-            .get_or_init(|| document(self.runtime(), self.rc()))
+        self.document.get_or_init(|| self.document_impl())
     }
     #[cfg(side = "server")]
     fn navigator<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Navigator> {
@@ -60,7 +59,7 @@ pub trait Window: Object {
     }
     #[cfg(side = "server")]
     fn alert(self: &RcRef<Self>, message: String) {
-        alert(self.runtime(), self.rc(), message);
+        self.alert_impl(message);
     }
 }
 
@@ -74,16 +73,18 @@ fn fetch_wrap(
 }
 
 #[rpc]
-fn alert(_: &Rc<Runtime>, window: RcWindow, message: String) -> () {
-    window.native().alert_with_message(&message).unwrap();
-    Ok(())
-}
-
-#[rpc]
-fn document(_: &Rc<Runtime>, window: RcWindow) -> RcDocument {
-    Ok(Rc2::new(DocumentFields::peer_new(
-        window.native().document().unwrap(),
-    )))
+impl dyn Window {
+    #[rpc]
+    fn document_impl(self: &RcRef<Self>, _: &Rc<Runtime>) -> RcDocument {
+        Ok(Rc2::new(DocumentFields::peer_new(
+            self.native().document().unwrap(),
+        )))
+    }
+    #[rpc]
+    fn alert_impl(self: &RcRef<Self>, _: &Rc<Runtime>, message: String) -> () {
+        self.native().alert_with_message(&message).unwrap();
+        Ok(())
+    }
 }
 
 #[rpc]

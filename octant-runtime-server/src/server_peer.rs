@@ -1,6 +1,12 @@
 use std::{fmt::Debug, rc::Rc};
 
-use octant_object::{base::{Base, BaseFields}, class, class::Class, DebugClass};
+use octant_object::{
+    base::{Base, BaseFields},
+    class,
+    class::Class,
+    DebugClass,
+};
+use octant_runtime_derive::{DeserializePeer, SerializePeer};
 
 use crate::{
     handle::{RawHandle, TypedHandle},
@@ -8,7 +14,7 @@ use crate::{
     PeerNew,
 };
 
-#[derive(DebugClass)]
+#[derive(DebugClass, SerializePeer, DeserializePeer)]
 pub struct PeerFields {
     parent: BaseFields,
     runtime: Rc<Runtime>,

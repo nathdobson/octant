@@ -31,8 +31,8 @@ pub trait CredentialRequestOptions: Object {
 fn public_key(
     _: &Rc<Runtime>,
     options: RcCredentialRequestOptions,
-    public_key: PublicKeyCredentialRequestOptions,
+    public_key_arg: PublicKeyCredentialRequestOptions,
 ) {
-    options.native().clone().public_key(&public_key.export());
+    options.native().clone().public_key(&public_key_arg.export());
     Ok(())
 }

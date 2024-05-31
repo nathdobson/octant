@@ -13,3 +13,5 @@ octant-serde-derive = {workspace=true}
 paste = {workspace=true}
 octant-reffed = {workspace=true}
 octant-error ={workspace=true}
+itertools = {workspace=true}
+log = {workspace=true}

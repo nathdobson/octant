@@ -9,6 +9,7 @@ use catalog::{Builder, BuilderFrom, Registry};
 use serde::Serialize;
 
 use crate::{DeserializeContext, DeserializeWith, Error, Format, RawEncoded};
+use itertools::Itertools;
 
 type DeserializeFn<U> =
     for<'c, 'de> fn(&'c DeserializeContext, &'de RawEncoded) -> Result<Box<U>, Error>;
@@ -50,6 +51,10 @@ impl Builder for DeserializeRegistry {
     }
 
     fn build(self) -> Self::Output {
+        log::info!(
+            "Found deserializers: {:#?}",
+            self.deserializers.keys().sorted()
+        );
         self
     }
 }
@@ -73,7 +78,7 @@ impl DeserializeRegistry {
         let dfn: &dyn Any = *self
             .deserializers
             .get(typ)
-            .ok_or_else(|| anyhow!("Could not find deserializer"))?;
+            .ok_or_else(|| anyhow!("Could not find deserializer for {}", typ,))?;
         let dfn: &DeserializeFn<U> = dfn
             .downcast_ref()
             .ok_or_else(|| anyhow!("Could not downcast deserializer"))?;

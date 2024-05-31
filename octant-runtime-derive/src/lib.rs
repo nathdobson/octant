@@ -4,8 +4,8 @@ use convert_case::{Case, Casing};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
-    parse_macro_input, spanned::Spanned, Data, DataStruct, DeriveInput, FnArg, ItemFn, ReturnType,
-    Signature,
+    parse_macro_input, spanned::Spanned, Data, DataStruct, DeriveInput, FnArg, ImplItem,
+    ImplItemFn, Item, ItemFn, ItemImpl, ReturnType, Signature, Token, Type,
 };
 
 #[proc_macro_derive(PeerNewClient)]
@@ -143,8 +143,13 @@ fn derive_serialize_peer_impl(input: DeriveInput) -> syn::Result<TokenStream> {
         data: input_data,
     } = &input;
     let value = input_ident;
+    let class = format_ident!(
+        "{}",
+        input_ident.to_string().strip_suffix("Fields").unwrap(),
+        span = input_ident.span()
+    );
     output = quote! {
-        impl octant_runtime::reexports::serde::Serialize for <#value as ::octant_object::class::ClassValue>::Dyn {
+        impl octant_runtime::reexports::serde::Serialize for dyn #class {
             fn serialize<S>(&self, s: S) -> ::std::result::Result<S::Ok, S::Error>
             where
                 S: ::serde::Serializer,
@@ -174,8 +179,13 @@ fn derive_deserialize_peer_impl(input: DeriveInput) -> syn::Result<TokenStream> 
         data: input_data,
     } = &input;
     let value = input_ident;
+    let class = format_ident!(
+        "{}",
+        input_ident.to_string().strip_suffix("Fields").unwrap(),
+        span = input_ident.span()
+    );
     output = quote! {
-        impl<'de> ::octant_serde::DeserializeRcWith<'de> for <#value as ::octant_object::class::ClassValue>::Dyn {
+        impl<'de> ::octant_serde::DeserializeRcWith<'de> for dyn #class {
             fn deserialize_rc_with<
                 D: ::serde::Deserializer<'de>
             >(
@@ -189,24 +199,42 @@ fn derive_deserialize_peer_impl(input: DeriveInput) -> syn::Result<TokenStream> 
     Ok(output)
 }
 
-struct RpcArgs {}
+struct RpcArgs {
+    self_type: Option<Type>,
+}
 
 #[proc_macro_attribute]
 pub fn rpc(
     args: proc_macro::TokenStream,
     input: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    let parser =
-        syn::meta::parser(|meta| Err(syn::Error::new(meta.path.span(), "No parameters expected")));
+    let mut self_type = None;
+    let parser = syn::meta::parser(|meta| {
+        if meta.path.is_ident("self") {
+            meta.input.parse::<Token![=]>()?;
+            self_type = Some(meta.input.parse()?);
+            Ok(())
+        } else {
+            Err(syn::Error::new(meta.path.span(), "No parameters expected"))
+        }
+    });
     parse_macro_input!(args with parser);
-    let args = RpcArgs {};
-    let input = parse_macro_input!(input as ItemFn);
+    let args = RpcArgs { self_type };
+    let input = parse_macro_input!(input as Item);
     proc_macro::TokenStream::from(
-        rpc_impl(args, &input).unwrap_or_else(syn::Error::into_compile_error),
+        rpc_item(&args, &input).unwrap_or_else(syn::Error::into_compile_error),
     )
 }
 
-fn rpc_impl(args: RpcArgs, input: &ItemFn) -> syn::Result<TokenStream> {
+fn rpc_item(args: &RpcArgs, input: &Item) -> syn::Result<TokenStream> {
+    match input {
+        Item::Fn(f) => rpc_fn(args, f),
+        Item::Impl(i) => rpc_impl(args, i),
+        _ => todo!(),
+    }
+}
+
+fn rpc_fn(args: &RpcArgs, input: &ItemFn) -> syn::Result<TokenStream> {
     let output_tokens: TokenStream;
     let ItemFn {
         attrs,
@@ -229,16 +257,46 @@ fn rpc_impl(args: RpcArgs, input: &ItemFn) -> syn::Result<TokenStream> {
     } = sig;
     let mut server_params: Vec<TokenStream> = vec![];
     let mut param_names: Vec<TokenStream> = vec![];
-    let mut server_runtime_param = None;
+    let mut seen_runtime = false;
+    let mut server_runtime_param = vec![];
+    let mut self_param = vec![];
+    let mut runtime_lookup = vec![];
+    let mut this_capture = vec![];
+    let mut this_field = vec![];
+    let mut self_callee = vec![];
     for (i, input) in inputs.iter().enumerate() {
         match input {
-            FnArg::Receiver(_) => todo!(),
+            FnArg::Receiver(rec) => {
+                self_param.push(quote! { #rec });
+            }
             FnArg::Typed(pat_type) => {
                 let colon = &pat_type.colon_token;
                 let ty = Some(&pat_type.ty);
-                if server_runtime_param.is_none() {
+                if !seen_runtime {
+                    seen_runtime = true;
                     let ident = Some(format_ident!("runtime", span = pat_type.pat.span()));
-                    server_runtime_param = Some(quote! {#ident #colon #ty });
+                    if self_param.is_empty() {
+                        server_runtime_param.push(quote! {#ident #colon #ty });
+                    } else {
+                        let self_type = args.self_type.as_ref().ok_or_else(|| {
+                            syn::Error::new(
+                                pat_type.span(),
+                                "Must specify [rpc(self=TheCurrentClass)] for methods",
+                            )
+                        })?;
+                        runtime_lookup.push(quote! {
+                            let runtime = self.runtime();
+                        });
+                        this_capture.push(quote! {
+                            this: self.rc()
+                        });
+                        this_field.push(quote! {
+                            this: ::octant_runtime::reexports::octant_reffed::rc::Rc2<#self_type>
+                        });
+                        self_callee.push(quote! {
+                            self.this.
+                        });
+                    }
                 } else {
                     let ident = format_ident!("_param_{}", i, span = pat_type.pat.span());
                     server_params.push(quote! { #ident #colon #ty });
@@ -247,13 +305,12 @@ fn rpc_impl(args: RpcArgs, input: &ItemFn) -> syn::Result<TokenStream> {
             }
         };
     }
-    let server_runtime_param = server_runtime_param.unwrap();
     let output_type;
     let output_type_arrow;
     match output {
         ReturnType::Default => {
             output_type = quote! { () };
-            output_type_arrow = quote!{ -> };
+            output_type_arrow = quote! { -> };
         }
         ReturnType::Type(arrow, ty) => {
             output_type_arrow = quote! { #arrow };
@@ -264,45 +321,116 @@ fn rpc_impl(args: RpcArgs, input: &ItemFn) -> syn::Result<TokenStream> {
         "{}Request",
         format!("{}", ident)
             .from_case(Case::Snake)
-            .to_case(Case::Pascal)
+            .to_case(Case::Pascal),
+        span = ident.span()
     );
+    let request_type_def = quote! {
+        #[derive(::std::fmt::Debug, ::octant_runtime::reexports::serde::Serialize, ::octant_runtime::reexports::octant_serde::DeserializeWith)]
+        struct #request_type {
+            #(#this_field,)*
+            #(#server_params,)*
+            down: <#output_type as ::octant_runtime::immediate_return::ImmediateReturn>::Down
+        }
+        ::octant_runtime::reexports::octant_serde::define_serde_impl!(#request_type: ::octant_runtime::proto::DownMessage);
+    };
     output_tokens = quote! {
         #[cfg(side = "server")]
         #vis #fn_token #ident(
-            #server_runtime_param,
+            #(#self_param,)*
+            #(#server_runtime_param,)*
             #(#server_params),*
         ) #output {
+            #request_type_def
+            impl ::octant_runtime::proto::DownMessage for #request_type {}
+
+            #(#runtime_lookup)*
             let (output, down) = <#output_type as ::octant_runtime_server::immediate_return::ImmediateReturn>::immediate_new(runtime);
             runtime.send(Box::<#request_type>::new(#request_type {
+                #(#this_capture,)*
                 #(#param_names,)*
                 down
             }));
             output
         }
 
-        #[derive(::std::fmt::Debug, ::octant_runtime::reexports::serde::Serialize, ::octant_runtime::reexports::octant_serde::DeserializeWith)]
-        pub struct #request_type {
-            #(#server_params,)*
-            down: <#output_type as ::octant_runtime::immediate_return::ImmediateReturn>::Down
-        }
-
-        ::octant_runtime::reexports::octant_serde::define_serde_impl!(#request_type: ::octant_runtime::proto::DownMessage);
-
-        impl ::octant_runtime::proto::DownMessage for #request_type {
-            #[cfg(side="client")]
-            fn run(self:Box<Self>, runtime: &::std::rc::Rc<::octant_runtime::runtime::Runtime>) -> ::octant_runtime::reexports::anyhow::Result<()>{
-                let output=#ident(runtime #(, self.#param_names)*)?;
-                ::octant_runtime::immediate_return::ImmediateReturn::immediate_return(output, runtime, self.down);
-                Ok(())
-            }
-        }
 
         #[cfg(side="client")]
         #fn_token #ident(
             #inputs
         ) #output_type_arrow ::octant_runtime::reexports::anyhow::Result<#output_type> {
+            #request_type_def
+            impl ::octant_runtime::proto::DownMessage for #request_type {
+                fn run(self:Box<Self>, runtime: &::std::rc::Rc<::octant_runtime::runtime::Runtime>) -> ::octant_runtime::reexports::anyhow::Result<()>{
+                    let output = #(#self_callee)*#ident(runtime #(, self.#param_names)*)?;
+                    ::octant_runtime::immediate_return::ImmediateReturn::immediate_return(output, runtime, self.down);
+                    Ok(())
+                }
+            }
             #block
         }
     };
     Ok(output_tokens)
+}
+
+fn rpc_impl(args: &RpcArgs, input: &ItemImpl) -> syn::Result<TokenStream> {
+    let ItemImpl {
+        attrs,
+        defaultness,
+        unsafety,
+        impl_token,
+        generics,
+        trait_,
+        self_ty,
+        brace_token,
+        items,
+    } = input;
+    let output;
+    let mut out_items = vec![];
+    for item in items {
+        match item {
+            ImplItem::Fn(item) => {
+                let ImplItemFn {
+                    attrs,
+                    vis,
+                    defaultness,
+                    sig,
+                    block,
+                } = item;
+                let mut out_attrs: Vec<TokenStream> = vec![];
+                for attr in &item.attrs {
+                    if attr.meta.path().is_ident("rpc") {
+                        out_attrs.push(quote! {
+                            #[rpc(self=#self_ty)]
+                        });
+                    } else {
+                        out_attrs.push(quote! {
+                            #attr
+                        })
+                    }
+                }
+                out_items.push(quote! {
+                    #(#out_attrs)*
+                    #vis
+                    #defaultness
+                    #sig
+                    #block
+                });
+            }
+            _ => {
+                out_items.push(quote! {#item});
+            }
+        }
+    }
+    output = quote! {
+        #(#attrs)*
+        #defaultness
+        #unsafety
+        #impl_token
+        #generics
+        #self_ty
+        {
+            #(#out_items)*
+        }
+    };
+    Ok(output)
 }

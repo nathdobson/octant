@@ -31,8 +31,8 @@ pub trait CredentialCreationOptions: Object {
 fn public_key(
     _: &Rc<Runtime>,
     options: RcCredentialCreationOptions,
-    public_key: PublicKeyCredentialCreationOptions,
+    public_key_arg: PublicKeyCredentialCreationOptions,
 ) {
-    options.native().clone().public_key(&public_key.export());
+    options.native().clone().public_key(&public_key_arg.export());
     Ok(())
 }
