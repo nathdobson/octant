@@ -7,11 +7,11 @@ use crate::export::Export;
 use crate::{
     object::Object, public_key_credential_creation_options::PublicKeyCredentialCreationOptions,
 };
-use crate::object::ObjectValue;
+use crate::object::ObjectFields;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
-pub struct CredentialCreationOptionsValue {
-    parent: ObjectValue,
+pub struct CredentialCreationOptionsFields {
+    parent: ObjectFields,
     #[cfg(side = "client")]
     any_value: web_sys::CredentialCreationOptions,
 }

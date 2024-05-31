@@ -21,17 +21,17 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 
 use crate::{
-    document::{Document, DocumentValue, RcDocument},
-    navigator::{Navigator, NavigatorValue, RcNavigator},
+    document::{Document, DocumentFields, RcDocument},
+    navigator::{Navigator, NavigatorFields, RcNavigator},
     object::Object,
     request::{RcRequest, Request},
-    response::{RcResponse, ResponseValue},
+    response::{RcResponse, ResponseFields},
 };
-use crate::object::ObjectValue;
+use crate::object::ObjectFields;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
-pub struct WindowValue {
-    parent: ObjectValue,
+pub struct WindowFields {
+    parent: ObjectFields,
     #[cfg(side = "client")]
     any_value: web_sys::Window,
     #[cfg(side = "server")]
@@ -81,15 +81,15 @@ define_sys_rpc! {
         Ok(())
     }
     fn document(_runtime:_, window: RcWindow) -> RcDocument {
-        Ok(Rc2::new(DocumentValue::peer_new(window.native().document().unwrap())))
+        Ok(Rc2::new(DocumentFields::peer_new(window.native().document().unwrap())))
     }
     fn navigator(_runtime:_,window:RcWindow)->RcNavigator{
-        Ok(Rc2::new(NavigatorValue::peer_new(window.native().navigator())))
+        Ok(Rc2::new(NavigatorFields::peer_new(window.native().navigator())))
     }
     fn fetch(runtime: _, window:RcWindow, req:RcRequest) -> OctantFuture<Result<RcResponse, OctantError>>{
         let fetch = window.native().fetch_with_request(req.native());
         Ok(OctantFuture::spawn(runtime, async move{
-            Ok(Rc2::new(ResponseValue::peer_new(JsFuture::from(fetch).await.map_err(OctantError::from)?.dyn_into().map_err(OctantError::from)?)) as RcResponse)
+            Ok(Rc2::new(ResponseFields::peer_new(JsFuture::from(fetch).await.map_err(OctantError::from)?.dyn_into().map_err(OctantError::from)?)) as RcResponse)
         }))
     }
 }

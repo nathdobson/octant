@@ -5,19 +5,19 @@
 //! object to a subclass, even if that subclass is a superclass of the actual object.
 //! ```
 //! # use std::sync::Arc;
-//! # use octant_object::base::{Base, BaseValue};
+//! # use octant_object::base::{Base, BaseFields};
 //! #[derive(Default)]
-//! pub struct AbstractBaseValue { parent: BaseValue }
+//! pub struct AbstractBaseFields { parent: BaseFields }
 //! #[class]
 //! pub trait AbstractBase: Base{}
 //!
 //! #[derive(Default)]
-//! pub struct ConcreteValue { parent: AbstractBaseValue }
+//! pub struct ConcreteFields { parent: AbstractBaseFields }
 //! #[class]
 //! pub trait Concrete: AbstractBase{}
 //!
 //! #[derive(Default)]
-//! pub struct OtherValue { parent: AbstractBaseValue }
+//! pub struct OtherFields { parent: AbstractBaseFields }
 //! #[class]
 //! pub trait Other: AbstractBase{}
 //!
@@ -26,17 +26,17 @@
 //! use octant_object_derive::class;
 //! {
 //!     // Cast to the concrete class
-//!     let base: Arc<dyn Base> = Arc::new(ConcreteValue::default());
+//!     let base: Arc<dyn Base> = Arc::new(ConcreteFields::default());
 //!     let conc: Arc<dyn Concrete> = downcast_object(base).ok().unwrap();
 //! }
 //! {
 //!     // Cast to a parent class
-//!     let base: Arc<dyn Base> = Arc::new(ConcreteValue::default());
+//!     let base: Arc<dyn Base> = Arc::new(ConcreteFields::default());
 //!     let abs: Arc<dyn AbstractBase> = downcast_object(base).ok().unwrap();
 //! }
 //! {
 //!     // Fail to make an illegal cast, but recover the original pointer.
-//!     let base: Arc<dyn Base> = Arc::new(ConcreteValue::default());
+//!     let base: Arc<dyn Base> = Arc::new(ConcreteFields::default());
 //!     let base: Arc<dyn Base> = downcast_object::<_, Arc<dyn Other>>(base).err().unwrap();
 //! }
 //! ```
@@ -80,19 +80,19 @@ pub mod smart_pointer;
 /// # #![feature(trait_upcasting)]
 /// # use std::any::Any;
 /// # use std::sync::Arc;
-/// # use octant_object::base::{Base, BaseValue};
+/// # use octant_object::base::{Base, BaseFields};
 /// # use octant_object::cast::BoxCastObject;
 /// # use octant_object::cast::inlinebox::InlineBox;
 /// use octant_object::cast::repr::PtrRepr;
 /// # use octant_object::cast::smart_pointer::SmartPointer;
 /// use octant_object_derive::class;
 /// #[derive(Default)]
-/// struct FooValue{
-///     parent: BaseValue
+/// struct FooFields{
+///     parent: BaseFields
 /// }
 /// #[class]
 /// trait Foo: Base{}
-/// let ptr: Arc<dyn Base> = Arc::new(FooValue::default());
+/// let ptr: Arc<dyn Base> = Arc::new(FooFields::default());
 /// let ptr: SmartPointer<dyn Base> = SmartPointer::new(ptr);
 /// let ptr: BoxCastObject = (ptr.into_leaf())(ptr);
 /// let ptr: InlineBox<dyn Any, _> = ptr.unsize();
@@ -129,18 +129,18 @@ where
 /// ```
 /// # use std::any::Any;
 /// # use std::sync::Arc;
-/// # use octant_object::base::{Base, BaseValue};
+/// # use octant_object::base::{Base, BaseFields};
 /// # use octant_object::cast::BoxCastObject;
 /// # use octant_object::cast::inlinebox::InlineBox;
 /// # use octant_object::cast::smart_pointer::SmartPointer;
 /// # use octant_object_derive::class;
 /// #[derive(Default)]
-/// struct FooValue {
-///     parent: BaseValue,
+/// struct FooFields {
+///     parent: BaseFields,
 /// }
 /// #[class]
 /// trait Foo : Base {}
-/// let ptr: Arc<dyn Foo> = Arc::new(FooValue::default());
+/// let ptr: Arc<dyn Foo> = Arc::new(FooFields::default());
 /// let ptr: SmartPointer<dyn Foo> = SmartPointer::new(ptr);
 /// let ptr: BoxCastObject = InlineBox::new(ptr).unsize();
 /// let ptr: BoxCastObject = (ptr.into_parent_object())(ptr).ok().unwrap();

@@ -2,11 +2,11 @@ use crate::{node::Node, octant_runtime::peer::AsNative};
 use octant_object::{class, DebugClass};
 use octant_reffed::rc::RcRef;
 use octant_runtime::{define_sys_rpc, DeserializePeer, PeerNew, SerializePeer};
-use crate::node::NodeValue;
+use crate::node::NodeFields;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
-pub struct ElementValue {
-    parent: NodeValue,
+pub struct ElementFields {
+    parent: NodeFields,
     #[cfg(side = "client")]
     wasm: web_sys::Element,
 }

@@ -15,11 +15,11 @@ use crate::{
     credential_creation_options::RcCredentialCreationOptions, credential_data::CredentialData,
     credential_request_options::RcCredentialRequestOptions, object::Object,
 };
-use crate::object::ObjectValue;
+use crate::object::ObjectFields;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
-pub struct CredentialsContainerValue {
-    parent: ObjectValue,
+pub struct CredentialsContainerFields {
+    parent: ObjectFields,
     #[cfg(side = "client")]
     any_value: web_sys::CredentialsContainer,
 }

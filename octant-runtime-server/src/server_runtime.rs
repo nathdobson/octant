@@ -13,7 +13,7 @@ use crate::{
     delete::delete_rpc,
     handle::{RawHandle, TypedHandle},
     LookupError,
-    peer::{Peer, PeerValue},
+    peer::{Peer, PeerFields},
     proto::{DownMessage, UpMessage, UpMessageList},
 };
 
@@ -61,14 +61,14 @@ impl Runtime {
             .insert(handle, result.clone());
         result
     }
-    pub fn add_uninit(self: &Rc<Self>) -> PeerValue {
+    pub fn add_uninit(self: &Rc<Self>) -> PeerFields {
         let handle;
         {
             let ref mut this = *self.state.borrow_mut();
             handle = RawHandle::new(this.next_handle);
             this.next_handle += 1;
         }
-        PeerValue::new(self.clone(), handle)
+        PeerFields::new(self.clone(), handle)
     }
     pub fn delete(self: &Rc<Self>, handle: RawHandle) {
         log::info!("Deleting handle {:?}", handle);

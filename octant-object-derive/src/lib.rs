@@ -54,7 +54,7 @@ fn derive_class_impl(args: Args, input: &ItemTrait) -> syn::Result<TokenStream> 
 
     let class = ident;
     let rc_class = format_ident!("Rc{}", ident);
-    let value = format_ident!("{}Value", class);
+    let fields = format_ident!("{}Fields", class);
 
     let get_ref = format_ident!(
         "{}",
@@ -101,8 +101,8 @@ fn derive_class_impl(args: Args, input: &ItemTrait) -> syn::Result<TokenStream> 
     let output = quote! {
         #(#attrs)*
         #vis #unsafety #auto_token #trait_token #ident <#generic_params> #colon_token #supertraits {
-            fn #get_ref(&self) -> &#value <#(#generic_args),*>;
-            fn #get_mut(&mut self) -> &mut #value <#(#generic_args),*>;
+            fn #get_ref(&self) -> &#fields <#(#generic_args),*>;
+            fn #get_mut(&mut self) -> &mut #fields <#(#generic_args),*>;
             #(#signatures)*
         }
         pub type #rc_class <#(#generic_args),*> = ::octant_object::reexports::octant_reffed::rc::Rc2<dyn 'static + #class<#(#generic_args),*>>;
@@ -111,18 +111,18 @@ fn derive_class_impl(args: Args, input: &ItemTrait) -> syn::Result<TokenStream> 
             __super_secret__T: octant_object::class::Ranked,
             __super_secret__T: octant_object::class::DerefRanked<
                 __super_secret__T::Rank,
-                <#value<#(#generic_args),*> as octant_object::class::Ranked>::Rank, TargetRanked = #value<#(#generic_args),*>>,
+                <#fields<#(#generic_args),*> as octant_object::class::Ranked>::Rank, TargetRanked = #fields<#(#generic_args),*>>,
         {
-            fn #get_ref(&self) -> &#value<#(#generic_args),*> {
+            fn #get_ref(&self) -> &#fields<#(#generic_args),*> {
                 self.deref_ranked()
             }
-            fn #get_mut(&mut self) -> &mut #value<#(#generic_args),*>{
+            fn #get_mut(&mut self) -> &mut #fields<#(#generic_args),*>{
                 self.deref_mut_ranked()
             }
             #(#items)*
         }
         impl<#generic_params> ::std::ops::Deref for dyn #class<#(#generic_args),*> {
-            type Target = #value<#(#generic_args),*>;
+            type Target = #fields<#(#generic_args),*>;
             fn deref(&self) -> &Self::Target {
                 self.#get_ref()
             }
@@ -132,28 +132,28 @@ fn derive_class_impl(args: Args, input: &ItemTrait) -> syn::Result<TokenStream> 
                 self.#get_mut()
             }
         }
-        impl<#generic_params> ::std::ops::Deref for #value<#(#generic_args),*> {
-            type Target = <dyn #parent as ::octant_object::class::Class>::Value;
+        impl<#generic_params> ::std::ops::Deref for #fields<#(#generic_args),*> {
+            type Target = <dyn #parent as ::octant_object::class::Class>::Fields;
             fn deref(&self) -> &Self::Target {
                 &self.parent
             }
         }
-        impl<#generic_params> ::std::ops::DerefMut for #value<#(#generic_args),*> {
+        impl<#generic_params> ::std::ops::DerefMut for #fields<#(#generic_args),*> {
             fn deref_mut(&mut self) -> &mut Self::Target {
                 &mut self.parent
             }
         }
         impl<#generic_params> ::octant_object::class::Class for dyn #class<#(#generic_args),*> {
-            type Value = #value<#(#generic_args),*>;
+            type Fields = #fields<#(#generic_args),*>;
         }
-        impl<#generic_params> ::octant_object::class::ClassValue for #value<#(#generic_args),*> {
+        impl<#generic_params> ::octant_object::class::ClassValue for #fields<#(#generic_args),*> {
             type Dyn = dyn #class<#(#generic_args),*>;
         }
         impl<#generic_params> octant_object::class::Subclass for dyn #class<#(#generic_args),*> {
             type Parent = dyn #parent;
         }
-        impl<#generic_params> octant_object::class::Ranked for #value<#(#generic_args),*> {
-            type Rank = ::octant_object::class::Succ<<<dyn #parent as ::octant_object::class::Class>::Value as octant_object::class::Ranked>::Rank>;
+        impl<#generic_params> octant_object::class::Ranked for #fields<#(#generic_args),*> {
+            type Rank = ::octant_object::class::Succ<<<dyn #parent as ::octant_object::class::Class>::Fields as octant_object::class::Ranked>::Rank>;
         }
     };
     Ok(output)
@@ -180,7 +180,7 @@ fn derive_debug_class_impl(input: DeriveInput) -> syn::Result<TokenStream> {
 
     let class = format_ident!(
         "{}",
-        input_ident.to_string().strip_suffix("Value").unwrap(),
+        input_ident.to_string().strip_suffix("Fields").unwrap(),
         span = input_ident.span()
     );
 

@@ -13,7 +13,7 @@ use octant_reffed::rc::RcRef;
 #[cfg(side = "client")]
 use octant_runtime::runtime::RuntimeSink;
 use octant_runtime::{
-    peer::{Peer, PeerValue},
+    peer::{Peer, PeerFields},
     proto::UpMessage,
     runtime::Runtime,
     DeserializePeer, PeerNew, SerializePeer,
@@ -49,17 +49,17 @@ impl EventHandler {
 }
 
 #[derive(DebugClass, SerializePeer, DeserializePeer)]
-pub struct EventListenerValue {
-    parent: PeerValue,
+pub struct EventListenerFields {
+    parent: PeerFields,
     #[cfg(side = "server")]
     handler: OnceCell<EventHandler>,
 }
 
 #[cfg(side = "server")]
-impl PeerNew for EventListenerValue {
-    type Builder = PeerValue;
+impl PeerNew for EventListenerFields {
+    type Builder = PeerFields;
     fn peer_new(builder: Self::Builder) -> Self {
-        EventListenerValue {
+        EventListenerFields {
             parent: builder,
             handler: Default::default(),
         }
@@ -67,11 +67,11 @@ impl PeerNew for EventListenerValue {
 }
 
 #[cfg(side = "client")]
-impl PeerNew for EventListenerValue {
+impl PeerNew for EventListenerFields {
     type Builder = ();
     fn peer_new(builder: Self::Builder) -> Self {
-        EventListenerValue {
-            parent: PeerValue::new(),
+        EventListenerFields {
+            parent: PeerFields::new(),
         }
     }
 }

@@ -8,32 +8,32 @@ use crate::{
 };
 
 pub trait Base: 'static + Any + CastValue {
-    fn value(&self) -> &BaseValue;
+    fn value(&self) -> &BaseFields;
 }
 
 impl Class for dyn Base {
-    type Value = BaseValue;
+    type Fields = BaseFields;
 }
 
-impl ClassValue for BaseValue {
+impl ClassValue for BaseFields {
     type Dyn = dyn Base;
 }
 
 #[derive(Debug)]
-pub struct BaseValue {}
+pub struct BaseFields {}
 
-impl BaseValue {
+impl BaseFields {
     pub fn new() -> Self {
-        BaseValue {}
+        BaseFields {}
     }
 }
 
-impl Ranked for BaseValue {
+impl Ranked for BaseFields {
     type Rank = Zero;
 }
 
-impl Base for BaseValue {
-    fn value(&self) -> &BaseValue {
+impl Base for BaseFields {
+    fn value(&self) -> &BaseFields {
         self
     }
 }
@@ -49,24 +49,24 @@ where
     <T as ::std::ops::Deref>::Target: Base,
     T: CastValue,
 {
-    fn value(&self) -> &BaseValue {
+    fn value(&self) -> &BaseFields {
         T::deref(self).value()
     }
 }
 
 impl ::std::ops::Deref for dyn Base {
-    type Target = BaseValue;
+    type Target = BaseFields;
     fn deref(&self) -> &Self::Target {
         self.value()
     }
 }
 
-impl Default for BaseValue {
+impl Default for BaseFields {
     fn default() -> Self {
-        BaseValue {}
+        BaseFields {}
     }
 }
 
-impl DebugClass for BaseValue {
+impl DebugClass for BaseFields {
     fn fmt_class(&self, _: &mut DebugStruct) {}
 }

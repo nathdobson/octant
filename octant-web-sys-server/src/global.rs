@@ -11,14 +11,14 @@ use octant_runtime::peer::AsNative;
 use octant_serde::define_serde_impl;
 
 use crate::{
-    credential_creation_options::{CredentialCreationOptionsValue, RcCredentialCreationOptions},
-    credential_request_options::{CredentialRequestOptionsValue, RcCredentialRequestOptions},
-    event_listener::{EventListenerValue, RcEventListener},
-    request::{RcRequest, RequestValue},
+    credential_creation_options::{CredentialCreationOptionsFields, RcCredentialCreationOptions},
+    credential_request_options::{CredentialRequestOptionsFields, RcCredentialRequestOptions},
+    event_listener::{EventListenerFields, RcEventListener},
+    request::{RcRequest, RequestFields},
     request_init::{RcRequestInit, RequestInit},
-    window::{RcWindow, Window, WindowValue},
+    window::{RcWindow, Window, WindowFields},
 };
-use crate::request_init::RequestInitValue;
+use crate::request_init::RequestInitFields;
 
 #[cfg(side = "server")]
 pub struct Global {
@@ -65,21 +65,21 @@ impl Global {
 
 define_sys_rpc! {
     fn window(_runtime:_) -> RcWindow {
-        Ok(Rc2::new(WindowValue::peer_new(web_sys::window().unwrap())))
+        Ok(Rc2::new(WindowFields::peer_new(web_sys::window().unwrap())))
     }
     fn new_request_init(_runtime:_) -> RcRequestInit {
-        Ok(Rc2::new(RequestInitValue::peer_new(web_sys::RequestInit::new())))
+        Ok(Rc2::new(RequestInitFields::peer_new(web_sys::RequestInit::new())))
     }
     fn new_request(_runtime:_, url:String, init:RcRequestInit) -> RcRequest {
-        Ok(Rc2::new(RequestValue::peer_new(web_sys::Request::new_with_str_and_init(&url, init.native()).unwrap())))
+        Ok(Rc2::new(RequestFields::peer_new(web_sys::Request::new_with_str_and_init(&url, init.native()).unwrap())))
     }
     fn new_credential_request_options(_runtime:_) -> RcCredentialRequestOptions {
-        Ok(Rc2::new(CredentialRequestOptionsValue::peer_new(web_sys::CredentialRequestOptions::new())))
+        Ok(Rc2::new(CredentialRequestOptionsFields::peer_new(web_sys::CredentialRequestOptions::new())))
     }
     fn new_credential_creation_options(_runtime:_) -> RcCredentialCreationOptions {
-        Ok(Rc2::new(CredentialCreationOptionsValue::peer_new(web_sys::CredentialCreationOptions::new())))
+        Ok(Rc2::new(CredentialCreationOptionsFields::peer_new(web_sys::CredentialCreationOptions::new())))
     }
     fn new_event_listener(_runtime:_) -> RcEventListener {
-        Ok(Rc2::new(EventListenerValue::peer_new(())))
+        Ok(Rc2::new(EventListenerFields::peer_new(())))
     }
 }

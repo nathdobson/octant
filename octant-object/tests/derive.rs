@@ -1,17 +1,17 @@
 #![allow(dead_code)]
 
-use octant_object::base::{Base, BaseValue};
+use octant_object::base::{Base, BaseFields};
 use octant_object_derive::class;
 
-pub struct FooValue {
-    parent: BaseValue,
+pub struct FooFields {
+    parent: BaseFields,
 }
 
 #[class]
 pub trait Foo: Base {}
 
-pub struct BarValue {
-    parent: FooValue,
+pub struct BarFields {
+    parent: FooFields,
 }
 
 #[class]

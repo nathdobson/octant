@@ -10,11 +10,11 @@ use octant_runtime::{
 use octant_serde::{define_serde_impl, DeserializeWith};
 
 use crate::{event_listener::RcEventListener, html_element::HtmlElement, object::Object};
-use crate::html_element::HtmlElementValue;
+use crate::html_element::HtmlElementFields;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
-pub struct HtmlInputElementValue {
-    parent: HtmlElementValue,
+pub struct HtmlInputElementFields {
+    parent: HtmlElementFields,
     #[cfg(side = "client")]
     any_value: web_sys::HtmlInputElement,
     #[cfg(side = "server")]

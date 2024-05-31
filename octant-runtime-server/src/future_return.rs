@@ -8,7 +8,7 @@ use octant_reffed::rc::Rc2;
 use octant_serde::DeserializeWith;
 
 #[cfg(side = "server")]
-use crate::peer::PeerValue;
+use crate::peer::PeerFields;
 #[cfg(side = "server")]
 use crate::PeerNew;
 use crate::{handle::TypedHandle, immediate_return::ImmediateReturn, peer::Peer, runtime::Runtime};
@@ -29,7 +29,7 @@ pub trait FutureReturn: 'static {
 #[cfg(side = "server")]
 impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Rc2<T>
 where
-    T::Value: Peer + PeerNew<Builder = PeerValue> + Unsize<T>,
+    T::Fields: Peer + PeerNew<Builder =PeerFields> + Unsize<T>,
 {
     type Down = TypedHandle<T>;
     type Up = ();
@@ -45,7 +45,7 @@ where
 #[cfg(side = "client")]
 impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Rc2<T>
 where
-    T::Value: Peer + Unsize<T>,
+    T::Fields: Peer + Unsize<T>,
 {
     type Down = TypedHandle<T>;
     type Up = ();

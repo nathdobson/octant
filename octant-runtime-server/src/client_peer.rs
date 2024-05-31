@@ -2,7 +2,7 @@ use std::{fmt::Debug, rc::Rc};
 
 use safe_once::{api::once::OnceEntry, cell::OnceCell};
 
-use octant_object::base::{Base, BaseValue};
+use octant_object::base::{Base, BaseFields};
 
 use crate::{
     handle::{RawHandle, TypedHandle},
@@ -19,18 +19,18 @@ struct PeerInit {
 }
 
 #[derive(DebugClass)]
-pub struct PeerValue {
-    parent: BaseValue,
+pub struct PeerFields {
+    parent: BaseFields,
     peer_init: OnceCell<PeerInit>,
 }
 
 #[class]
 pub trait Peer: Base + Debug {}
 
-impl PeerValue {
+impl PeerFields {
     pub fn new() -> Self {
-        PeerValue {
-            parent: BaseValue::default(),
+        PeerFields {
+            parent: BaseFields::default(),
             peer_init: OnceCell::new(),
         }
     }
@@ -56,10 +56,10 @@ impl dyn Peer {
     }
 }
 
-impl PeerNew for PeerValue {
+impl PeerNew for PeerFields {
     type Builder = ();
     fn peer_new(builder: Self::Builder) -> Self {
-        PeerValue::new()
+        PeerFields::new()
     }
 }
 

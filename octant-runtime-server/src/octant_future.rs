@@ -21,15 +21,15 @@ use octant_serde::{
 
 #[cfg(side = "server")]
 use crate::immediate_return::AsTypedHandle;
-use crate::peer::PeerValue;
+use crate::peer::PeerFields;
 use crate::{
     deserialize_object_with, future_return::FutureReturn, handle::TypedHandle,
     immediate_return::ImmediateReturn, peer::Peer, proto::UpMessage, runtime::Runtime,
 };
 
 #[derive(DebugClass)]
-pub struct AbstractOctantFutureValue {
-    parent: PeerValue,
+pub struct AbstractOctantFutureFields {
+    parent: PeerFields,
     #[cfg(side = "server")]
     sender: RefCell<Option<oneshot::Sender<RawEncoded>>>,
 }
@@ -92,8 +92,8 @@ impl UpMessage for FutureResponse {
 #[cfg(side = "client")]
 impl<T: Debug + FutureReturn> OctantFuture<T> {
     pub fn spawn<F: 'static + Future<Output = T>>(runtime: &Rc<Runtime>, f: F) -> Self {
-        let parent = Rc2::new(AbstractOctantFutureValue {
-            parent: PeerValue::new(),
+        let parent = Rc2::new(AbstractOctantFutureFields {
+            parent: PeerFields::new(),
         });
         let down = Rc::new(RefCell::new(None));
         wasm_bindgen_futures::spawn_local({
@@ -161,7 +161,7 @@ impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
         let (retain, down) = T::future_new(runtime);
         let (tx, rx) = oneshot::channel();
         let peer: Rc2<dyn AbstractOctantFuture> =
-            runtime.add::<AbstractOctantFutureValue>(AbstractOctantFutureValue {
+            runtime.add::<AbstractOctantFutureFields>(AbstractOctantFutureFields {
                 parent: runtime.add_uninit(),
                 sender: RefCell::new(Some(tx)),
             });

@@ -20,11 +20,11 @@ use crate::{
     event_listener::RcEventListener, html_element::HtmlElement,
     html_input_element::RcHtmlInputElement, node::Node, object::Object,
 };
-use crate::html_element::HtmlElementValue;
+use crate::html_element::HtmlElementFields;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
-pub struct HtmlFormElementValue {
-    parent: HtmlElementValue,
+pub struct HtmlFormElementFields {
+    parent: HtmlElementFields,
     #[cfg(side = "client")]
     any_value: web_sys::HtmlFormElement,
     #[cfg(side = "client")]

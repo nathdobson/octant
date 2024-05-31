@@ -6,14 +6,14 @@ use octant_runtime::{define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, S
 
 use crate::{
     credentials_container::{
-        CredentialsContainer, CredentialsContainerValue, RcCredentialsContainer,
+        CredentialsContainer, CredentialsContainerFields, RcCredentialsContainer,
     },
-    object::{Object, ObjectValue},
+    object::{Object, ObjectFields},
 };
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
-pub struct NavigatorValue {
-    parent: ObjectValue,
+pub struct NavigatorFields {
+    parent: ObjectFields,
     #[cfg(side = "client")]
     any_value: web_sys::Navigator,
     #[cfg(side = "server")]
@@ -32,6 +32,6 @@ pub trait Navigator: Object {
 
 define_sys_rpc! {
     fn credentials(_runtime:_, navigator:RcNavigator) -> RcCredentialsContainer{
-        Ok(Rc2::new(CredentialsContainerValue::peer_new(navigator.native().credentials())))
+        Ok(Rc2::new(CredentialsContainerFields::peer_new(navigator.native().credentials())))
     }
 }

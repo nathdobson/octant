@@ -1,13 +1,13 @@
-use crate::any_value::AnyValueValue;
+use crate::any_value::AnyValueFields;
 use octant_object::{class, DebugClass};
 use octant_runtime::{
-    peer::{Peer, PeerValue},
+    peer::{Peer, PeerFields},
     DeserializePeer, PeerNew, SerializePeer,
 };
 
 #[derive(DebugClass, SerializePeer, DeserializePeer)]
-pub struct JsValueValue {
-    parent: PeerValue,
+pub struct JsValueFields {
+    parent: PeerFields,
     #[cfg(side = "client")]
     any_value: wasm_bindgen::JsValue,
 }
@@ -16,20 +16,20 @@ pub struct JsValueValue {
 pub trait JsValue: Peer {}
 
 #[cfg(side = "client")]
-impl PeerNew for JsValueValue {
+impl PeerNew for JsValueFields {
     type Builder = wasm_bindgen::JsValue;
     fn peer_new(any_value: wasm_bindgen::JsValue) -> Self {
-        JsValueValue {
-            parent: PeerValue::new(),
+        JsValueFields {
+            parent: PeerFields::new(),
             any_value,
         }
     }
 }
 
 #[cfg(side = "server")]
-impl PeerNew for JsValueValue {
-    type Builder = PeerValue;
-    fn peer_new(handle: PeerValue) -> Self {
-        JsValueValue { parent: handle }
+impl PeerNew for JsValueFields {
+    type Builder = PeerFields;
+    fn peer_new(handle: PeerFields) -> Self {
+        JsValueFields { parent: handle }
     }
 }

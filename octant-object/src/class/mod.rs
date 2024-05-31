@@ -9,7 +9,7 @@ use std::{
 };
 
 pub trait Class: Any + Unsize<dyn Any> + Pointee<Metadata = DynMetadata<Self>> {
-    type Value: ClassValue<Dyn = Self>;
+    type Fields: ClassValue<Dyn = Self>;
 }
 
 pub trait Subclass: Class + Unsize<Self::Parent> {
@@ -17,7 +17,7 @@ pub trait Subclass: Class + Unsize<Self::Parent> {
 }
 
 pub trait ClassValue: Sized + Any + Unsize<Self::Dyn> {
-    type Dyn: ?Sized + Class<Value = Self>;
+    type Dyn: ?Sized + Class<Fields = Self>;
 }
 
 pub trait Nat {}

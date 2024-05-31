@@ -1,6 +1,6 @@
 use std::{fmt::Debug, rc::Rc};
 
-use octant_object::{base::{Base, BaseValue}, class, class::Class, DebugClass};
+use octant_object::{base::{Base, BaseFields}, class, class::Class, DebugClass};
 
 use crate::{
     handle::{RawHandle, TypedHandle},
@@ -9,8 +9,8 @@ use crate::{
 };
 
 #[derive(DebugClass)]
-pub struct PeerValue {
-    parent: BaseValue,
+pub struct PeerFields {
+    parent: BaseFields,
     runtime: Rc<Runtime>,
     handle: RawHandle,
 }
@@ -22,10 +22,10 @@ pub trait Peer: Base + Debug {
     }
 }
 
-impl PeerValue {
+impl PeerFields {
     pub fn new(runtime: Rc<Runtime>, handle: RawHandle) -> Self {
-        PeerValue {
-            parent: BaseValue::default(),
+        PeerFields {
+            parent: BaseFields::default(),
             runtime,
             handle,
         }
@@ -41,15 +41,15 @@ impl dyn Peer {
     }
 }
 
-impl Drop for PeerValue {
+impl Drop for PeerFields {
     fn drop(&mut self) {
         self.runtime().delete(self.handle);
     }
 }
 
-impl PeerNew for PeerValue {
-    type Builder = PeerValue;
-    fn peer_new(peer: PeerValue) -> Self {
+impl PeerNew for PeerFields {
+    type Builder = PeerFields;
+    fn peer_new(peer: PeerFields) -> Self {
         peer
     }
 }

@@ -8,11 +8,11 @@ use octant_runtime::{
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
 
-use crate::object::{Object, ObjectValue};
+use crate::object::{Object, ObjectFields};
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
-pub struct ResponseValue {
-    parent: ObjectValue,
+pub struct ResponseFields {
+    parent: ObjectFields,
     #[cfg(side = "client")]
     any_value: web_sys::Response,
 }

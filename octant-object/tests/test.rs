@@ -9,11 +9,11 @@
 use std::rc::Rc;
 
 use octant_object::{base, base::Base, cast::downcast_object};
-use octant_object::base::BaseValue;
+use octant_object::base::BaseFields;
 use octant_object_derive::class;
 
-pub struct AValue {
-    parent: BaseValue,
+pub struct AFields {
+    parent: BaseFields,
     x: u32,
 }
 
@@ -24,17 +24,17 @@ pub trait A: Base + Sync + Send {
     }
 }
 
-impl AValue {
-    pub fn new(x: u32) -> AValue {
-        AValue {
-            parent: base::BaseValue::new(),
+impl AFields {
+    pub fn new(x: u32) -> AFields {
+        AFields {
+            parent: base::BaseFields::new(),
             x,
         }
     }
 }
 
-pub struct BValue {
-    parent: AValue,
+pub struct BFields {
+    parent: AFields,
     y: u32,
 }
 
@@ -45,17 +45,17 @@ pub trait B: A {
     }
 }
 
-impl BValue {
-    pub fn new(x: u32, y: u32) -> BValue {
-        BValue {
-            parent: AValue::new(x),
+impl BFields {
+    pub fn new(x: u32, y: u32) -> BFields {
+        BFields {
+            parent: AFields::new(x),
             y,
         }
     }
 }
 
-pub struct CValue {
-    parent: BValue,
+pub struct CFields {
+    parent: BFields,
     z: u32,
 }
 
@@ -66,17 +66,17 @@ pub trait C: B {
     }
 }
 
-impl CValue {
-    pub fn new(x: u32, y: u32, z: u32) -> CValue {
-        CValue {
-            parent: BValue::new(x, y),
+impl CFields {
+    pub fn new(x: u32, y: u32, z: u32) -> CFields {
+        CFields {
+            parent: BFields::new(x, y),
             z,
         }
     }
 }
 
-pub struct DValue {
-    parent: CValue,
+pub struct DFields {
+    parent: CFields,
     w: u32,
 }
 
@@ -88,52 +88,52 @@ pub trait D: C {
 }
 
 
-impl DValue {
-    pub fn new(x: u32, y: u32, z: u32, w: u32) -> DValue {
-        DValue {
-            parent: CValue::new(x, y, z),
+impl DFields {
+    pub fn new(x: u32, y: u32, z: u32, w: u32) -> DFields {
+        DFields {
+            parent: CFields::new(x, y, z),
             w,
         }
     }
 }
 
-fn test_a_a(x: &AValue) -> &dyn A {
+fn test_a_a(x: &AFields) -> &dyn A {
     x
 }
 
-fn test_b_a(x: &BValue) -> &dyn A {
+fn test_b_a(x: &BFields) -> &dyn A {
     x
 }
 
-fn test_c_a(x: &CValue) -> &dyn A {
+fn test_c_a(x: &CFields) -> &dyn A {
     x
 }
 
-fn test_d_a(x: &DValue) -> &dyn A {
+fn test_d_a(x: &DFields) -> &dyn A {
     x
 }
 
-fn test_b_b(x: &BValue) -> &dyn B {
+fn test_b_b(x: &BFields) -> &dyn B {
     x
 }
 
-fn test_c_b(x: &CValue) -> &dyn B {
+fn test_c_b(x: &CFields) -> &dyn B {
     x
 }
 
-fn test_d_b(x: &DValue) -> &dyn B {
+fn test_d_b(x: &DFields) -> &dyn B {
     x
 }
 
-fn test_c_c(x: &CValue) -> &dyn C {
+fn test_c_c(x: &CFields) -> &dyn C {
     x
 }
 
-fn test_d_c(x: &DValue) -> &dyn C {
+fn test_d_c(x: &DFields) -> &dyn C {
     x
 }
 
-fn test_d_d(x: &DValue) -> &dyn D {
+fn test_d_d(x: &DFields) -> &dyn D {
     x
 }
 
@@ -143,26 +143,26 @@ fn test_d_b_up(x: &dyn D) -> &dyn B {
 
 #[test]
 fn test() {
-    let x = DValue::new(1, 2, 3, 4);
+    let x = DFields::new(1, 2, 3, 4);
     let y: &dyn A = &x;
 }
 
 #[test]
 fn test_downcast() {
     {
-        let x: Rc<dyn A> = Rc::new(DValue::new(1, 2, 3, 4));
+        let x: Rc<dyn A> = Rc::new(DFields::new(1, 2, 3, 4));
         let x: Rc<dyn A> = downcast_object(x).ok().unwrap();
     }
     {
-        let x: Rc<dyn A> = Rc::new(DValue::new(1, 2, 3, 4));
+        let x: Rc<dyn A> = Rc::new(DFields::new(1, 2, 3, 4));
         let x: Rc<dyn B> = downcast_object(x).ok().unwrap();
     }
     {
-        let x: Rc<dyn A> = Rc::new(DValue::new(1, 2, 3, 4));
+        let x: Rc<dyn A> = Rc::new(DFields::new(1, 2, 3, 4));
         let x: Rc<dyn C> = downcast_object(x).ok().unwrap();
     }
     {
-        let x: Rc<dyn A> = Rc::new(DValue::new(1, 2, 3, 4));
+        let x: Rc<dyn A> = Rc::new(DFields::new(1, 2, 3, 4));
         let x: Rc<dyn D> = downcast_object(x).ok().unwrap();
     }
 }

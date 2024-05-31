@@ -3,13 +3,13 @@
 use std::fmt::Debug;
 
 use octant_object::{
-    base::{Base, BaseValue},
+    base::{Base, BaseFields},
 };
 use octant_object_derive::{class, DebugClass};
 
 #[derive(DebugClass)]
-pub struct AValue<T1: 'static + Debug> {
-    parent: BaseValue,
+pub struct AFields<T1: 'static + Debug> {
+    parent: BaseFields,
     x: T1,
 }
 
@@ -17,8 +17,8 @@ pub struct AValue<T1: 'static + Debug> {
 pub trait A<T1: 'static + Debug>: Base {}
 
 #[derive(DebugClass)]
-pub struct BValue<T2: 'static + Debug> {
-    parent: AValue<T2>,
+pub struct BFields<T2: 'static + Debug> {
+    parent: AFields<T2>,
     y: T2,
 }
 
@@ -26,8 +26,8 @@ pub struct BValue<T2: 'static + Debug> {
 pub trait B<T2: 'static + Debug>: A<T2> {}
 
 #[derive(DebugClass)]
-pub struct CValue {
-    parent: BValue<u32>,
+pub struct CFields {
+    parent: BFields<u32>,
     z: u32,
 }
 
@@ -40,10 +40,10 @@ fn test() {
         "C { x: 4, y: 8, z: 15 }",
         format!(
             "{:?}",
-            CValue {
-                parent: BValue {
-                    parent: AValue {
-                        parent: BaseValue::default(),
+            CFields {
+                parent: BFields {
+                    parent: AFields {
+                        parent: BaseFields::default(),
                         x: 4
                     },
                     y: 8,

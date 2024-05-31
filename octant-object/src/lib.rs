@@ -15,11 +15,11 @@
 //! ```
 //! #![feature(trait_upcasting)]
 //! # use std::any::Any;
-//! # use octant_object::base::{Base, BaseValue};
+//! # use octant_object::base::{Base, BaseFields};
 //! # use octant_object_derive::class;
 //!
-//! pub struct AnimalValue {
-//!     parent: BaseValue,
+//! pub struct AnimalFields {
+//!     parent: BaseFields,
 //!     num_legs: usize,
 //! }
 //! #[class]
@@ -28,12 +28,12 @@
 //!         self.animal().num_legs * 5
 //!     }
 //!     fn is_dog(&self) -> bool{
-//!         (self as &dyn Any).is::<DogValue>()
+//!         (self as &dyn Any).is::<DogFields>()
 //!     }
 //! }
 //!
-//! pub struct DogValue {
-//!     parent: AnimalValue,
+//! pub struct DogFields {
+//!     parent: AnimalFields,
 //!     name: String,
 //! }
 //! #[class]
@@ -41,26 +41,26 @@
 //!
 //! }
 //!
-//! impl AnimalValue {
+//! impl AnimalFields {
 //!     // Constructors should return value types so that subclasses can call constructors.
 //!     pub fn new(num_legs: usize) -> Self {
-//!         AnimalValue {
-//!             parent: BaseValue::new(),
+//!         AnimalFields {
+//!             parent: BaseFields::new(),
 //!             num_legs
 //!         }
 //!     }
 //! }
 //!
-//! impl DogValue {
+//! impl DogFields {
 //!     pub fn new(name: String) -> Self {
-//!         DogValue {
-//!             parent: AnimalValue::new(4),
+//!         DogFields {
+//!             parent: AnimalFields::new(4),
 //!             name,
 //!         }
 //!     }
 //! }
 //!
-//! let dog: Box<dyn Dog> = Box::new(DogValue::new("otto".to_string()));
+//! let dog: Box<dyn Dog> = Box::new(DogFields::new("otto".to_string()));
 //! // Methods are inherited
 //! assert_eq!(dog.num_toes(), 20);
 //! // Fields are inherited.
@@ -74,11 +74,11 @@
 //! ```
 //! # #![feature(trait_upcasting)]
 //! # use std::fmt::Debug;
-//! # use octant_object::base::{Base, BaseValue};
+//! # use octant_object::base::{Base, BaseFields};
 //! # use octant_object_derive::{class, DebugClass};
 //! #[derive(DebugClass)]
-//! pub struct AnimalValue{
-//!     parent: BaseValue,
+//! pub struct AnimalFields {
+//!     parent: BaseFields,
 //!     num_legs: usize,
 //! }
 //! #[class]
@@ -86,30 +86,30 @@
 //! }
 //!
 //! #[derive(DebugClass)]
-//! pub struct DogValue {
-//!     parent: AnimalValue,
+//! pub struct DogFields {
+//!     parent: AnimalFields,
 //!     name: String,
 //! }
 //! #[class]
 //! pub trait Dog: Animal {}
 //!
-//! impl AnimalValue {
+//! impl AnimalFields {
 //!     pub fn new(num_legs: usize) -> Self {
-//!         AnimalValue {
-//!             parent: BaseValue::new(),
+//!         AnimalFields {
+//!             parent: BaseFields::new(),
 //!             num_legs
 //!         }
 //!     }
 //! }
-//! impl DogValue {
+//! impl DogFields {
 //!     pub fn new(name: String) -> Self {
-//!         DogValue {
-//!             parent: AnimalValue::new(4),
+//!         DogFields {
+//!             parent: AnimalFields::new(4),
 //!             name,
 //!         }
 //!     }
 //! }
-//! let dog: Box<dyn Debug> = Box::new(DogValue::new("otto".to_string()));
+//! let dog: Box<dyn Debug> = Box::new(DogFields::new("otto".to_string()));
 //! assert_eq!(&format!("{:?}",dog), r#"Dog { num_legs: 4, name: "otto" }"#);
 //! ```
 

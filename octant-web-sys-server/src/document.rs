@@ -6,7 +6,7 @@ use octant_runtime::{
     handle::TypedHandle,
     immediate_return::AsTypedHandle,
     octant_future::OctantFuture,
-    peer::{AsNative, Peer, PeerValue},
+    peer::{AsNative, Peer, PeerFields},
     proto::{DownMessage, UpMessage},
     runtime::Runtime,
     DeserializePeer, SerializePeer,
@@ -20,19 +20,19 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
 
 use crate::{
-    element::{ElementValue, RcElement},
-    html_div_element::{HtmlDivElement, HtmlDivElementValue, RcHtmlDivElement},
-    html_element::{HtmlElement, HtmlElementValue, RcHtmlElement},
-    html_form_element::{HtmlFormElementValue, RcHtmlFormElement},
-    html_input_element::{HtmlInputElementValue, RcHtmlInputElement},
-    node::{Node, NodeValue, RcNode},
+    element::{ElementFields, RcElement},
+    html_div_element::{HtmlDivElement, HtmlDivElementFields, RcHtmlDivElement},
+    html_element::{HtmlElement, HtmlElementFields, RcHtmlElement},
+    html_form_element::{HtmlFormElementFields, RcHtmlFormElement},
+    html_input_element::{HtmlInputElementFields, RcHtmlInputElement},
+    node::{Node, NodeFields, RcNode},
     object::Object,
-    text::{RcText, Text, TextValue},
+    text::{RcText, Text, TextFields},
 };
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
-pub struct DocumentValue {
-    parent: NodeValue,
+pub struct DocumentFields {
+    parent: NodeFields,
     #[cfg(side = "client")]
     any_value: web_sys::Document,
     #[cfg(side = "server")]
@@ -71,22 +71,22 @@ impl dyn Document {
 
 define_sys_rpc! {
     pub fn create_div(_runtime:_, doc:Rc2<dyn Document>) -> RcHtmlDivElement {
-        Ok(Rc2::new(HtmlDivElementValue::peer_new(doc.native().create_element("div").unwrap().dyn_into().unwrap())))
+        Ok(Rc2::new(HtmlDivElementFields::peer_new(doc.native().create_element("div").unwrap().dyn_into().unwrap())))
     }
     pub fn create_text_node(_runtime:_, doc:Rc2<dyn Document>, text: String) -> RcText {
-        Ok(Rc2::new(TextValue::peer_new(doc.native().create_text_node(&text).dyn_into().unwrap())))
+        Ok(Rc2::new(TextFields::peer_new(doc.native().create_text_node(&text).dyn_into().unwrap())))
     }
     pub fn create_input_element(_runtime:_, doc:Rc2<dyn Document>) -> RcHtmlInputElement {
-        Ok(Rc2::new(HtmlInputElementValue::peer_new(doc.native().create_element("input").unwrap().dyn_into().unwrap())))
+        Ok(Rc2::new(HtmlInputElementFields::peer_new(doc.native().create_element("input").unwrap().dyn_into().unwrap())))
     }
     pub fn create_element(_runtime:_, doc:Rc2<dyn Document>, tag: String) -> RcElement {
-        Ok(Rc2::new(ElementValue::peer_new(doc.native().create_element(&tag).unwrap())))
+        Ok(Rc2::new(ElementFields::peer_new(doc.native().create_element(&tag).unwrap())))
     }
     pub fn create_form_element(_runtime:_, doc:Rc2<dyn Document>) -> RcHtmlFormElement {
-        Ok(Rc2::new(HtmlFormElementValue::peer_new(doc.native().create_element("form").unwrap().dyn_into().unwrap())))
+        Ok(Rc2::new(HtmlFormElementFields::peer_new(doc.native().create_element("form").unwrap().dyn_into().unwrap())))
     }
     pub fn body(_runtime:_, doc:Rc2<dyn Document>) -> RcHtmlElement {
-        Ok(Rc2::new(HtmlElementValue::peer_new(doc.native().body().unwrap()) ))
+        Ok(Rc2::new(HtmlElementFields::peer_new(doc.native().body().unwrap()) ))
     }
     pub fn location(runtime:_, doc:Rc2<dyn Document>) -> OctantFuture<String> {
         Ok(OctantFuture::<String>::spawn(&runtime, async move{
