@@ -23,11 +23,10 @@ use wasm_bindgen_futures::JsFuture;
 use crate::{
     document::{Document, DocumentFields, RcDocument},
     navigator::{Navigator, NavigatorFields, RcNavigator},
-    object::Object,
+    object::{Object, ObjectFields},
     request::{RcRequest, Request},
     response::{RcResponse, ResponseFields},
 };
-use crate::object::ObjectFields;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct WindowFields {
@@ -40,28 +39,27 @@ pub struct WindowFields {
     navigator: OnceCell<RcNavigator>,
 }
 
-#[class]
-pub trait Window: Object {}
-
 #[cfg(side = "server")]
-impl dyn Window {
-    pub fn fetch<'a>(
-        self: &'a RcRef<Self>,
-        request: RcRequest,
-    ) -> impl 'a + Future<Output = anyhow::Result<RcResponse>> {
+pub type FetchFuture<'a> = impl 'a + Future<Output = anyhow::Result<RcResponse>>;
+
+#[class]
+pub trait Window: Object {
+    #[cfg(side = "server")]
+    fn fetch<'a>(self: &'a RcRef<Self>, request: RcRequest) -> FetchFuture<'a> {
         async move { Ok(fetch_wrap(self.runtime(), self.rc(), request).await??) }
     }
-    pub fn document<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Document> {
-        self.window()
-            .document
+    #[cfg(side = "server")]
+    fn document<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Document> {
+        self.document
             .get_or_init(|| document(self.runtime(), self.rc()))
     }
-    pub fn navigator<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Navigator> {
-        self.window()
-            .navigator
+    #[cfg(side = "server")]
+    fn navigator<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Navigator> {
+        self.navigator
             .get_or_init(|| navigator(self.runtime(), self.rc()))
     }
-    pub fn alert(self: &RcRef<Self>, message: String) {
+    #[cfg(side = "server")]
+    fn alert(self: &RcRef<Self>, message: String) {
         alert(self.runtime(), self.rc(), message);
     }
 }

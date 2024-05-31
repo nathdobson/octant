@@ -8,9 +8,13 @@
 
 use std::rc::Rc;
 
-use octant_object::{base, base::Base, cast::downcast_object};
-use octant_object::base::BaseFields;
+use octant_object::{
+    base,
+    base::{Base, BaseFields},
+    cast::downcast_object,
+};
 use octant_object_derive::class;
+use octant_reffed::rc::RcRef;
 
 pub struct AFields {
     parent: BaseFields,
@@ -21,6 +25,9 @@ pub struct AFields {
 pub trait A: Base + Sync + Send {
     fn get_x(&self) -> &u32 {
         &self.a().x
+    }
+    fn fooble<'a>(self: &'a RcRef<Self>) -> &'a u32 {
+        &self.x
     }
 }
 
@@ -86,7 +93,6 @@ pub trait D: C {
         &self.d().w
     }
 }
-
 
 impl DFields {
     pub fn new(x: u32, y: u32, z: u32, w: u32) -> DFields {

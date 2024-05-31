@@ -8,9 +8,9 @@ use convert_case::{Case, Casing};
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{
-    parse_macro_input, spanned::Spanned, Attribute, Data, DataStruct, DeriveInput, Field, Fields,
-    GenericArgument, GenericParam, Item, ItemStruct, ItemTrait, Path, PathArguments, Token,
-    TraitItem, TraitItemFn, Type, TypeParamBound,
+    parse_macro_input, spanned::Spanned, Attribute, Data, DataStruct, DeriveInput, Expr, Field,
+    Fields, FnArg, GenericArgument, GenericParam, Item, ItemStruct, ItemTrait, Path, PathArguments,
+    Signature, Token, TraitItem, TraitItemFn, Type, TypeParamBound,
 };
 
 struct Args {}
@@ -66,9 +66,11 @@ fn derive_class_impl(args: Args, input: &ItemTrait) -> syn::Result<TokenStream> 
     );
     let get_mut = format_ident!("{}_mut", get_ref);
 
-    let signatures: Vec<_> = items
-        .iter()
-        .map(|i| match i {
+    let mut signatures: Vec<TokenStream> = vec![];
+    let mut stubs: Vec<TokenStream> = vec![];
+    let mut impls: Vec<TokenStream> = vec![];
+    for item in items {
+        match item {
             TraitItem::Fn(f) => {
                 let TraitItemFn {
                     attrs,
@@ -76,14 +78,56 @@ fn derive_class_impl(args: Args, input: &ItemTrait) -> syn::Result<TokenStream> 
                     default,
                     semi_token,
                 } = f;
-                quote! {
-                    #(#attrs)*
-                    #sig ;
+                let stub_name = format_ident!("_stub_{}", sig.ident);
+                let Signature {
+                    constness,
+                    asyncness,
+                    unsafety,
+                    abi,
+                    fn_token,
+                    ident,
+                    generics,
+                    paren_token,
+                    inputs,
+                    variadic,
+                    output,
+                } = sig;
+                let mut parameters: Vec<TokenStream> = vec![];
+                let mut args: Vec<TokenStream> = vec![];
+                for (i, input) in inputs.iter().enumerate() {
+                    match input {
+                        FnArg::Receiver(receiver) => {
+                            parameters.push(quote! {#input});
+                            let s = receiver.self_token;
+                            args.push(quote! {#s});
+                        }
+                        FnArg::Typed(typed) => {
+                            let ident = format_ident!("_param_{}", i, span = typed.span());
+                            let colon = &typed.colon_token;
+                            let ty = &typed.ty;
+                            parameters.push(quote! { #ident #colon #ty});
+                            args.push(quote! {#ident});
+                        }
+                    }
                 }
+                signatures.push(quote! {
+                    #(#attrs)*
+                    #fn_token #ident #generics (#(#parameters),*) #output;
+                });
+                stubs.push(quote! {
+                    #(#attrs)*
+                    #fn_token #ident #generics (#(#parameters),*) #output {
+                        <dyn #class>::#stub_name(#(#args),*)
+                    }
+                });
+                impls.push(quote! {
+                    #(#attrs)*
+                    #fn_token #stub_name #generics ( #inputs ) #output #default
+                })
             }
             _ => todo!(),
-        })
-        .collect();
+        }
+    }
 
     let generic_params = &generics.params;
     let generic_where = &generics.where_clause;
@@ -119,7 +163,10 @@ fn derive_class_impl(args: Args, input: &ItemTrait) -> syn::Result<TokenStream> 
             fn #get_mut(&mut self) -> &mut #fields<#(#generic_args),*>{
                 self.deref_mut_ranked()
             }
-            #(#items)*
+            #(#stubs)*
+        }
+        impl<#generic_params> dyn #class<#(#generic_args),*> {
+            #(#impls)*
         }
         impl<#generic_params> ::std::ops::Deref for dyn #class<#(#generic_args),*> {
             type Target = #fields<#(#generic_args),*>;
