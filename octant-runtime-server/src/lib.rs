@@ -5,6 +5,11 @@
 #![feature(trait_alias)]
 
 extern crate core;
+#[cfg(side="client")]
+extern crate self as octant_runtime_client;
+#[cfg(side="server")]
+extern crate self as octant_runtime_server;
+extern crate self as octant_runtime;
 
 use std::{
     fmt::{Display, Formatter},
@@ -21,8 +26,6 @@ use crate::{
     handle::{RawHandle, TypedHandle},
     runtime::Runtime,
 };
-
-pub mod define_sys_rpc;
 pub mod handle;
 #[doc(hidden)]
 pub mod reexports {

@@ -1,8 +1,11 @@
 use octant_object::{class, DebugClass};
 use safe_once::cell::OnceCell;
+use std::rc::Rc;
 
 use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::{define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer};
+use octant_runtime::{
+    peer::AsNative, rpc, runtime::Runtime, DeserializePeer, PeerNew, SerializePeer,
+};
 
 use crate::{
     credentials_container::{
@@ -30,8 +33,9 @@ pub trait Navigator: Object {
     }
 }
 
-define_sys_rpc! {
-    fn credentials(_runtime:_, navigator:RcNavigator) -> RcCredentialsContainer{
-        Ok(Rc2::new(CredentialsContainerFields::peer_new(navigator.native().credentials())))
-    }
+#[rpc]
+fn credentials(_: &Rc<Runtime>, navigator: RcNavigator) -> RcCredentialsContainer {
+    Ok(Rc2::new(CredentialsContainerFields::peer_new(
+        navigator.native().credentials(),
+    )))
 }

@@ -1,10 +1,12 @@
-use std::{cell::RefCell, collections::HashSet};
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 use by_address::ByAddress;
 use octant_object::{class, DebugClass};
 
 use octant_reffed::rc::RcRef;
-use octant_runtime::{define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer};
+use octant_runtime::{
+    peer::AsNative, rpc, runtime::Runtime, DeserializePeer, PeerNew, SerializePeer,
+};
 
 use crate::object::{Object, ObjectFields};
 
@@ -44,18 +46,22 @@ pub trait Node: Object {
     }
 }
 
-define_sys_rpc! {
-    fn append_child(_runtime:_, this: RcNode, add:RcNode) -> () {
-        this.node().children.borrow_mut().insert(ByAddress(add.clone()));
-        this.native().append_child(add.native()).unwrap();
-        Ok(())
-    }
+#[rpc]
+fn append_child(_: &Rc<Runtime>, this: RcNode, add: RcNode) -> () {
+    this.node()
+        .children
+        .borrow_mut()
+        .insert(ByAddress(add.clone()));
+    this.native().append_child(add.native()).unwrap();
+    Ok(())
 }
 
-define_sys_rpc! {
-    fn remove_child(_runtime:_, this: RcNode, add:RcNode) -> () {
-        this.node().children.borrow_mut().remove(&ByAddress(add.clone()));
-        this.native().remove_child(add.native()).unwrap();
-        Ok(())
-    }
+#[rpc]
+fn remove_child(_: &Rc<Runtime>, this: RcNode, add: RcNode) -> () {
+    this.node()
+        .children
+        .borrow_mut()
+        .remove(&ByAddress(add.clone()));
+    this.native().remove_child(add.native()).unwrap();
+    Ok(())
 }

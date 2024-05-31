@@ -12,7 +12,7 @@ use octant_error::OctantError;
 use octant_object::{class, DebugClass};
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{
-    define_sys_rpc, future_return::FutureReturn, octant_future::OctantFuture, peer::AsNative,
+    future_return::FutureReturn, octant_future::OctantFuture, peer::AsNative, rpc,
     runtime::Runtime, DeserializePeer, PeerNew, SerializePeer,
 };
 #[cfg(side = "client")]
@@ -73,21 +73,40 @@ fn fetch_wrap(
     fetch(runtime, window, request)
 }
 
-define_sys_rpc! {
-    fn alert(_runtime:_, window: RcWindow, message: String) -> () {
-        window.native().alert_with_message(&message).unwrap();
-        Ok(())
-    }
-    fn document(_runtime:_, window: RcWindow) -> RcDocument {
-        Ok(Rc2::new(DocumentFields::peer_new(window.native().document().unwrap())))
-    }
-    fn navigator(_runtime:_,window:RcWindow)->RcNavigator{
-        Ok(Rc2::new(NavigatorFields::peer_new(window.native().navigator())))
-    }
-    fn fetch(runtime: _, window:RcWindow, req:RcRequest) -> OctantFuture<Result<RcResponse, OctantError>>{
-        let fetch = window.native().fetch_with_request(req.native());
-        Ok(OctantFuture::spawn(runtime, async move{
-            Ok(Rc2::new(ResponseFields::peer_new(JsFuture::from(fetch).await.map_err(OctantError::from)?.dyn_into().map_err(OctantError::from)?)) as RcResponse)
-        }))
-    }
+#[rpc]
+fn alert(_: &Rc<Runtime>, window: RcWindow, message: String) -> () {
+    window.native().alert_with_message(&message).unwrap();
+    Ok(())
+}
+
+#[rpc]
+fn document(_: &Rc<Runtime>, window: RcWindow) -> RcDocument {
+    Ok(Rc2::new(DocumentFields::peer_new(
+        window.native().document().unwrap(),
+    )))
+}
+
+#[rpc]
+fn navigator(_: &Rc<Runtime>, window: RcWindow) -> RcNavigator {
+    Ok(Rc2::new(NavigatorFields::peer_new(
+        window.native().navigator(),
+    )))
+}
+
+#[rpc]
+fn fetch(
+    runtime: &Rc<Runtime>,
+    window: RcWindow,
+    req: RcRequest,
+) -> OctantFuture<Result<RcResponse, OctantError>> {
+    let fetch = window.native().fetch_with_request(req.native());
+    Ok(OctantFuture::spawn(runtime, async move {
+        Ok(Rc2::new(ResponseFields::peer_new(
+            JsFuture::from(fetch)
+                .await
+                .map_err(OctantError::from)?
+                .dyn_into()
+                .map_err(OctantError::from)?,
+        )) as RcResponse)
+    }))
 }

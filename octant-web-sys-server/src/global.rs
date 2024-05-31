@@ -1,13 +1,11 @@
-use std::{any::Any, hint::must_use, marker::PhantomData};
-use std::rc::Rc;
+use std::{any::Any, hint::must_use, marker::PhantomData, rc::Rc};
 
 use catalog::register;
 use safe_once::cell::OnceCell;
 use serde::{Deserialize, Serialize};
 
 use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::{define_sys_rpc, PeerNew, runtime::Runtime};
-use octant_runtime::peer::AsNative;
+use octant_runtime::{peer::AsNative, rpc, runtime::Runtime, PeerNew};
 use octant_serde::define_serde_impl;
 
 use crate::{
@@ -15,10 +13,9 @@ use crate::{
     credential_request_options::{CredentialRequestOptionsFields, RcCredentialRequestOptions},
     event_listener::{EventListenerFields, RcEventListener},
     request::{RcRequest, RequestFields},
-    request_init::{RcRequestInit, RequestInit},
+    request_init::{RcRequestInit, RequestInit, RequestInitFields},
     window::{RcWindow, Window, WindowFields},
 };
-use crate::request_init::RequestInitFields;
 
 #[cfg(side = "server")]
 pub struct Global {
@@ -62,24 +59,40 @@ impl Global {
         listener
     }
 }
+#[rpc]
+fn window(_: &Rc<Runtime>) -> RcWindow {
+    Ok(Rc2::new(WindowFields::peer_new(web_sys::window().unwrap())))
+}
 
-define_sys_rpc! {
-    fn window(_runtime:_) -> RcWindow {
-        Ok(Rc2::new(WindowFields::peer_new(web_sys::window().unwrap())))
-    }
-    fn new_request_init(_runtime:_) -> RcRequestInit {
-        Ok(Rc2::new(RequestInitFields::peer_new(web_sys::RequestInit::new())))
-    }
-    fn new_request(_runtime:_, url:String, init:RcRequestInit) -> RcRequest {
-        Ok(Rc2::new(RequestFields::peer_new(web_sys::Request::new_with_str_and_init(&url, init.native()).unwrap())))
-    }
-    fn new_credential_request_options(_runtime:_) -> RcCredentialRequestOptions {
-        Ok(Rc2::new(CredentialRequestOptionsFields::peer_new(web_sys::CredentialRequestOptions::new())))
-    }
-    fn new_credential_creation_options(_runtime:_) -> RcCredentialCreationOptions {
-        Ok(Rc2::new(CredentialCreationOptionsFields::peer_new(web_sys::CredentialCreationOptions::new())))
-    }
-    fn new_event_listener(_runtime:_) -> RcEventListener {
-        Ok(Rc2::new(EventListenerFields::peer_new(())))
-    }
+#[rpc]
+fn new_request_init(_: &Rc<Runtime>) -> RcRequestInit {
+    Ok(Rc2::new(RequestInitFields::peer_new(
+        web_sys::RequestInit::new(),
+    )))
+}
+
+#[rpc]
+fn new_request(_: &Rc<Runtime>, url: String, init: RcRequestInit) -> RcRequest {
+    Ok(Rc2::new(RequestFields::peer_new(
+        web_sys::Request::new_with_str_and_init(&url, init.native()).unwrap(),
+    )))
+}
+
+#[rpc]
+fn new_credential_request_options(_: &Rc<Runtime>) -> RcCredentialRequestOptions {
+    Ok(Rc2::new(CredentialRequestOptionsFields::peer_new(
+        web_sys::CredentialRequestOptions::new(),
+    )))
+}
+
+#[rpc]
+fn new_credential_creation_options(_: &Rc<Runtime>) -> RcCredentialCreationOptions {
+    Ok(Rc2::new(CredentialCreationOptionsFields::peer_new(
+        web_sys::CredentialCreationOptions::new(),
+    )))
+}
+
+#[rpc]
+fn new_event_listener(_: &Rc<Runtime>) -> RcEventListener {
+    Ok(Rc2::new(EventListenerFields::peer_new(())))
 }

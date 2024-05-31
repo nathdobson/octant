@@ -1,15 +1,16 @@
 use octant_object::{class, DebugClass};
 use octant_reffed::rc::RcRef;
 use octant_runtime::{
-     define_sys_rpc, peer::AsNative, DeserializePeer, PeerNew, SerializePeer,
+    peer::AsNative, rpc, runtime::Runtime, DeserializePeer, PeerNew, SerializePeer,
 };
+use std::rc::Rc;
 
 #[cfg(side = "client")]
 use crate::export::Export;
 use crate::{
-    object::Object, public_key_credential_request_options::PublicKeyCredentialRequestOptions,
+    object::{Object, ObjectFields},
+    public_key_credential_request_options::PublicKeyCredentialRequestOptions,
 };
-use crate::object::ObjectFields;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct CredentialRequestOptionsFields {
@@ -26,10 +27,12 @@ pub trait CredentialRequestOptions: Object {
     }
 }
 
-
-define_sys_rpc! {
-    fn public_key(_runtime:_, options:RcCredentialRequestOptions, public_key:PublicKeyCredentialRequestOptions) -> (){
-        options.native().clone().public_key(&public_key.export());
-        Ok(())
-    }
+#[rpc]
+fn public_key(
+    _: &Rc<Runtime>,
+    options: RcCredentialRequestOptions,
+    public_key: PublicKeyCredentialRequestOptions,
+) {
+    options.native().clone().public_key(&public_key.export());
+    Ok(())
 }
