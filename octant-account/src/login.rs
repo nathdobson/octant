@@ -93,7 +93,7 @@ impl Handler for LoginHandler {
         let form = d
             .create_form_element()
             .child(email.clone())
-            .child(d.create_element("br"))
+            .child(d.create_element("br".to_string()))
             .child(
                 d.create_input_element()
                     .attr("type", "submit")
@@ -113,7 +113,7 @@ impl Handler for LoginHandler {
                     });
                 }
             }));
-        let page = d.create_element("div").child(text).child(form);
+        let page = d.create_div_element().child(text).child(form);
         Ok(Page::new(session.global().clone(), page))
     }
 }

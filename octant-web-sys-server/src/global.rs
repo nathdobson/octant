@@ -59,6 +59,7 @@ impl Global {
         listener
     }
 }
+
 #[rpc]
 fn window(_: &Rc<Runtime>) -> RcWindow {
     Ok(Rc2::new(WindowFields::peer_new(web_sys::window().unwrap())))

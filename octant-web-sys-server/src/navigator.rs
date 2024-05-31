@@ -29,13 +29,16 @@ pub trait Navigator: Object {
     fn credentials<'a>(self: &'a RcRef<Self>) -> &'a RcCredentialsContainer {
         self.navigator()
             .credentials_container
-            .get_or_init(|| credentials(self.runtime(), self.rc()))
+            .get_or_init(|| self.credentials_impl())
     }
 }
 
 #[rpc]
-fn credentials(_: &Rc<Runtime>, navigator: RcNavigator) -> RcCredentialsContainer {
-    Ok(Rc2::new(CredentialsContainerFields::peer_new(
-        navigator.native().credentials(),
-    )))
+impl dyn Navigator {
+    #[rpc]
+    fn credentials_impl(self: &RcRef<Self>, _: &Rc<Runtime>) -> RcCredentialsContainer {
+        Ok(Rc2::new(CredentialsContainerFields::peer_new(
+            self.native().credentials(),
+        )))
+    }
 }

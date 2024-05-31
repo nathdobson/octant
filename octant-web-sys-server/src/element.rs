@@ -17,17 +17,20 @@ pub struct ElementFields {
 pub trait Element: Node {
     #[cfg(side = "server")]
     fn set_attribute(self: &RcRef<Self>, key: &str, value: &str) {
-        set_attribute(
-            self.runtime(),
-            self.rc(),
-            key.to_string(),
-            value.to_string(),
-        )
+        self.set_attribute_impl(key.to_string(), value.to_string())
     }
 }
 
 #[rpc]
-fn set_attribute(_: &Rc<Runtime>, this: RcElement, key: String, value: String) -> () {
-    this.native().set_attribute(&key, &value).unwrap();
-    Ok(())
+impl dyn Element {
+    #[rpc]
+    fn set_attribute_impl(
+        self: &RcRef<dyn Element>,
+        _: &Rc<Runtime>,
+        key: String,
+        value: String,
+    ) -> () {
+        self.native().set_attribute(&key, &value).unwrap();
+        Ok(())
+    }
 }

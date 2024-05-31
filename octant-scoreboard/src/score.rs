@@ -51,7 +51,7 @@ impl ScoreHandler {
         let form = d
             .create_form_element()
             .child(input.clone())
-            .child(d.create_element("br"))
+            .child(d.create_element("br".to_string()))
             .child(d.create_input_element().attr("type", "submit"))
             .handler({
                 let this = self.clone();
@@ -65,7 +65,7 @@ impl ScoreHandler {
             });
         for guess in &*self.guesses.lock() {
             page = page.child(
-                d.create_element("p")
+                d.create_element("p".to_string())
                     .child(d.create_text_node(format!("{}: {}", guess.email, guess.guess))),
             );
         }
@@ -84,7 +84,7 @@ impl Handler for ScoreHandler {
 
     fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> anyhow::Result<Page> {
         let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());
-        let page = global.window().document().create_element("div");
+        let page = global.window().document().create_div_element();
         session.global().runtime().spawner().spawn({
             let session = session.clone();
             let page = page.clone();

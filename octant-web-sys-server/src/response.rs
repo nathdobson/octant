@@ -24,23 +24,27 @@ pub trait Response: Object {}
 #[cfg(side = "server")]
 impl dyn Response {
     pub async fn text(self: &RcRef<Self>) -> anyhow::Result<String> {
-        Ok(text(self.runtime(), self.rc()).await?.into_inner()?)
+        Ok(self.text_impl().await?.into_inner()?)
     }
 }
 
 #[rpc]
-fn text(
-    runtime: &Rc<Runtime>,
-    response: RcResponse,
-) -> OctantFuture<DataReturn<Result<String, OctantError>>> {
-    Ok(OctantFuture::spawn(runtime, async move {
-        DataReturn::new(
-            try {
-                let text = JsFuture::from(response.native().text().map_err(OctantError::from)?)
-                    .await
-                    .map_err(OctantError::from)?;
-                text.as_string().unwrap()
-            },
-        )
-    }))
+impl dyn Response {
+    #[rpc]
+    fn text_impl(
+        self: &RcRef<Self>,
+        runtime: &Rc<Runtime>,
+    ) -> OctantFuture<DataReturn<Result<String, OctantError>>> {
+        let this = self.rc();
+        Ok(OctantFuture::spawn(runtime, async move {
+            DataReturn::new(
+                try {
+                    let text = JsFuture::from(this.native().text().map_err(OctantError::from)?)
+                        .await
+                        .map_err(OctantError::from)?;
+                    text.as_string().unwrap()
+                },
+            )
+        }))
+    }
 }

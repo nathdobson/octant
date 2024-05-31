@@ -23,16 +23,19 @@ pub struct CredentialCreationOptionsFields {
 pub trait CredentialCreationOptions: Object {
     #[cfg(side = "server")]
     fn public_key(self: &RcRef<Self>, options: PublicKeyCredentialCreationOptions) {
-        public_key(self.runtime(), self.rc(), options)
+        self.public_key_impl(options);
     }
 }
 
 #[rpc]
-fn public_key(
-    _: &Rc<Runtime>,
-    options: RcCredentialCreationOptions,
-    public_key_arg: PublicKeyCredentialCreationOptions,
-) {
-    options.native().clone().public_key(&public_key_arg.export());
-    Ok(())
+impl dyn CredentialCreationOptions {
+    #[rpc]
+    fn public_key_impl(
+        self: &RcRef<Self>,
+        _: &Rc<Runtime>,
+        public_key_arg: PublicKeyCredentialCreationOptions,
+    ) {
+        self.native().clone().public_key(&public_key_arg.export());
+        Ok(())
+    }
 }

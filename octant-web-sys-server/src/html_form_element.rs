@@ -45,37 +45,35 @@ pub trait HtmlFormElement: HtmlElement {
         self.html_form_element()
             .listener
             .get_or_init(|| listener.clone());
-        set_listener(self.runtime(), self.rc(), listener);
+        self.set_listener_impl(listener);
     }
 }
 
 #[rpc]
-fn set_listener(
-    runtime: &Rc<Runtime>,
-    element: RcHtmlFormElement,
-    listener: RcEventListener,
-) -> () {
-    let cb = Closure::<dyn Fn(Event)>::new({
-        let listener = Rc2::downgrade(&listener);
-        let element = Rc2::downgrade(&element);
-        move |e: Event| {
-            e.prevent_default();
-            if let Some(element) = element.upgrade() {
-                for child in element.children() {
-                    if let Ok(child) = downcast_object::<_, RcHtmlInputElement>(child) {
-                        child.update_value();
+impl dyn HtmlFormElement {
+    #[rpc]
+    fn set_listener_impl(self: &RcRef<Self>, runtime: &Rc<Runtime>, listener: RcEventListener) {
+        let cb = Closure::<dyn Fn(Event)>::new({
+            let listener = Rc2::downgrade(&listener);
+            let this = Rc2::downgrade(&self.rc());
+            move |e: Event| {
+                e.prevent_default();
+                if let Some(this) = this.upgrade() {
+                    for child in this.children() {
+                        if let Ok(child) = downcast_object::<_, RcHtmlInputElement>(child) {
+                            child.update_value();
+                        }
                     }
                 }
+                if let Some(listener) = listener.upgrade() {
+                    listener.fire();
+                }
             }
-            if let Some(listener) = listener.upgrade() {
-                listener.fire();
-            }
-        }
-    });
-    element
-        .native()
-        .add_event_listener_with_callback("submit", cb.as_ref().unchecked_ref())
-        .unwrap();
-    element.html_form_element().closure.get_or_init(|| cb);
-    Ok(())
+        });
+        self.native()
+            .add_event_listener_with_callback("submit", cb.as_ref().unchecked_ref())
+            .unwrap();
+        self.html_form_element().closure.get_or_init(|| cb);
+        Ok(())
+    }
 }

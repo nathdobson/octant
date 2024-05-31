@@ -34,7 +34,7 @@ pub trait Node: Object {
             .children
             .borrow_mut()
             .insert(ByAddress(e.clone()));
-        append_child(self.runtime(), self.rc(), e);
+        self.append_child_impl(e);
     }
     #[cfg(side = "server")]
     fn remove_child(self: &RcRef<Self>, e: RcNode) {
@@ -42,26 +42,28 @@ pub trait Node: Object {
             .children
             .borrow_mut()
             .remove(&ByAddress(e.clone()));
-        remove_child(self.runtime(), self.rc(), e);
+        self.remove_child_impl(e);
     }
 }
 
 #[rpc]
-fn append_child(_: &Rc<Runtime>, this: RcNode, add: RcNode) -> () {
-    this.node()
-        .children
-        .borrow_mut()
-        .insert(ByAddress(add.clone()));
-    this.native().append_child(add.native()).unwrap();
-    Ok(())
-}
-
-#[rpc]
-fn remove_child(_: &Rc<Runtime>, this: RcNode, add: RcNode) -> () {
-    this.node()
-        .children
-        .borrow_mut()
-        .remove(&ByAddress(add.clone()));
-    this.native().remove_child(add.native()).unwrap();
-    Ok(())
+impl dyn Node {
+    #[rpc]
+    fn append_child_impl(self: &RcRef<Self>, _: &Rc<Runtime>, add: RcNode) -> () {
+        self.node()
+            .children
+            .borrow_mut()
+            .insert(ByAddress(add.clone()));
+        self.native().append_child(add.native()).unwrap();
+        Ok(())
+    }
+    #[rpc]
+    fn remove_child_impl(self: &RcRef<Self>, _: &Rc<Runtime>, add: RcNode) -> () {
+        self.node()
+            .children
+            .borrow_mut()
+            .remove(&ByAddress(add.clone()));
+        self.native().remove_child(add.native()).unwrap();
+        Ok(())
+    }
 }
