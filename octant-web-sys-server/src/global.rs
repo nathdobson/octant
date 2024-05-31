@@ -62,38 +62,36 @@ impl Global {
 
 #[rpc]
 fn window(_: &Rc<Runtime>) -> RcWindow {
-    Ok(Rc2::new(WindowFields::peer_new(web_sys::window().unwrap())))
+    Ok(RcWindow::peer_new(web_sys::window().unwrap()))
 }
 
 #[rpc]
 fn new_request_init(_: &Rc<Runtime>) -> RcRequestInit {
-    Ok(Rc2::new(RequestInitFields::peer_new(
-        web_sys::RequestInit::new(),
-    )))
+    Ok(RcRequestInit::peer_new(web_sys::RequestInit::new()))
 }
 
 #[rpc]
 fn new_request(_: &Rc<Runtime>, url: String, init: RcRequestInit) -> RcRequest {
-    Ok(Rc2::new(RequestFields::peer_new(
+    Ok(RcRequest::peer_new(
         web_sys::Request::new_with_str_and_init(&url, init.native()).unwrap(),
-    )))
+    ))
 }
 
 #[rpc]
 fn new_credential_request_options(_: &Rc<Runtime>) -> RcCredentialRequestOptions {
-    Ok(Rc2::new(CredentialRequestOptionsFields::peer_new(
+    Ok(RcCredentialRequestOptions::peer_new(
         web_sys::CredentialRequestOptions::new(),
-    )))
+    ))
 }
 
 #[rpc]
 fn new_credential_creation_options(_: &Rc<Runtime>) -> RcCredentialCreationOptions {
-    Ok(Rc2::new(CredentialCreationOptionsFields::peer_new(
+    Ok(RcCredentialCreationOptions::peer_new(
         web_sys::CredentialCreationOptions::new(),
-    )))
+    ))
 }
 
 #[rpc]
 fn new_event_listener(_: &Rc<Runtime>) -> RcEventListener {
-    Ok(Rc2::new(EventListenerFields::peer_new(())))
+    Ok(RcEventListener::peer_new(()))
 }

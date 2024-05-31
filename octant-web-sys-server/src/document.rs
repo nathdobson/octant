@@ -47,45 +47,45 @@ pub trait Document: Node {}
 impl dyn Document {
     #[rpc]
     pub fn create_div_element(self: &RcRef<Self>, _: &Rc<Runtime>) -> RcHtmlDivElement {
-        Ok(Rc2::new(HtmlDivElementFields::peer_new(
+        Ok(RcHtmlDivElement::peer_new(
             self.native()
                 .create_element("div")
                 .unwrap()
                 .dyn_into()
                 .unwrap(),
-        )))
+        ))
     }
     #[rpc]
     pub fn create_form_element(self: &RcRef<Self>, _: &Rc<Runtime>) -> RcHtmlFormElement {
-        Ok(Rc2::new(HtmlFormElementFields::peer_new(
+        Ok(RcHtmlFormElement::peer_new(
             self.native()
                 .create_element("form")
                 .unwrap()
                 .dyn_into()
                 .unwrap(),
-        )))
+        ))
     }
     #[rpc]
     pub fn create_element(self: &RcRef<Self>, _: &Rc<Runtime>, tag: String) -> RcElement {
-        Ok(Rc2::new(ElementFields::peer_new(
+        Ok(RcElement::peer_new(
             self.native().create_element(&tag).unwrap(),
-        )))
+        ))
     }
     #[rpc]
     pub fn create_text_node(self: &RcRef<Self>, _: &Rc<Runtime>, text: String) -> RcText {
-        Ok(Rc2::new(TextFields::peer_new(
+        Ok(RcText::peer_new(
             self.native().create_text_node(&text).dyn_into().unwrap(),
-        )))
+        ))
     }
     #[rpc]
     pub fn create_input_element(self: &RcRef<Self>, _: &Rc<Runtime>) -> RcHtmlInputElement {
-        Ok(Rc2::new(HtmlInputElementFields::peer_new(
+        Ok(RcHtmlInputElement::peer_new(
             self.native()
                 .create_element("input")
                 .unwrap()
                 .dyn_into()
                 .unwrap(),
-        )))
+        ))
     }
     #[rpc]
     pub fn location(self: &RcRef<Self>, runtime: &Rc<Runtime>) -> OctantFuture<String> {
@@ -100,8 +100,6 @@ impl dyn Document {
     }
     #[rpc]
     fn body_impl(self: &RcRef<Self>, _: &Rc<Runtime>) -> RcHtmlElement {
-        Ok(Rc2::new(HtmlElementFields::peer_new(
-            self.native().body().unwrap(),
-        )))
+        Ok(RcHtmlElement::peer_new(self.native().body().unwrap()))
     }
 }

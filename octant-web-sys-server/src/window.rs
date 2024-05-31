@@ -54,8 +54,7 @@ pub trait Window: Object {
     }
     #[cfg(side = "server")]
     fn navigator<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Navigator> {
-        self.navigator
-            .get_or_init(|| self.navigator_impl())
+        self.navigator.get_or_init(|| self.navigator_impl())
     }
     #[cfg(side = "server")]
     fn alert(self: &RcRef<Self>, message: String) {
@@ -67,9 +66,7 @@ pub trait Window: Object {
 impl dyn Window {
     #[rpc]
     fn document_impl(self: &RcRef<Self>, _: &Rc<Runtime>) -> RcDocument {
-        Ok(Rc2::new(DocumentFields::peer_new(
-            self.native().document().unwrap(),
-        )))
+        Ok(RcDocument::peer_new(self.native().document().unwrap()))
     }
     #[rpc]
     fn alert_impl(self: &RcRef<Self>, _: &Rc<Runtime>, message: String) -> () {
@@ -78,9 +75,7 @@ impl dyn Window {
     }
     #[rpc]
     fn navigator_impl(self: &RcRef<Self>, _: &Rc<Runtime>) -> RcNavigator {
-        Ok(Rc2::new(NavigatorFields::peer_new(
-            self.native().navigator(),
-        )))
+        Ok(RcNavigator::peer_new(self.native().navigator()))
     }
     #[rpc]
     fn fetch_impl(
@@ -90,13 +85,13 @@ impl dyn Window {
     ) -> OctantFuture<Result<RcResponse, OctantError>> {
         let fetch = self.native().fetch_with_request(req.native());
         Ok(OctantFuture::spawn(runtime, async move {
-            Ok(Rc2::new(ResponseFields::peer_new(
+            Ok(RcResponse::peer_new(
                 JsFuture::from(fetch)
                     .await
                     .map_err(OctantError::from)?
                     .dyn_into()
                     .map_err(OctantError::from)?,
-            )) as RcResponse)
+            ))
         }))
     }
 }

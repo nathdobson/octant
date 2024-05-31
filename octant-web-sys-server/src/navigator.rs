@@ -37,8 +37,8 @@ pub trait Navigator: Object {
 impl dyn Navigator {
     #[rpc]
     fn credentials_impl(self: &RcRef<Self>, _: &Rc<Runtime>) -> RcCredentialsContainer {
-        Ok(Rc2::new(CredentialsContainerFields::peer_new(
+        Ok(RcCredentialsContainer::peer_new(
             self.native().credentials(),
-        )))
+        ))
     }
 }

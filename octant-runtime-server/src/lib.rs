@@ -5,11 +5,11 @@
 #![feature(trait_alias)]
 
 extern crate core;
-#[cfg(side="client")]
-extern crate self as octant_runtime_client;
-#[cfg(side="server")]
-extern crate self as octant_runtime_server;
 extern crate self as octant_runtime;
+#[cfg(side = "client")]
+extern crate self as octant_runtime_client;
+#[cfg(side = "server")]
+extern crate self as octant_runtime_server;
 
 use std::{
     fmt::{Display, Formatter},
@@ -85,4 +85,15 @@ impl Display for LookupError {
 pub trait PeerNew {
     type Builder;
     fn peer_new(builder: Self::Builder) -> Self;
+}
+
+impl<T> PeerNew for Rc2<T>
+where
+    T: ?Sized + Class,
+    T::Fields: PeerNew,
+{
+    type Builder = <T::Fields as PeerNew>::Builder;
+    fn peer_new(builder: Self::Builder) -> Self {
+        Rc2::<T::Fields>::new(T::Fields::peer_new(builder))
+    }
 }
