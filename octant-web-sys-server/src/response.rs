@@ -1,4 +1,4 @@
-use octant_error::OctantError;
+use octant_error::{OctantError, OctantResult};
 use octant_object::{class, DebugClass};
 use octant_reffed::rc::RcRef;
 use octant_runtime::{
@@ -23,7 +23,7 @@ pub trait Response: Object {}
 
 #[cfg(side = "server")]
 impl dyn Response {
-    pub async fn text(self: &RcRef<Self>) -> anyhow::Result<String> {
+    pub async fn text(self: &RcRef<Self>) -> OctantResult<String> {
         Ok(self.text_impl().await?.into_inner()?)
     }
 }

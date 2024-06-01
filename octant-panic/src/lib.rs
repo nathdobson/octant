@@ -5,26 +5,26 @@ use std::{
     panic::{catch_unwind, PanicInfo, UnwindSafe, update_hook},
     sync::Once,
 };
+use octant_error::{octant_error, OctantError, OctantResult};
 
-use anyhow::anyhow;
 
 thread_local! {
-    static LAST_ERROR:Cell<Option<anyhow::Error>> = Cell::new(None);
+    static LAST_ERROR:Cell<Option<OctantError>> = Cell::new(None);
 }
-pub fn catch_error<T>(f: impl UnwindSafe + FnOnce() -> T) -> anyhow::Result<T> {
+pub fn catch_error<T>(f: impl UnwindSafe + FnOnce() -> T) -> OctantResult<T> {
     catch_unwind(f).map_err(|e| {
         if let Some(error) = LAST_ERROR.take() {
             return error;
         }
         let e = match e.downcast::<String>() {
-            Ok(e) => return anyhow::Error::msg(*e),
+            Ok(e) => return OctantError::msg(*e),
             Err(e) => e,
         };
         let _ = match e.downcast::<&str>() {
-            Ok(e) => return anyhow::Error::msg(*e),
+            Ok(e) => return OctantError::msg(*e),
             Err(e) => e,
         };
-        anyhow!("unknown error")
+        octant_error!("unknown error")
     })
 }
 
@@ -51,6 +51,6 @@ pub fn panic_handler(
     } else {
         format!("{}", payload)
     };
-    let error = anyhow::Error::msg(message);
+    let error = OctantError::msg(message);
     LAST_ERROR.set(Some(error));
 }

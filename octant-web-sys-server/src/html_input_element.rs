@@ -2,6 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use octant_object::{class, DebugClass};
 use serde::Serialize;
+use octant_error::OctantResult;
 
 use octant_reffed::rc::RcRef;
 use octant_runtime::{
@@ -45,7 +46,7 @@ struct SetInput {
 define_serde_impl!(SetInput : UpMessage);
 impl UpMessage for SetInput {
     #[cfg(side = "server")]
-    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> anyhow::Result<()> {
+    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()> {
         *self.element.html_input_element().value.borrow_mut() = Rc::new(self.value);
         Ok(())
     }

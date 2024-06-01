@@ -8,7 +8,6 @@ metabuild = ["octant-sys-build"]
 [dependencies]
 serde = { workspace=true, features = ["derive"] }
 octant-object = {workspace=true}
-anyhow = {workspace=true}
 catalog = {workspace=true}
 paste = {workspace=true}
 octant-serde = {workspace=true}
@@ -20,7 +19,7 @@ parking_lot = {workspace=true}
 log = {workspace=true}
 octant-reffed = {workspace=true}
 cfg-if = {workspace=true}
-octant-error = {workspace=true}
+octant-error = {workspace=true, features= ["tokio"]}
 octant-runtime-derive = {workspace=true}
 
 [build-dependencies]

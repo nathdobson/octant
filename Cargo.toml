@@ -96,3 +96,4 @@ slab = "0.4.9"
 octant-object-derive = {path="octant-object-derive"}
 convert_case = "0.6.0"
 octant-runtime-derive = {path="octant-runtime-derive"}
+backtrace = "0.3.72"

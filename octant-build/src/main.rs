@@ -5,6 +5,7 @@ use std::{io, io::ErrorKind, path::Path};
 use clap::{Parser, Subcommand, ValueEnum};
 use futures::future::{BoxFuture, FutureExt};
 use tokio::{fs, fs::create_dir_all, process::Command};
+use octant_error::OctantResult;
 
 #[derive(Clone, ValueEnum, Debug)]
 enum Profile {
@@ -27,7 +28,7 @@ enum Commands {
     Test,
 }
 
-fn copy_dir_all<'a>(src: &'a Path, dst: &'a Path) -> BoxFuture<'a, anyhow::Result<()>> {
+fn copy_dir_all<'a>(src: &'a Path, dst: &'a Path) -> BoxFuture<'a, OctantResult<()>> {
     async move {
         fs::create_dir_all(&dst).await?;
         let mut entries = fs::read_dir(src).await?;
@@ -51,7 +52,7 @@ async fn main() {
     }
 }
 
-async fn main_impl() -> anyhow::Result<()> {
+async fn main_impl() -> OctantResult<()> {
     let cli = Cli::parse();
     let profile = cli.profile.unwrap_or(Profile::Dev);
     let profile_name = match profile {

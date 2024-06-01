@@ -3,11 +3,21 @@ use std::fmt::{Debug, Display, Formatter};
 use anyhow::anyhow;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+#[doc(hidden)]
+pub mod reexports {
+    pub use anyhow;
+}
+
 #[cfg(feature = "wasm")]
 pub mod wasm;
 
 #[derive(Debug)]
 pub struct OctantError(anyhow::Error);
+
+#[macro_export]
+macro_rules! octant_error {
+    ($($x:tt)*) => {$crate::OctantError::from($crate::reexports::anyhow::anyhow!($($x)*))};
+}
 
 pub type OctantResult<T> = Result<T, OctantError>;
 
@@ -17,7 +27,7 @@ impl Display for OctantError {
     }
 }
 
-impl std::error::Error for OctantError {}
+// impl std::error::Error for OctantError {}
 
 impl OctantError {
     pub fn new<T: 'static + Sync + Send + std::error::Error>(x: T) -> Self {
@@ -64,6 +74,46 @@ impl From<anyhow::Error> for OctantError {
     }
 }
 
+impl From<std::io::Error> for OctantError {
+    fn from(value: std::io::Error) -> Self {
+        OctantError(anyhow::Error::from(value))
+    }
+}
+
+impl From<serde_json::Error> for OctantError {
+    fn from(value: serde_json::Error) -> Self {
+        OctantError(anyhow::Error::from(value))
+    }
+}
+
+#[cfg(feature = "tokio")]
+impl From<tokio::sync::oneshot::error::RecvError> for OctantError {
+    fn from(value: tokio::sync::oneshot::error::RecvError) -> Self {
+        OctantError(anyhow::Error::from(value))
+    }
+}
+
+#[cfg(feature = "warp")]
+impl From<warp::Error> for OctantError {
+    fn from(value: warp::Error) -> Self {
+        OctantError(anyhow::Error::from(value))
+    }
+}
+
+#[cfg(feature = "url")]
+impl From<url::ParseError> for OctantError {
+    fn from(value: url::ParseError) -> Self {
+        OctantError(anyhow::Error::from(value))
+    }
+}
+
+#[cfg(feature = "webauthn-rs-core")]
+impl From<webauthn_rs_core::error::WebauthnError> for OctantError {
+    fn from(value: webauthn_rs_core::error::WebauthnError) -> Self {
+        OctantError(anyhow::Error::from(value))
+    }
+}
+
 pub trait Context<T> {
     // Required methods
     fn context<C>(self, context: C) -> Result<T, OctantError>
@@ -77,13 +127,13 @@ pub trait Context<T> {
 
 impl<T, E> Context<T> for Result<T, E>
 where
-    E: std::error::Error + Send + Sync + 'static,
+    OctantError: From<E>,
 {
     fn context<C>(self, context: C) -> Result<T, OctantError>
     where
         C: Display + Send + Sync + 'static,
     {
-        self.map_err(|e| OctantError::new(e).context(context))
+        self.map_err(|e| OctantError::from(e).context(context))
     }
 
     fn with_context<C, F>(self, context: F) -> Result<T, OctantError>
@@ -91,7 +141,7 @@ where
         C: Display + Send + Sync + 'static,
         F: FnOnce() -> C,
     {
-        self.map_err(|e| OctantError::new(e).with_context(context))
+        self.map_err(|e| OctantError::from(e).with_context(context))
     }
 }
 

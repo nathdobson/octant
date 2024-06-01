@@ -1,8 +1,9 @@
 use std::fmt::{Debug, Formatter};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use octant_error::OctantResult;
 
-use crate::{DeserializeContext, DeserializeWith, Error};
+use crate::{DeserializeContext, DeserializeWith};
 
 #[derive(Clone)]
 pub enum RawEncoded {
@@ -10,7 +11,7 @@ pub enum RawEncoded {
 }
 
 impl RawEncoded {
-    pub fn deserialize_as<'c, 'de, T: Deserialize<'de>>(&'de self) -> Result<T, Error> {
+    pub fn deserialize_as<'c, 'de, T: Deserialize<'de>>(&'de self) -> OctantResult<T> {
         match self {
             RawEncoded::Text(text) => Ok(T::deserialize(&mut serde_json::Deserializer::new(
                 &mut serde_json::de::StrRead::new(&text),
@@ -20,7 +21,7 @@ impl RawEncoded {
     pub fn deserialize_as_with<'c, 'de, T: DeserializeWith<'de>>(
         &'de self,
         ctx: &'c DeserializeContext,
-    ) -> Result<T, Error> {
+    ) -> OctantResult<T> {
         match self {
             RawEncoded::Text(text) => Ok(T::deserialize_with(
                 ctx,

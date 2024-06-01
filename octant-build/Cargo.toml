@@ -13,4 +13,4 @@ tokio = { workspace = true, features = [
   "rt-multi-thread",
 ] }
 futures = { workspace = true }
-anyhow = { workspace = true }
+octant-error = {workspace=true}

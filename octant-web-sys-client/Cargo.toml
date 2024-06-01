@@ -10,7 +10,6 @@ metabuild = ["octant-sys-build"]
 octant-runtime-client = {workspace=true}
 octant-serde = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
-anyhow = { workspace = true }
 catalog = { workspace = true }
 octant-error = { workspace = true }
 log = { workspace = true }

@@ -2,7 +2,7 @@ use std::rc::Rc;
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
 
-use octant_error::OctantError;
+use octant_error::{OctantError, OctantResult};
 use octant_object::{class, DebugClass};
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{
@@ -34,13 +34,13 @@ impl dyn CredentialsContainer {
     pub async fn get_with_options(
         self: &Rc2<Self>,
         req: RcCredentialRequestOptions,
-    ) -> anyhow::Result<CredentialData> {
+    ) -> OctantResult<CredentialData> {
         Ok(self.get_with_options_impl(req).await?.into_inner()?)
     }
     pub async fn create_with_options(
         self: &Rc2<Self>,
         req: RcCredentialCreationOptions,
-    ) -> anyhow::Result<CredentialData> {
+    ) -> OctantResult<CredentialData> {
         Ok(self.create_with_options_impl(req).await?.into_inner()?)
     }
 }

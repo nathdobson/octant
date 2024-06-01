@@ -5,13 +5,12 @@ extern crate octant_web_sys_client;
 
 use std::rc::Rc;
 
-use anyhow::anyhow;
 use futures::StreamExt;
 use tokio::{sync::mpsc::unbounded_channel, try_join};
 use wasm_bindgen::prelude::*;
 use web_sys::window;
 
-use octant_error::OctantError;
+use octant_error::{octant_error, OctantError, OctantResult};
 use octant_runtime_client::{
     proto::{DownMessageList, UpMessageList},
     runtime::Runtime,
@@ -41,7 +40,7 @@ pub async fn main() {
     }
 }
 
-pub async fn main_impl() -> anyhow::Result<!> {
+pub async fn main_impl() -> OctantResult<!> {
     let location = window().expect("no window").location();
     let http_proto = location.protocol().map_err(OctantError::from)?;
     let host = location.host().map_err(OctantError::from)?;
@@ -49,7 +48,7 @@ pub async fn main_impl() -> anyhow::Result<!> {
         "http:" => "ws:",
         "https:" => "wss:",
         _ => {
-            return Err(anyhow!(
+            return Err(octant_error!(
                 "Cannot infer websocket protocol for {:?}",
                 http_proto
             ));
@@ -86,7 +85,7 @@ pub async fn main_impl() -> anyhow::Result<!> {
                 message.run(&runtime)?;
             }
         }
-        Err(anyhow!("Websocket terminated"))
+        Err(octant_error!("Websocket terminated"))
     };
     let send_fut = async {
         loop {
@@ -97,7 +96,7 @@ pub async fn main_impl() -> anyhow::Result<!> {
             let commands = commands
                 .iter()
                 .map(|x| Format::default().serialize(&**x))
-                .collect::<anyhow::Result<Vec<_>>>()?;
+                .collect::<OctantResult<Vec<_>>>()?;
             let message = UpMessageList { commands };
             tx.send(WebSocketMessage::Text(serde_json::to_string(&message)?))?;
         }

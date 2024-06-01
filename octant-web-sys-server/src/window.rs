@@ -8,7 +8,7 @@ use futures::future::BoxFuture;
 use safe_once::cell::OnceCell;
 use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serializer};
 
-use octant_error::OctantError;
+use octant_error::{OctantError, OctantResult};
 use octant_object::{class, DebugClass};
 use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{
@@ -40,7 +40,7 @@ pub struct WindowFields {
 }
 
 #[cfg(side = "server")]
-pub type FetchFuture<'a> = impl 'a + Future<Output = anyhow::Result<RcResponse>>;
+pub type FetchFuture<'a> = impl 'a + Future<Output = OctantResult<RcResponse>>;
 
 #[class]
 pub trait Window: Object {

@@ -7,7 +7,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use anyhow::anyhow;
 use base64urlsafedata::HumanBinaryData;
 use parking_lot::Mutex;
 use url::Url;
@@ -18,6 +17,7 @@ use octant_database::{
     tack::Tack,
     value::{dict::Dict, prim::Prim},
 };
+use octant_error::{octant_error, OctantResult};
 use octant_server::{cookies::CookieData, session::Session};
 
 mod into_auth;
@@ -91,10 +91,10 @@ octant_database::database_struct! {
     }
 }
 
-fn build_webauthn(url: &Url) -> anyhow::Result<Webauthn> {
+fn build_webauthn(url: &Url) -> OctantResult<Webauthn> {
     let rp_id = url
         .host()
-        .ok_or_else(|| anyhow!("host not included in URL"))?
+        .ok_or_else(|| octant_error!("host not included in URL"))?
         .to_string();
     let rp_origin = url.join("/")?;
     let webauthn = WebauthnBuilder::new(&rp_id, &rp_origin)?

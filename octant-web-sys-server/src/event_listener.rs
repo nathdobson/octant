@@ -7,6 +7,7 @@ use std::{
 
 use octant_object::{class, DebugClass};
 use serde::Serialize;
+use octant_error::OctantResult;
 
 use crate::object::Object;
 use octant_reffed::rc::RcRef;
@@ -105,7 +106,7 @@ struct EventFired {
 define_serde_impl!(EventFired : UpMessage);
 impl UpMessage for EventFired {
     #[cfg(side = "server")]
-    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> anyhow::Result<()> {
+    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()> {
         if let Some(handler) = self.listener.handler.try_get() {
             (handler.0)()
         }

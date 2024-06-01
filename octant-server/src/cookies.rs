@@ -8,6 +8,7 @@ use std::rc::Rc;
 use parking_lot::Mutex;
 use uuid::Uuid;
 use weak_table::WeakValueHashMap;
+use octant_runtime_server::reexports::octant_error::OctantResult;
 
 use crate::session::{Session, SessionData};
 
@@ -87,7 +88,7 @@ impl CookieRouter {
         &'a self,
         session: &'a Rc<Session>,
         cookie: String,
-    ) -> impl 'a + Future<Output = anyhow::Result<()>> {
+    ) -> impl 'a + Future<Output = OctantResult<()>> {
         async move {
             let (cookie_token, _guard) = self.create_start(cookie);
             let request_init = session.global().new_request_init();
@@ -105,7 +106,7 @@ impl CookieRouter {
             Ok(())
         }
     }
-    pub async fn update(&self, session: &Rc<Session>) -> anyhow::Result<()> {
+    pub async fn update(&self, session: &Rc<Session>) -> OctantResult<()> {
         let (cookie_token, _guard) = self.update_start(&session);
         let request_init = session.global().new_request_init();
         let request = session.global().new_request(

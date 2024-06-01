@@ -10,7 +10,6 @@ use std::{
 };
 use std::rc::Rc;
 
-use anyhow::anyhow;
 use clap::Parser;
 use cookie::Cookie;
 use futures::{
@@ -25,6 +24,7 @@ use warp::{
     Filter,
     Reply, ws::{Message, WebSocket},
 };
+use octant_error::{octant_error, OctantError, OctantResult};
 
 use octant_executor::{
     event_loop::EventPool,
@@ -72,7 +72,7 @@ impl OctantServerOptions {
 
 pub trait Handler: 'static + Sync + Send {
     fn prefix(&self) -> String;
-    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> anyhow::Result<Page>;
+    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> OctantResult<Page>;
 }
 
 struct OctantApplication {
@@ -81,7 +81,7 @@ struct OctantApplication {
 }
 
 impl OctantApplication {
-    fn create_page(&self, url: &str, _global: Rc<Global>) -> anyhow::Result<Page> {
+    fn create_page(&self, url: &str, _global: Rc<Global>) -> OctantResult<Page> {
         let url = Url::parse(url)?;
         let prefix = url
             .path_segments()
@@ -90,11 +90,11 @@ impl OctantApplication {
                 x.next()
             })
             .flatten()
-            .ok_or_else(|| anyhow::Error::msg("Cannot find path prefix"))?;
+            .ok_or_else(|| OctantError::msg("Cannot find path prefix"))?;
         self.server
             .handlers
             .get(prefix)
-            .ok_or_else(|| anyhow::Error::msg("Cannot find handler"))?
+            .ok_or_else(|| OctantError::msg("Cannot find handler"))?
             .clone()
             .handle(&url, self.session.clone())
     }
@@ -117,12 +117,12 @@ impl OctantServer {
     pub fn add_handler(&mut self, handler: impl Handler) {
         self.handlers.insert(handler.prefix(), Arc::new(handler));
     }
-    async fn encode(x: DownMessageList) -> anyhow::Result<Message> {
+    async fn encode(x: DownMessageList) -> OctantResult<Message> {
         match Format::default().serialize_raw(&x)? {
             RawEncoded::Text(x) => Ok(Message::text(x)),
         }
     }
-    fn decode(runtime: &Rc<Runtime>, x: Message) -> anyhow::Result<Option<UpMessageList>> {
+    fn decode(runtime: &Rc<Runtime>, x: Message) -> OctantResult<Option<UpMessageList>> {
         if x.is_close() {
             Ok(None)
         } else if x.is_text() {
@@ -140,7 +140,7 @@ impl OctantServer {
         self: Arc<Self>,
         tx: SplitSink<WebSocket, Message>,
         rx: SplitStream<WebSocket>,
-    ) -> anyhow::Result<()> {
+    ) -> OctantResult<()> {
         let spawn = self.spawn.clone();
         spawn
             .spawn_async(move || async move {
@@ -153,7 +153,7 @@ impl OctantServer {
         self: Arc<Self>,
         tx: SplitSink<WebSocket, Message>,
         mut rx: SplitStream<WebSocket>,
-    ) -> anyhow::Result<()> {
+    ) -> OctantResult<()> {
         let (tx_inner, rx_inner) = mpsc::unbounded_channel();
         let mut sink = BufferedDownMessageSink::new(rx_inner, Box::pin(tx.with(Self::encode)));
         let (spawn, mut pool) = EventPool::new(move |cx| sink.poll_flush(cx));
@@ -193,14 +193,14 @@ impl OctantServer {
         log::info!("Done running pool");
         Ok(())
     }
-    pub async fn run(self) -> anyhow::Result<()> {
+    pub async fn run(self) -> OctantResult<()> {
         Arc::new(self).run_arc().await?;
         Ok(())
     }
     fn add_header(reply: impl Reply) -> impl Reply {
         warp::reply::with_header(reply, "Cache-Control", "no-cache")
     }
-    pub async fn run_arc(self: Arc<Self>) -> anyhow::Result<()> {
+    pub async fn run_arc(self: Arc<Self>) -> OctantResult<()> {
         let statik = warp::path("static")
             .and(warp::fs::dir("./target/www"))
             .map(Self::add_header);
@@ -261,7 +261,7 @@ impl OctantServer {
             if let Some(bind_http) = self.options.bind_http {
                 warp::serve(routes.clone()).run(bind_http).await;
             }
-            Result::<_, anyhow::Error>::Ok(())
+            Result::<_, OctantError>::Ok(())
         };
         let https = async {
             if let Some(bind_https) = self.options.bind_https {
@@ -271,19 +271,19 @@ impl OctantServer {
                         self.options
                             .cert_path
                             .as_ref()
-                            .ok_or_else(|| anyhow!("missing cert_path flag"))?,
+                            .ok_or_else(|| octant_error!("missing cert_path flag"))?,
                     )
                     .key_path(
                         &self
                             .options
                             .key_path
                             .as_ref()
-                            .ok_or_else(|| anyhow!("missing key_path flag:"))?,
+                            .ok_or_else(|| octant_error!("missing key_path flag:"))?,
                     )
                     .run(bind_https)
                     .await;
             }
-            Result::<_, anyhow::Error>::Ok(())
+            Result::<_, OctantError>::Ok(())
         };
         try_join!(http, https)?;
         Ok(())
@@ -291,7 +291,7 @@ impl OctantServer {
 }
 
 pub trait Application: 'static + Sync + Send {
-    fn create_page(&self, url: &str, global: Arc<Global>) -> anyhow::Result<Page>;
+    fn create_page(&self, url: &str, global: Arc<Global>) -> OctantResult<Page>;
 }
 
 pub struct Page {

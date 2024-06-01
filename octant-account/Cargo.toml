@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = { workspace = true }
 url = { workspace = true }
 tokio = { workspace = true }
 log = { workspace = true }
@@ -19,3 +18,4 @@ parking_lot = { workspace = true }
 uuid = { workspace = true }
 octant-web-sys-server = { workspace = true }
 octant-reffed = {workspace=true}
+octant-error = {workspace=true, features=["webauthn-rs-core"]}

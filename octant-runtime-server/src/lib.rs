@@ -29,7 +29,6 @@ use crate::{
 pub mod handle;
 #[doc(hidden)]
 pub mod reexports {
-    pub use anyhow;
     pub use catalog;
     pub use paste;
     pub use serde;
@@ -37,6 +36,7 @@ pub mod reexports {
     pub use octant_object;
     pub use octant_reffed;
     pub use octant_serde;
+    pub use ::octant_error;
 }
 
 #[cfg(side = "client")]

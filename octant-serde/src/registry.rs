@@ -4,15 +4,15 @@ use std::{
     marker::{PhantomData, Unsize},
 };
 
-use anyhow::anyhow;
 use catalog::{Builder, BuilderFrom, Registry};
 use serde::Serialize;
 
-use crate::{DeserializeContext, DeserializeWith, Error, Format, RawEncoded};
+use crate::{DeserializeContext, DeserializeWith, Format, RawEncoded};
 use itertools::Itertools;
+use octant_error::{octant_error, OctantResult};
 
 type DeserializeFn<U> =
-    for<'c, 'de> fn(&'c DeserializeContext, &'de RawEncoded) -> Result<Box<U>, Error>;
+    for<'c, 'de> fn(&'c DeserializeContext, &'de RawEncoded) -> OctantResult<Box<U>>;
 
 pub struct DeserializeImp<U: ?Sized, T> {
     pub name: &'static str,
@@ -78,14 +78,14 @@ impl DeserializeRegistry {
         ctx: &DeserializeContext,
         typ: &str,
         value: &RawEncoded,
-    ) -> Result<Box<U>, Error> {
+    ) -> OctantResult<Box<U>> {
         let dfn: &dyn Any = *self
             .deserializers
             .get(typ)
-            .ok_or_else(|| anyhow!("Could not find deserializer for {}", typ,))?;
+            .ok_or_else(|| octant_error!("Could not find deserializer for {}", typ,))?;
         let dfn: &DeserializeFn<U> = dfn
             .downcast_ref()
-            .ok_or_else(|| anyhow!("Could not downcast deserializer"))?;
+            .ok_or_else(|| octant_error!("Could not downcast deserializer"))?;
         (*dfn)(ctx, value)
     }
 }
@@ -95,11 +95,11 @@ pub trait SerializeType {
 }
 
 pub trait SerializeDyn: SerializeType {
-    fn serialize_dyn(&self, format: Format) -> Result<RawEncoded, Error>;
+    fn serialize_dyn(&self, format: Format) -> OctantResult<RawEncoded>;
 }
 
 impl<T: Serialize + SerializeType> SerializeDyn for T {
-    fn serialize_dyn(&self, format: Format) -> Result<RawEncoded, Error> {
+    fn serialize_dyn(&self, format: Format) -> OctantResult<RawEncoded> {
         format.serialize_raw(self)
     }
 }

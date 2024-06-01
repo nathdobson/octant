@@ -1,12 +1,12 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
-use anyhow::{anyhow, Context};
 use tokio::sync::RwLock;
 use url::Url;
 use webauthn_rs::prelude::{Passkey, Uuid};
 
 use octant_database::{forest::Forest, tack::Tack, tree::Tree};
+use octant_error::{Context, octant_error, OctantResult};
 use octant_server::{Handler, Page, session::Session};
 use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
 
@@ -26,7 +26,7 @@ impl RegisterHandler {
         url: &Url,
         email: String,
         name: String,
-    ) -> anyhow::Result<()> {
+    ) -> OctantResult<()> {
         let webauthn = build_webauthn(url)?;
         let (ccr, skr) =
             webauthn.start_passkey_registration(Uuid::new_v4(), &email, &name, None)?;
@@ -47,12 +47,12 @@ impl RegisterHandler {
         this.register(email, name, result).await?;
         Ok(())
     }
-    async fn register(&self, email: String, name: String, passkey: Passkey) -> anyhow::Result<()> {
+    async fn register(&self, email: String, name: String, passkey: Passkey) -> OctantResult<()> {
         let read = self.forest.read().await;
         let mut accounts = read.write(&self.accounts);
         let users = accounts.get_mut().users();
         if let Some(account) = users.get(&email) {
-            return Err(anyhow!("already registered"));
+            return Err(octant_error!("already registered"));
         }
         let mut account = Account::new(email.clone(), name);
         Tack::new(&mut account).add_passkey(passkey);
@@ -66,7 +66,7 @@ impl Handler for RegisterHandler {
         "register".to_string()
     }
 
-    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> anyhow::Result<Page> {
+    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> OctantResult<Page> {
         let url = url.clone();
         let d = session.global().window().document();
         let text = d.create_text_node(format!("Register"));

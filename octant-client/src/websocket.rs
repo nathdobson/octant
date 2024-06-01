@@ -1,13 +1,12 @@
 use core::mem;
 use std::{pin::Pin, rc::Rc, str, task::Poll};
 
-use anyhow::anyhow;
 use futures::Stream;
 use tokio::sync::mpsc;
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
 use web_sys::{CloseEvent, ErrorEvent, Event, MessageEvent, WebSocket};
 
-use octant_error::{Context, OctantError};
+use octant_error::{Context, octant_error, OctantError, OctantResult};
 
 struct WebSocketStream {
     socket: WebSocket,
@@ -52,19 +51,17 @@ impl Drop for WebSocketStream {
 // }
 
 impl WebSocketStream {
-    pub fn send(&self, message: WebSocketMessage) -> anyhow::Result<()> {
+    pub fn send(&self, message: WebSocketMessage) -> OctantResult<()> {
         match message {
             WebSocketMessage::Text(x) => self.socket.send_with_str(&x),
             WebSocketMessage::Binary(x) => self.socket.send_with_u8_array(&x),
         }
-        .map_err(OctantError::from)
         .context("Failed to send.")
-        .map_err(|e| e.into_anyhow())
     }
 }
 
 impl Stream for WebSocketReceiver {
-    type Item = anyhow::Result<WebSocketMessage>;
+    type Item = OctantResult<WebSocketMessage>;
 
     fn poll_next(
         mut self: Pin<&mut Self>,
@@ -74,7 +71,7 @@ impl Stream for WebSocketReceiver {
             Poll::Ready(Some(WebSocketEvent::Connect)) => unreachable!(),
             Poll::Ready(Some(WebSocketEvent::Message(x))) => Poll::Ready(Some(Ok(x))),
             Poll::Ready(Some(WebSocketEvent::Error(e))) => {
-                Poll::Ready(Some(Err(OctantError::from(JsValue::from(e)).into_anyhow())))
+                Poll::Ready(Some(Err(OctantError::from(JsValue::from(e)))))
             }
             Poll::Ready(None) => Poll::Ready(None),
             Poll::Pending => Poll::Pending,
@@ -84,15 +81,13 @@ impl Stream for WebSocketReceiver {
 }
 
 impl WebSocketSender {
-    pub fn send(&self, message: WebSocketMessage) -> anyhow::Result<()> {
+    pub fn send(&self, message: WebSocketMessage) -> OctantResult<()> {
         self.stream.send(message)
     }
 }
 
-pub async fn connect(address: &str) -> anyhow::Result<(WebSocketSender, WebSocketReceiver)> {
-    let socket = WebSocket::new(address)
-        .map_err(OctantError::from)
-        .context("Failed to create socket.")?;
+pub async fn connect(address: &str) -> OctantResult<(WebSocketSender, WebSocketReceiver)> {
+    let socket = WebSocket::new(address).context("Failed to create socket.")?;
     let (recv_tx, mut recv_rx) = mpsc::unbounded_channel();
     socket.set_binary_type(web_sys::BinaryType::Arraybuffer);
 
@@ -151,12 +146,11 @@ pub async fn connect(address: &str) -> anyhow::Result<(WebSocketSender, WebSocke
         WebSocketEvent::Error(e) => {
             log::error!("receive error");
             return Err(OctantError::from(JsValue::from(e))
-                .context("Failed to connect.")
-                .into_anyhow());
+                .context("Failed to connect."));
         }
         WebSocketEvent::Message(_) => unreachable!(),
         WebSocketEvent::Close => {
-            return Err(anyhow!("Connection closed."));
+            return Err(octant_error!("Connection closed."));
         }
     }
 

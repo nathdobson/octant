@@ -9,7 +9,6 @@ octant-panic = { workspace = true }
 simple_logger = { workspace = true }
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }
 octant-runtime-server = {workspace=true}
-anyhow = { workspace = true }
 atomic_refcell = { workspace = true }
 url = { workspace = true }
 webauthn-rs = { workspace = true }
@@ -19,3 +18,4 @@ octant-account = { workspace = true }
 octant-database = { workspace = true }
 parking_lot = { workspace = true }
 octant-web-sys-server = { workspace = true }
+octant-error = {workspace=true}

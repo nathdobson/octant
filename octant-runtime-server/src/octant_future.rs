@@ -5,11 +5,14 @@ use std::{
     task::{Context, Poll},
 };
 
-#[cfg(side = "server")]
-use anyhow::anyhow;
 use serde::{Deserializer, Serialize, Serializer};
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
+
+#[cfg(side = "server")]
+use octant_error::octant_error;
+#[cfg(side = "server")]
+use octant_error::OctantResult;
 
 use octant_object::{class, DebugClass};
 use octant_reffed::rc::Rc2;
@@ -21,10 +24,14 @@ use octant_serde::{
 
 #[cfg(side = "server")]
 use crate::immediate_return::AsTypedHandle;
-use crate::peer::PeerFields;
 use crate::{
-    deserialize_object_with, future_return::FutureReturn, handle::TypedHandle,
-    immediate_return::ImmediateReturn, peer::Peer, proto::UpMessage, runtime::Runtime,
+    deserialize_object_with,
+    future_return::FutureReturn,
+    handle::TypedHandle,
+    immediate_return::ImmediateReturn,
+    peer::{Peer, PeerFields},
+    proto::UpMessage,
+    runtime::Runtime,
 };
 
 #[derive(DebugClass)]
@@ -77,12 +84,12 @@ pub struct FutureResponse {
 define_serde_impl!(FutureResponse: UpMessage);
 impl UpMessage for FutureResponse {
     #[cfg(side = "server")]
-    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> anyhow::Result<()> {
+    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()> {
         self.promise
             .sender
             .borrow_mut()
             .take()
-            .ok_or_else(|| anyhow!("double return"))?
+            .ok_or_else(|| octant_error!("double return"))?
             .send(self.value)
             .ok();
         Ok(())
@@ -122,7 +129,7 @@ impl<T: Debug + FutureReturn> OctantFuture<T> {
 
 #[cfg(side = "server")]
 impl<T: FutureReturn> Future for OctantFuture<T> {
-    type Output = anyhow::Result<T>;
+    type Output = OctantResult<T>;
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         if let Poll::Ready(up) = Pin::new(&mut (*self).receiver).poll(cx)? {
             let mut ctx = DeserializeContext::new();

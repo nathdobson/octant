@@ -8,6 +8,7 @@ use octant_reffed::rc::{Rc2, Weak2};
 use octant_serde::DeserializeContext;
 use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
+use octant_error::OctantResult;
 
 use crate::{
     delete::delete_rpc,
@@ -74,7 +75,7 @@ impl Runtime {
         log::info!("Deleting handle {:?}", handle);
         delete_rpc(self, handle);
     }
-    pub fn run_batch(self: &Rc<Self>, batch: UpMessageList) -> anyhow::Result<()> {
+    pub fn run_batch(self: &Rc<Self>, batch: UpMessageList) -> OctantResult<()> {
         let mut ctx = DeserializeContext::new();
         ctx.insert::<Rc<Runtime>>(self.clone());
         for message in batch.commands {
@@ -84,7 +85,7 @@ impl Runtime {
         }
         Ok(())
     }
-    pub fn run_message(self: &Rc<Self>, message: Box<dyn UpMessage>) -> anyhow::Result<()> {
+    pub fn run_message(self: &Rc<Self>, message: Box<dyn UpMessage>) -> OctantResult<()> {
         message.run(self)
     }
     pub fn lookup<T: ?Sized + Class>(

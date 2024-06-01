@@ -1,11 +1,11 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
-use anyhow::anyhow;
 use parking_lot::Mutex;
 use url::Url;
 
 use octant_account::SessionTable;
+use octant_runtime_server::reexports::octant_error::{octant_error, OctantResult};
 use octant_server::{cookies::CookieRouter, Handler, Page, session::Session};
 use octant_web_sys_server::{
     builder::{ElementExt, HtmlFormElementExt, NodeExt},
@@ -24,11 +24,11 @@ pub struct Guess {
 }
 
 impl ScoreHandler {
-    pub fn handle_form(&self, session: &Rc<Session>, guess: &str) -> anyhow::Result<()> {
+    pub fn handle_form(&self, session: &Rc<Session>, guess: &str) -> OctantResult<()> {
         let login = self
             .session_table
             .get(session)
-            .ok_or_else(|| anyhow!("not logged in"))?;
+            .ok_or_else(|| octant_error!("not logged in"))?;
         self.guesses.lock().push(Guess {
             email: login.email.clone(),
             guess: guess.to_string(),
@@ -39,7 +39,7 @@ impl ScoreHandler {
         self: &Arc<Self>,
         mut page: RcElement,
         session: Rc<Session>,
-    ) -> anyhow::Result<()> {
+    ) -> OctantResult<()> {
         let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());
         // prompt(
         //     session.global().runtime(),
@@ -82,7 +82,7 @@ impl Handler for ScoreHandler {
         "score".to_string()
     }
 
-    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> anyhow::Result<Page> {
+    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> OctantResult<Page> {
         let global = octant_web_sys_server::global::Global::new(session.global().runtime().clone());
         let page = global.window().document().create_div_element();
         session.global().runtime().spawner().spawn({

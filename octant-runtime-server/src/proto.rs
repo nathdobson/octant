@@ -8,6 +8,7 @@ use serde::{
     de::{Error, MapAccess, Visitor},
     Deserialize, Deserializer, Serialize,
 };
+use octant_error::OctantResult;
 
 use octant_serde::{
     DeserializeContext, DeserializeWith, DeserializeWithSeed, Encoded, SerializeDyn,
@@ -17,7 +18,7 @@ use crate::runtime::Runtime;
 
 #[cfg(side = "client")]
 pub trait DownMessage: SerializeDyn + Debug + Any {
-    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> anyhow::Result<()>;
+    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()>;
 }
 
 #[cfg(side = "server")]
@@ -28,7 +29,7 @@ pub trait UpMessage: SerializeDyn + Debug + Any {}
 
 #[cfg(side = "server")]
 pub trait UpMessage: SerializeDyn + Debug + Any {
-    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> anyhow::Result<()>;
+    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()>;
 }
 
 #[derive(Serialize, Deserialize, Debug)]

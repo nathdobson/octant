@@ -365,10 +365,10 @@ fn rpc_fn(args: &RpcArgs, input: &ItemFn) -> syn::Result<TokenStream> {
         #[cfg(side="client")]
         #fn_token #ident(
             #inputs
-        ) #output_type_arrow ::octant_runtime::reexports::anyhow::Result<#output_type> {
+        ) #output_type_arrow ::octant_runtime::reexports::octant_error::OctantResult<#output_type> {
             #request_type_def
             impl ::octant_runtime::proto::DownMessage for #request_type {
-                fn run(self:Box<Self>, runtime: &::std::rc::Rc<::octant_runtime::runtime::Runtime>) -> ::octant_runtime::reexports::anyhow::Result<()>{
+                fn run(self:Box<Self>, runtime: &::std::rc::Rc<::octant_runtime::runtime::Runtime>) -> ::octant_runtime::reexports::octant_error::OctantResult<()>{
                     let output = #(#self_callee)*#ident(runtime #(, self.#param_names)*)?;
                     ::octant_runtime::immediate_return::ImmediateReturn::immediate_return(output, runtime, self.down);
                     Ok(())

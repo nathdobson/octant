@@ -24,7 +24,6 @@ web-sys = { workspace = true, features = [
 ] }
 log = { workspace = true }
 js-sys = { workspace = true }
-anyhow = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
 wasm-logger = { workspace = true }
 console_error_panic_hook = { workspace = true }

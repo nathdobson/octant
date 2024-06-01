@@ -13,6 +13,7 @@ use std::{
 use futures::future::LocalBoxFuture;
 use slab::Slab;
 use tokio::sync::mpsc;
+use octant_error::OctantResult;
 
 #[derive(Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
 struct EventTaskId(usize);
@@ -26,7 +27,7 @@ struct EventWaker {
 struct EventTask {
     waker: Arc<EventWaker>,
     spawn: Rc<EventSpawn>,
-    inner: RefCell<LocalBoxFuture<'static, anyhow::Result<()>>>,
+    inner: RefCell<LocalBoxFuture<'static, OctantResult<()>>>,
 }
 
 struct TaskSet {
@@ -48,7 +49,7 @@ pub struct EventPool {
     macrotasks: mpsc::UnboundedReceiver<EventTaskId>,
     task_set: Rc<TaskSet>,
     flushing: bool,
-    poll_flush: Box<dyn FnMut(&mut Context<'_>) -> Poll<anyhow::Result<()>>>,
+    poll_flush: Box<dyn FnMut(&mut Context<'_>) -> Poll<OctantResult<()>>>,
 }
 
 impl EventTask {}
@@ -62,7 +63,7 @@ impl Wake for EventWaker {
 }
 
 impl EventPool {
-    pub fn new<F: 'static + FnMut(&mut Context<'_>) -> Poll<anyhow::Result<()>>>(
+    pub fn new<F: 'static + FnMut(&mut Context<'_>) -> Poll<OctantResult<()>>>(
         poll_flush: F,
     ) -> (Rc<EventSpawn>, Self) {
         let (micro_tx, micro_rx) = mpsc::unbounded_channel();
@@ -87,7 +88,7 @@ impl EventPool {
         (spawn, pool)
     }
 
-    fn poll_once(&mut self, id: EventTaskId) -> anyhow::Result<()> {
+    fn poll_once(&mut self, id: EventTaskId) -> OctantResult<()> {
         let task = self.task_set.tasks.borrow_mut().get(id.0).unwrap().clone();
         task.waker.woken.store(false, Ordering::SeqCst);
         let polled = task
@@ -105,7 +106,7 @@ impl EventPool {
         Ok(())
     }
 
-    fn poll_step(&mut self, cx: &mut Context<'_>) -> Poll<anyhow::Result<()>> {
+    fn poll_step(&mut self, cx: &mut Context<'_>) -> Poll<OctantResult<()>> {
         'system: loop {
             if self.flushing {
                 ready!((self.poll_flush)(cx))?;
@@ -143,13 +144,13 @@ impl EventPool {
             }
         }
     }
-    pub async fn run(&mut self) -> anyhow::Result<()> {
+    pub async fn run(&mut self) -> OctantResult<()> {
         poll_fn(|cx| self.poll_step(cx)).await
     }
 }
 
 impl EventSpawn {
-    fn try_insert<F: 'static + Future<Output = anyhow::Result<()>>>(
+    fn try_insert<F: 'static + Future<Output = OctantResult<()>>>(
         self: &Rc<EventSpawn>,
         f: F,
     ) -> Option<EventTaskId> {
@@ -171,12 +172,12 @@ impl EventSpawn {
             None
         }
     }
-    pub fn spawn<F: 'static + Future<Output = anyhow::Result<()>>>(self: &Rc<Self>, f: F) {
+    pub fn spawn<F: 'static + Future<Output = OctantResult<()>>>(self: &Rc<Self>, f: F) {
         if let Some(id) = self.try_insert(f) {
             self.queue.microtasks.send(id).ok();
         }
     }
-    pub fn spawn_macro<F: 'static + Future<Output = anyhow::Result<()>>>(self: &Rc<Self>, f: F) {
+    pub fn spawn_macro<F: 'static + Future<Output = OctantResult<()>>>(self: &Rc<Self>, f: F) {
         if let Some(id) = self.try_insert(f) {
             self.queue.macrotasks.send(id).ok();
         }
@@ -194,11 +195,12 @@ mod test {
 
     use parking_lot::Mutex;
     use tokio::task::yield_now;
+    use octant_error::OctantResult;
 
     use crate::event_loop::EventPool;
 
     #[tokio::test]
-    async fn test() -> anyhow::Result<()> {
+    async fn test() -> OctantResult<()> {
         static LOG: Mutex<Vec<String>> = Mutex::new(vec![]);
         let (spawn, mut pool) = EventPool::new(|_| {
             LOG.lock().push(format!("yield"));
@@ -220,7 +222,7 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test2() -> anyhow::Result<()> {
+    async fn test2() -> OctantResult<()> {
         static LOG: Mutex<Vec<String>> = Mutex::new(vec![]);
         let (spawn, mut pool) = EventPool::new(|_| {
             LOG.lock().push(format!("yield"));
@@ -250,7 +252,7 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test3() -> anyhow::Result<()> {
+    async fn test3() -> OctantResult<()> {
         static LOG: Mutex<Vec<String>> = Mutex::new(vec![]);
         let (spawn, mut pool) = EventPool::new(|_| Poll::Ready(Ok(())));
         spawn.spawn({

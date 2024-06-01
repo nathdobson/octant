@@ -1,13 +1,13 @@
 use std::{future::Future, sync::Arc};
 use std::rc::Rc;
 
-use anyhow::anyhow;
 use tokio::sync::RwLock;
 use url::Url;
 use uuid::Uuid;
 use webauthn_rs::prelude::Passkey;
 
 use octant_database::{forest::Forest, tree::Tree};
+use octant_error::{octant_error, OctantResult};
 use octant_server::{cookies::CookieRouter, Handler, Page, session::Session};
 use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
 
@@ -29,7 +29,7 @@ impl LoginHandler {
         session: Rc<Session>,
         url: &'a Url,
         email: &'a str,
-    ) -> impl 'a + Future<Output = anyhow::Result<()>> {
+    ) -> impl 'a + Future<Output = OctantResult<()>> {
         async move {
             let webauthn = build_webauthn(url)?;
             let passkeys: Vec<Passkey> = {
@@ -38,7 +38,7 @@ impl LoginHandler {
                 let user = accounts
                     .users
                     .get(email)
-                    .ok_or_else(|| anyhow!("account does not exist"))?;
+                    .ok_or_else(|| octant_error!("account does not exist"))?;
                 user.passkeys.iter().map(|(k, v)| (*v).clone()).collect()
             };
             let (rcr, skr) = webauthn.start_passkey_authentication(&passkeys)?;
@@ -81,7 +81,7 @@ impl Handler for LoginHandler {
         "login".to_string()
     }
 
-    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> anyhow::Result<Page> {
+    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> OctantResult<Page> {
         let url = url.clone();
         let d = session.global().window().document();
         let text = d.create_text_node(format!("Register"));

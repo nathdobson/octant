@@ -9,8 +9,13 @@ wasm-bindgen = { workspace = true ,optional = true}
 web-sys = { workspace = true, features = ["console"] ,optional = true}
 log = { workspace = true }
 anyhow = { workspace = true, features= ["backtrace"] }
-serde = { version = "1.0.203", features = ["derive"] }
-backtrace = "0.3.71"
+serde = { workspace=true, features = ["derive"] }
+backtrace = {workspace=true}
+serde_json = {workspace=true}
+tokio = {workspace=true, features=["sync"], optional=true}
+warp={workspace=true, optional=true}
+url = {workspace=true ,optional = true}
+webauthn-rs-core = {workspace=true, optional=true}
 
 [features]
 wasm = ["sendable", "wasm-bindgen", "web-sys"]

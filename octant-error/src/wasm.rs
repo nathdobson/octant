@@ -1,5 +1,4 @@
 use std::{
-    convert::TryFrom,
     fmt::{Debug, Display, Formatter},
 };
 
@@ -33,17 +32,9 @@ impl WasmError {
     }
 }
 
-impl TryFrom<anyhow::Error> for WasmError {
-    type Error = anyhow::Error;
-
-    fn try_from(x: anyhow::Error) -> Result<WasmError, anyhow::Error> {
-        x.downcast::<WasmError>()
-    }
-}
-
-pub fn log_error(x: &anyhow::Error) {
+pub fn log_error(x: &OctantError) {
     log::error!("{}", x);
-    if let Some(wasm) = x.downcast_ref::<WasmError>() {
+    if let Some(wasm) = x.0.downcast_ref::<WasmError>() {
         if let Some(js) = wasm.as_ref() {
             console::error_1(js);
         } else {
@@ -55,11 +46,11 @@ pub fn log_error(x: &anyhow::Error) {
 // not sure why SendOption doesn't do this.
 unsafe impl Sync for WasmError {}
 
-impl From<WasmError> for OctantError {
-    fn from(value: WasmError) -> Self {
-        Self::from(anyhow::Error::from(value))
-    }
-}
+// impl From<WasmError> for OctantError {
+//     fn from(value: WasmError) -> Self {
+//         Self::from(OctantError::from(value))
+//     }
+// }
 
 impl From<JsValue> for OctantError {
     fn from(value: JsValue) -> Self {

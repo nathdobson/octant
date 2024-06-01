@@ -4,8 +4,9 @@ use std::{
 };
 
 use serde::{Deserialize, Deserializer, Serialize};
+use octant_error::OctantResult;
 
-use crate::{DESERIALIZE_REGISTRY, DeserializeContext, DeserializeWith, Error, RawEncoded};
+use crate::{DESERIALIZE_REGISTRY, DeserializeContext, DeserializeWith,  RawEncoded};
 
 #[derive(Serialize, Deserialize)]
 pub struct Encoded<U: ?Sized> {
@@ -27,7 +28,7 @@ impl<U: ?Sized> Encoded<U> {
     pub fn as_raw(&self) -> &RawEncoded {
         &self.value
     }
-    pub fn deserialize_with(&self, ctx: &DeserializeContext) -> Result<Box<U>, Error>
+    pub fn deserialize_with(&self, ctx: &DeserializeContext) -> OctantResult<Box<U>>
     where
         U: 'static,
     {

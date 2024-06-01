@@ -7,6 +7,7 @@ use octant_reffed::rc::Rc2;
 use octant_serde::DeserializeContext;
 use tokio::sync::mpsc::UnboundedSender;
 use web_sys::console;
+use octant_error::OctantResult;
 
 use crate::{
     handle::{RawHandle, TypedHandle},
@@ -31,7 +32,7 @@ pub struct RuntimeSink {
 }
 
 impl Runtime {
-    pub fn new(sink: UnboundedSender<Box<dyn UpMessage>>) -> anyhow::Result<Rc<Runtime>> {
+    pub fn new(sink: UnboundedSender<Box<dyn UpMessage>>) -> OctantResult<Rc<Runtime>> {
         let runtime = Rc::new(Runtime {
             state: AtomicRefCell::new(State {
                 handles: HashMap::new(),
@@ -72,7 +73,7 @@ impl Runtime {
     pub fn delete(self: &Rc<Self>, handle: RawHandle) {
         self.state.borrow_mut().handles.remove(&handle);
     }
-    pub async fn run_batch(self: &Rc<Self>, messages: DownMessageList) -> anyhow::Result<()> {
+    pub async fn run_batch(self: &Rc<Self>, messages: DownMessageList) -> OctantResult<()> {
         let mut ctx = DeserializeContext::new();
         ctx.insert::<Rc<Runtime>>(self.clone());
         for message in messages.commands {
@@ -82,7 +83,7 @@ impl Runtime {
         }
         Ok(())
     }
-    async fn run_message(self: &Rc<Self>, message: Box<dyn DownMessage>) -> anyhow::Result<()> {
+    async fn run_message(self: &Rc<Self>, message: Box<dyn DownMessage>) -> OctantResult<()> {
         message.run(self)?;
         Ok(())
     }
