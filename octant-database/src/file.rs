@@ -1,20 +1,24 @@
-use std::{io, path::Path, sync::Arc, time::Duration};
+use catalog::{register, Registry};
+use std::{
+    any::Any, collections::HashMap, io, marker::PhantomData, path::Path, sync::Arc, time::Duration,
+};
 
 use serde::{Deserialize, Serialize};
 use serde_json::ser::PrettyFormatter;
 use tokio::{
     fs,
-    fs::{File, read_dir},
+    fs::{read_dir, File},
     io::AsyncWriteExt,
     sync::RwLock,
 };
 
 use crate::{
-    de::{forest::DeserializeForest, update::DeserializeUpdate},
+    de::{forest::DeserializeForest, proxy::DeserializerProxy, update::DeserializeUpdate},
     forest::Forest,
     json::JsonProxy,
     ser::{forest::SerializeForest, update::SerializeUpdate},
     tree::{Tree, TreeId},
+    value::prim::Prim,
 };
 
 pub struct Database {
@@ -22,6 +26,75 @@ pub struct Database {
     file: File,
     ser_forest: SerializeForest<JsonProxy>,
 }
+
+pub static DATABASE_REGISTRY: Registry<DatabaseRegistry<JsonProxy>> = Registry::new();
+
+trait DeserializeTable<DP: DeserializerProxy>: 'static + Sync + Send {
+    fn deserialize_table<'up, 'de: 'up>(
+        &self,
+        forest: &mut DeserializeForest<DP>,
+        d: <DP as DeserializerProxy>::DeserializerValue<'up, 'de>,
+    ) -> Result<Arc<dyn 'static + Sync + Send + Any>, <DP as DeserializerProxy>::Error>;
+}
+
+pub struct DatabaseRegistry<DP: DeserializerProxy> {
+    deserializers: HashMap<&'static str, Box<dyn DeserializeTable<DP>>>,
+}
+
+impl<DP: DeserializerProxy> catalog::Builder for DatabaseRegistry<DP> {
+    type Output = DatabaseRegistry<DP>;
+
+    fn new() -> Self {
+        DatabaseRegistry {
+            deserializers: HashMap::new(),
+        }
+    }
+
+    fn build(self) -> Self::Output {
+        self
+    }
+}
+
+pub struct TableImpl<T: ?Sized> {
+    name: &'static str,
+    phantom: PhantomData<T>,
+}
+
+impl<T: ?Sized> TableImpl<T> {
+    pub const fn new(name: &'static str) -> Self {
+        TableImpl {
+            name,
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<
+        DP: DeserializerProxy,
+        T: 'static + Sync + Send + for<'de> DeserializeUpdate<'de> + SerializeUpdate,
+    > DeserializeTable<DP> for &'static TableImpl<T>
+{
+    fn deserialize_table<'up, 'de: 'up>(
+        &self,
+        forest: &mut DeserializeForest<DP>,
+        d: <DP as DeserializerProxy>::DeserializerValue<'up, 'de>,
+    ) -> Result<Arc<dyn 'static + Sync + Send + Any>, <DP as DeserializerProxy>::Error> {
+        Ok(Arc::<Tree<T>>::deserialize_snapshot(forest, d)?)
+    }
+}
+
+impl<T, DP: DeserializerProxy> catalog::BuilderFrom<&'static TableImpl<T>> for DatabaseRegistry<DP>
+where
+    T: 'static + Sync + Send,
+    T: 'static + for<'de> DeserializeUpdate<'de> + SerializeUpdate,
+{
+    fn insert(&mut self, element: &'static TableImpl<T>) {
+        self.deserializers.insert(element.name, Box::new(element));
+    }
+}
+
+#[register(DATABASE_REGISTRY)]
+pub static REGISTER_UNIT: TableImpl<Prim<()>> = TableImpl::new("()");
 
 impl Database {
     fn serializer(vec: &mut Vec<u8>) -> serde_json::Serializer<&mut Vec<u8>, PrettyFormatter> {

@@ -5,26 +5,26 @@
 #![feature(never_type)]
 
 use std::{
-    collections::HashMap, future::pending, net::SocketAddr, sync::Arc,
+    collections::HashMap, future::pending, net::SocketAddr, rc::Rc, sync::Arc,
     thread::available_parallelism,
 };
-use std::rc::Rc;
 
 use clap::Parser;
 use cookie::Cookie;
 use futures::{
-    SinkExt,
     stream::{SplitSink, SplitStream, StreamExt},
+    SinkExt,
 };
 use itertools::Itertools;
+use octant_error::{octant_error, OctantError, OctantResult};
 use tokio::{sync::mpsc, try_join};
 use url::Url;
 use uuid::Uuid;
 use warp::{
-    Filter,
-    Reply, ws::{Message, WebSocket},
+    filters::BoxedFilter,
+    ws::{Message, WebSocket},
+    Filter, Rejection, Reply,
 };
-use octant_error::{octant_error, OctantError, OctantResult};
 
 use octant_executor::{
     event_loop::EventPool,
@@ -97,6 +97,22 @@ impl OctantApplication {
             .ok_or_else(|| OctantError::msg("Cannot find handler"))?
             .clone()
             .handle(&url, self.session.clone())
+    }
+}
+
+type WarpHandler = BoxedFilter<(Box<dyn Reply>,)>;
+
+pub trait IntoWarpHandler {
+    fn into_warp_handler(self) -> WarpHandler;
+}
+
+impl<T: 'static + Sync + Send + Filter<Extract = (R,), Error = Rejection>, R: 'static> IntoWarpHandler
+    for T
+where
+    R: Reply,
+{
+    fn into_warp_handler(self) -> WarpHandler {
+        self.map(|x| Box::new(x) as Box<dyn Reply>).boxed()
     }
 }
 
@@ -200,10 +216,15 @@ impl OctantServer {
     fn add_header(reply: impl Reply) -> impl Reply {
         warp::reply::with_header(reply, "Cache-Control", "no-cache")
     }
-    pub async fn run_arc(self: Arc<Self>) -> OctantResult<()> {
-        let statik = warp::path("static")
+    fn statik() -> BoxedFilter<(Box<dyn Reply>,)> {
+        warp::path("static")
             .and(warp::fs::dir("./target/www"))
-            .map(Self::add_header);
+            .map(Self::add_header)
+            .map(|x| Box::new(x) as Box<dyn Reply>)
+            .boxed()
+    }
+    pub async fn run_arc(self: Arc<Self>) -> OctantResult<()> {
+        let statik = Self::statik();
         let site = warp::path("site")
             .and(warp::fs::file("./target/www/index.html"))
             .map(Self::add_header);
