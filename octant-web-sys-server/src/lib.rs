@@ -10,6 +10,7 @@
 #![feature(trait_alias)]
 #![feature(type_alias_impl_trait)]
 #![feature(try_blocks)]
+#![feature(impl_trait_in_assoc_type)]
 
 #[cfg(side="client")]
 extern crate octant_runtime_client as octant_runtime;

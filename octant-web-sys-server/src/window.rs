@@ -40,13 +40,29 @@ pub struct WindowFields {
 }
 
 #[cfg(side = "server")]
-pub type FetchFuture<'a> = impl 'a + Future<Output = OctantResult<RcResponse>>;
+pub type FetchFuture<'a> = <() as FetchFutureTrait>::Fut<'a>;
+
+#[cfg(side = "server")]
+pub trait FetchFutureTrait {
+    type Fut<'a>: 'a + Future<Output = OctantResult<RcResponse>>
+    where
+        Self: 'a;
+    fn fetch<'a>(this: &'a RcRef<dyn Window>, request: RcRequest) -> Self::Fut<'a>;
+}
+
+#[cfg(side = "server")]
+impl FetchFutureTrait for () {
+    type Fut<'a> = impl 'a + Future<Output = OctantResult<RcResponse>>;
+    fn fetch<'a>(this: &'a RcRef<dyn Window>, request: RcRequest) -> Self::Fut<'a> {
+        async move { Ok(this.fetch_impl(request).await??) }
+    }
+}
 
 #[class]
 pub trait Window: Object {
     #[cfg(side = "server")]
     fn fetch<'a>(self: &'a RcRef<Self>, request: RcRequest) -> FetchFuture<'a> {
-        async move { Ok(self.fetch_impl(request).await??) }
+        <()>::fetch(self, request)
     }
     #[cfg(side = "server")]
     fn document<'a>(self: &'a RcRef<Self>) -> &'a RcRef<dyn Document> {
