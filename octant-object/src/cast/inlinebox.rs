@@ -69,7 +69,7 @@ impl<T: ?Sized, R> InlineBox<T, R> {
             let value = ptr::read(r);
             mem::forget(self);
             let metadata = std::ptr::metadata::<U>(
-                std::ptr::from_raw_parts::<T>(null(), metadata) as *const U
+                std::ptr::from_raw_parts::<T>(null::<()>(), metadata) as *const U
             );
             InlineBox {
                 value,

@@ -97,3 +97,7 @@ octant-object-derive = {path="octant-object-derive"}
 convert_case = "0.6.0"
 octant-runtime-derive = {path="octant-runtime-derive"}
 backtrace = "0.3.72"
+marshal = {path="../marshal/marshal"}
+marshal-json = {path="../marshal/marshal-json"}
+marshal-bin = {path="../marshal/marshal-bin"}
+marshal-update = {path="../marshal/marshal-update"}
