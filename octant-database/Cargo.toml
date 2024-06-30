@@ -4,8 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-serde = { workspace = true, features = ["derive", "unstable"] }
-serde_assert = { workspace = true }
 tokio = { workspace = true, features = [
   "io-util",
   "rt",
@@ -13,14 +11,20 @@ tokio = { workspace = true, features = [
   "sync",
   "time",
 ] }
-serde_json = { workspace = true }
 tmpdir = { workspace = true }
 parking_lot = { workspace = true }
 by_address = { workspace = true }
 weak-table = { workspace = true }
 catalog = {workspace=true}
+marshal = {workspace = true}
+marshal-object = {workspace=true}
+marshal-update = {workspace=true}
+marshal-json = {workspace=true}
+octant-error={workspace=true}
+marshal-pointer = {workspace=true}
+anyhow = {workspace=true}
+marshal-bin = {workspace=true}
 
 [dev-dependencies]
-serde-value = { workspace = true }
 parking_lot = { workspace = true, features = ["deadlock_detection"] }
 pretty_assertions = { workspace = true }

@@ -1,10 +1,14 @@
-use catalog::{register, Registry};
-use std::{
-    any::Any, collections::HashMap, io, marker::PhantomData, path::Path, sync::Arc, time::Duration,
+use marshal::{context::OwnedContext, decode::DecodeHint};
+use marshal_json::{
+    decode::full::{JsonDecoder, JsonDecoderBuilder},
+    encode::full::{JsonEncoder, JsonEncoderBuilder},
 };
-
-use serde::{Deserialize, Serialize};
-use serde_json::ser::PrettyFormatter;
+use marshal_update::{
+    de::DeserializeUpdate,
+    ser::{SerializeStream, SerializeUpdate},
+};
+use octant_error::OctantResult;
+use std::{path::Path, sync::Arc, time::Duration};
 use tokio::{
     fs,
     fs::{read_dir, File},
@@ -12,100 +16,14 @@ use tokio::{
     sync::RwLock,
 };
 
-use crate::{
-    de::{forest::DeserializeForest, proxy::DeserializerProxy, update::DeserializeUpdate},
-    forest::Forest,
-    json::JsonProxy,
-    ser::{forest::SerializeForest, update::SerializeUpdate},
-    tree::{Tree, TreeId},
-    value::prim::Prim,
-};
-
-pub struct Database {
-    forest: Arc<RwLock<Forest>>,
+pub struct DatabaseFile<T: SerializeStream> {
+    state: Arc<RwLock<T>>,
+    stream: T::Stream,
     file: File,
-    ser_forest: SerializeForest<JsonProxy>,
 }
 
-pub static DATABASE_REGISTRY: Registry<DatabaseRegistry<JsonProxy>> = Registry::new();
-
-trait DeserializeTable<DP: DeserializerProxy>: 'static + Sync + Send {
-    fn deserialize_table<'up, 'de: 'up>(
-        &self,
-        forest: &mut DeserializeForest<DP>,
-        d: <DP as DeserializerProxy>::DeserializerValue<'up, 'de>,
-    ) -> Result<Arc<dyn 'static + Sync + Send + Any>, <DP as DeserializerProxy>::Error>;
-}
-
-pub struct DatabaseRegistry<DP: DeserializerProxy> {
-    deserializers: HashMap<&'static str, Box<dyn DeserializeTable<DP>>>,
-}
-
-impl<DP: DeserializerProxy> catalog::Builder for DatabaseRegistry<DP> {
-    type Output = DatabaseRegistry<DP>;
-
-    fn new() -> Self {
-        DatabaseRegistry {
-            deserializers: HashMap::new(),
-        }
-    }
-
-    fn build(self) -> Self::Output {
-        self
-    }
-}
-
-pub struct TableImpl<T: ?Sized> {
-    name: &'static str,
-    phantom: PhantomData<T>,
-}
-
-impl<T: ?Sized> TableImpl<T> {
-    pub const fn new(name: &'static str) -> Self {
-        TableImpl {
-            name,
-            phantom: PhantomData,
-        }
-    }
-}
-
-impl<
-        DP: DeserializerProxy,
-        T: 'static + Sync + Send + for<'de> DeserializeUpdate<'de> + SerializeUpdate,
-    > DeserializeTable<DP> for &'static TableImpl<T>
-{
-    fn deserialize_table<'up, 'de: 'up>(
-        &self,
-        forest: &mut DeserializeForest<DP>,
-        d: <DP as DeserializerProxy>::DeserializerValue<'up, 'de>,
-    ) -> Result<Arc<dyn 'static + Sync + Send + Any>, <DP as DeserializerProxy>::Error> {
-        Ok(Arc::<Tree<T>>::deserialize_snapshot(forest, d)?)
-    }
-}
-
-impl<T, DP: DeserializerProxy> catalog::BuilderFrom<&'static TableImpl<T>> for DatabaseRegistry<DP>
-where
-    T: 'static + Sync + Send,
-    T: 'static + for<'de> DeserializeUpdate<'de> + SerializeUpdate,
-{
-    fn insert(&mut self, element: &'static TableImpl<T>) {
-        self.deserializers.insert(element.name, Box::new(element));
-    }
-}
-
-#[register(DATABASE_REGISTRY)]
-pub static REGISTER_UNIT: TableImpl<Prim<()>> = TableImpl::new("()");
-
-impl Database {
-    fn serializer(vec: &mut Vec<u8>) -> serde_json::Serializer<&mut Vec<u8>, PrettyFormatter> {
-        serde_json::Serializer::with_formatter(vec, PrettyFormatter::new())
-    }
-    pub async fn new<
-        T: 'static + Send + Sync + for<'de> DeserializeUpdate<'de> + SerializeUpdate,
-    >(
-        dir: &Path,
-        def: impl FnOnce() -> Arc<Tree<T>>,
-    ) -> io::Result<(Self, Arc<Tree<T>>)> {
+impl<T: SerializeUpdate<JsonEncoder> + DeserializeUpdate<JsonDecoder> + Default> DatabaseFile<T> {
+    pub async fn new(dir: &Path) -> OctantResult<(Self, Arc<RwLock<T>>)> {
         let ext = "json";
         let mut entries = read_dir(dir).await?;
         let mut indices: Vec<u64> = vec![];
@@ -118,72 +36,67 @@ impl Database {
                 indices.push(index);
             }
         }
-        let mut root: Arc<Tree<T>>;
+        let mut state: T;
         let next: u64;
         if let Some(last) = indices.iter().max() {
             let path = dir.join(&format!("{}.{}", last, ext));
-            let mut de_forest = DeserializeForest::<JsonProxy>::new();
+
             let data = fs::read(&path).await?;
-            let mut d = serde_json::Deserializer::from_slice(&data);
-            root = de_forest.deserialize_snapshot(&mut d)?;
-            while let Ok(next) = u64::deserialize(&mut d) {
-                for _ in 0..next {
-                    let id = TreeId::deserialize(&mut d)?;
-                    de_forest.deserialize_update(id, &mut d)?;
-                }
+            let mut ctx = OwnedContext::new();
+            let mut d = JsonDecoderBuilder::new(&data);
+            state = T::deserialize(d.build(), ctx.borrow())?;
+            while let Some(mut d) = d.build().decode(DecodeHint::Option)?.try_into_option()? {
+                state.deserialize_update(d.decode_some()?, ctx.borrow())?;
+                d.decode_end()?;
             }
             next = *last + 1;
         } else {
             next = 0;
-            root = def();
+            state = T::default();
         }
         let mut file = File::create(dir.join(&format!("{}.{}", next, ext))).await?;
-        let mut forest = Forest::new();
-        let mut ser_forest = SerializeForest::new();
-        let mut output = vec![];
-        ser_forest.serialize_snapshot(
-            &mut root,
-            &mut forest,
-            &mut Self::serializer(&mut output),
-        )?;
-        output.push(b'\n');
-        file.write_all(&output).await?;
+        let mut ctx = OwnedContext::new();
+        let mut output = JsonEncoderBuilder::new().serialize(&state, ctx.borrow())?;
+        output.push('\n');
+        file.write_all(output.as_bytes()).await?;
+        let stream = state.start_stream(ctx.borrow())?;
+        let state = Arc::new(RwLock::new(state));
         Ok((
-            Database {
-                forest: Arc::new(RwLock::new(forest)),
+            DatabaseFile {
+                state: state.clone(),
+                stream,
                 file,
-                ser_forest,
             },
-            root,
+            state,
         ))
     }
-    pub fn forest(&self) -> &Arc<RwLock<Forest>> {
-        &self.forest
-    }
-    pub async fn serialize(&mut self) -> io::Result<()> {
-        let mut output = vec![];
+    pub async fn serialize(&mut self) -> OctantResult<()> {
+        let mut output: String;
         {
-            let ref mut forest = *self.forest.write().await;
-            let queue = forest.take_queue();
-            if !queue.is_empty() {
-                queue.len().serialize(&mut Self::serializer(&mut output))?;
-                output.push(b'\n');
-                for id in queue {
-                    id.serialize(&mut Self::serializer(&mut output))?;
-                    output.push(b'\n');
-                    self.ser_forest.serialize_update(
-                        id,
-                        forest,
-                        &mut Self::serializer(&mut output),
-                    )?;
-                    output.push(b'\n');
-                }
+            let state = self.state.read().await;
+            {
+                let mut ctx = OwnedContext::new();
+                output = JsonEncoderBuilder::new().with(|e| {
+                    let mut e = e.encode_some()?;
+                    state.serialize_update(&mut self.stream, e.encode_some()?, ctx.borrow())?;
+                    e.end()?;
+                    Ok(())
+                })?;
             }
         }
-        self.file.write_all(&output).await?;
+        output.push('\n');
+        self.file.write_all(output.as_bytes()).await?;
         Ok(())
     }
-    pub async fn serialize_every(mut self, time: Duration) -> io::Result<!> {
+    pub async fn terminate(&mut self) -> OctantResult<()> {
+        let mut ctx = OwnedContext::new();
+        let mut output = JsonEncoderBuilder::new().with(|e| e.encode_none())?;
+        output.push('\n');
+        self.file.write_all(output.as_bytes()).await?;
+        Ok(())
+    }
+
+    pub async fn serialize_every(mut self, time: Duration) -> OctantResult<!> {
         loop {
             tokio::time::sleep(time).await;
             self.serialize().await?;

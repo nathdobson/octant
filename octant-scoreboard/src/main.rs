@@ -11,7 +11,7 @@ use parking_lot::Mutex;
 use octant_account::{
     AccountDatabase, login::LoginHandler, register::RegisterHandler, SessionTable,
 };
-use octant_database::{database_struct, file::Database, tree::Tree};
+use octant_database::{database_struct, file::DatabaseFile, tree::Tree};
 use octant_error::Context;
 use octant_panic::register_handler;
 use octant_runtime_server::reexports::octant_error::OctantResult;
@@ -33,7 +33,7 @@ async fn main() -> OctantResult<()> {
     simple_logger::SimpleLogger::new().env().init().unwrap();
     register_handler();
     let options = OctantServerOptions::from_command_line();
-    let (db_writer, db) = Database::new(
+    let (db_writer, db) = DatabaseFile::new(
         Path::new(&options.db_path),
         <Arc<Tree<ScoreboardDatabase>>>::default,
     )

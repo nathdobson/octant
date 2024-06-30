@@ -101,3 +101,5 @@ marshal = {path="../marshal/marshal"}
 marshal-json = {path="../marshal/marshal-json"}
 marshal-bin = {path="../marshal/marshal-bin"}
 marshal-update = {path="../marshal/marshal-update"}
+marshal-object = {path ="../marshal/marshal-object"}
+marshal-pointer = {path="../marshal/marshal-pointer"}
