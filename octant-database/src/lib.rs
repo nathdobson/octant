@@ -5,3 +5,6 @@
 
 pub mod file;
 pub mod table;
+pub mod database;
+mod lock;
+mod dirty;

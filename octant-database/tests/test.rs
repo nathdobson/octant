@@ -5,10 +5,11 @@ use marshal_object::derive_variant;
 use marshal_update::{DeserializeUpdate, SerializeStream, SerializeUpdate};
 use octant_database::{
     file::DatabaseFile,
-    table::{BoxTable, Database, Table},
+    table::{BoxTable,  Table},
 };
 use octant_error::OctantResult;
 use std::{mem, path, path::Path};
+use octant_database::database::Database;
 
 #[tokio::test]
 async fn test() -> OctantResult<()> {
@@ -20,7 +21,6 @@ async fn test() -> OctantResult<()> {
     db.serialize().await?;
     root.write().await.1 = 8;
     db.serialize().await?;
-    db.terminate().await?;
     mem::drop((db, root));
     let (mut db, root) = DatabaseFile::<(u8, u8)>::new(&path).await?;
     assert_eq!(root.read().await.0, 4);
@@ -29,7 +29,6 @@ async fn test() -> OctantResult<()> {
     db.serialize().await?;
     root.write().await.1 = 16;
     db.serialize().await?;
-    db.terminate().await?;
     mem::drop((db, root));
     Ok(())
 }
@@ -57,7 +56,6 @@ async fn test2() -> OctantResult<()> {
     db.serialize().await?;
     root.write().await.table_mut::<MyTable>().y = 8;
     db.serialize().await?;
-    db.terminate().await?;
     mem::drop((db, root));
     let (mut db, root) = DatabaseFile::<Database>::new(&path).await?;
     assert_eq!(root.write().await.table::<MyTable>().x, 4);
@@ -66,7 +64,6 @@ async fn test2() -> OctantResult<()> {
     db.serialize().await?;
     root.write().await.table_mut::<MyTable>().x = 16;
     db.serialize().await?;
-    db.terminate().await?;
     mem::drop((db, root));
     Ok(())
 }

@@ -1,12 +1,11 @@
 use std::{rc::Rc, sync::Arc};
 
-use octant_database::table::ArcDatabase;
 use octant_error::{octant_error, Context, OctantResult};
 use octant_server::{session::Session, Handler, Page};
 use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
 use url::Url;
 use webauthn_rs::prelude::{Passkey, Uuid};
-
+use octant_database::database::ArcDatabase;
 use crate::{build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, Account, AccountTable};
 
 pub struct RegisterHandler {
