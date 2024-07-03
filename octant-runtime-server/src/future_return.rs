@@ -1,21 +1,22 @@
 use std::{fmt::Debug, marker::Unsize, rc::Rc};
 
-use serde::Serialize;
-
 use octant_error::OctantError;
 use octant_object::class::Class;
 use octant_reffed::rc::Rc2;
-use octant_serde::DeserializeWith;
 
 #[cfg(side = "server")]
 use crate::peer::PeerFields;
 #[cfg(side = "server")]
 use crate::PeerNew;
-use crate::{handle::TypedHandle, immediate_return::ImmediateReturn, peer::Peer, runtime::Runtime};
+use crate::{
+    handle::TypedHandle, immediate_return::ImmediateReturn, peer::Peer, runtime::Runtime,
+    OctantDeserialize,
+    OctantSerialize,
+};
 
 pub trait FutureReturn: 'static {
-    type Down: 'static + Serialize + for<'de> DeserializeWith<'de> + Debug;
-    type Up: 'static + Serialize + for<'de> DeserializeWith<'de> + Debug;
+    type Down: 'static + OctantSerialize + OctantDeserialize + Debug;
+    type Up: 'static + OctantSerialize + OctantDeserialize + Debug;
     #[cfg(side = "server")]
     type Retain: 'static + Debug;
     #[cfg(side = "server")]
@@ -29,7 +30,7 @@ pub trait FutureReturn: 'static {
 #[cfg(side = "server")]
 impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Rc2<T>
 where
-    T::Fields: Peer + PeerNew<Builder =PeerFields> + Unsize<T>,
+    T::Fields: Peer + PeerNew<Builder = PeerFields> + Unsize<T>,
 {
     type Down = TypedHandle<T>;
     type Up = ();
@@ -140,9 +141,7 @@ impl<T> DataReturn<T> {
     }
 }
 
-impl<T: 'static + Debug + Serialize + for<'de> DeserializeWith<'de>> FutureReturn
-    for DataReturn<T>
-{
+impl<T: 'static + Debug + OctantSerialize + OctantDeserialize> FutureReturn for DataReturn<T> {
     type Down = ();
     type Up = T;
     #[cfg(side = "server")]

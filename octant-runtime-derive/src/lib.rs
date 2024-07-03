@@ -149,13 +149,8 @@ fn derive_serialize_peer_impl(input: DeriveInput) -> syn::Result<TokenStream> {
         span = input_ident.span()
     );
     output = quote! {
-        impl octant_runtime::reexports::serde::Serialize for dyn #class {
-            fn serialize<S>(&self, s: S) -> ::std::result::Result<S::Ok, S::Error>
-            where
-                S: ::serde::Serializer,
-            {
-                return self.raw_handle().serialize(s);
-            }
+        impl octant_runtime::reexports::marshal::ser::rc::SerializeRc for dyn #class {
+
         }
     };
     Ok(output)
@@ -185,15 +180,8 @@ fn derive_deserialize_peer_impl(input: DeriveInput) -> syn::Result<TokenStream> 
         span = input_ident.span()
     );
     output = quote! {
-        impl<'de> ::octant_serde::DeserializeRcWith<'de> for dyn #class {
-            fn deserialize_rc_with<
-                D: ::serde::Deserializer<'de>
-            >(
-                ctx: &::octant_serde::DeserializeContext,
-                d: D
-            ) -> ::std::result::Result<::octant_reffed::rc::Rc2<Self>, D::Error>{
-                octant_runtime::deserialize_object_with(ctx, d)
-            }
+        impl ::octant_runtime::reexports::marshal::de::rc::DeserializeRc for dyn #class {
+
         }
     };
     Ok(output)
@@ -333,13 +321,13 @@ fn rpc_fn(args: &RpcArgs, input: &ItemFn) -> syn::Result<TokenStream> {
         span = ident.span()
     );
     let request_type_def = quote! {
-        #[derive(::std::fmt::Debug, ::octant_runtime::reexports::serde::Serialize, ::octant_runtime::reexports::octant_serde::DeserializeWith)]
+        #[derive(::std::fmt::Debug, ::octant_runtime::reexports::marshal::Serialize, ::octant_runtime::reexports::marshal::Deserialize)]
         struct #request_type {
             #(#this_field,)*
             #(#server_params,)*
             down: <#output_type as ::octant_runtime::immediate_return::ImmediateReturn>::Down
         }
-        ::octant_runtime::reexports::octant_serde::define_serde_impl!(#request_type: ::octant_runtime::proto::DownMessage);
+        // ::octant_runtime::reexports::octant_serde::define_serde_impl!(#request_type: ::octant_runtime::proto::DownMessage);
     };
     output_tokens = quote! {
         #[cfg(side = "server")]

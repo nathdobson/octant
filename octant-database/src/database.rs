@@ -10,7 +10,6 @@ use marshal_update::{
     ser::{SerializeStream, SerializeUpdate},
 };
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use crate::lock::DbLock;
 
 #[derive(Default)]

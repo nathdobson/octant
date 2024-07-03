@@ -1,11 +1,10 @@
+use marshal::{Deserialize, Serialize};
 use std::{cell::RefCell, fmt::Debug, future::Future, marker::PhantomData, rc::Rc};
 #[cfg(side = "server")]
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-
-use serde::{Deserializer, Serialize, Serializer};
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
 
@@ -16,16 +15,10 @@ use octant_error::OctantResult;
 
 use octant_object::{class, DebugClass};
 use octant_reffed::rc::Rc2;
-#[cfg(side = "client")]
-use octant_serde::Format;
-use octant_serde::{
-    define_serde_impl, DeserializeContext, DeserializeRcWith, DeserializeWith, RawEncoded,
-};
 
 #[cfg(side = "server")]
 use crate::immediate_return::AsTypedHandle;
 use crate::{
-    deserialize_object_with,
     future_return::FutureReturn,
     handle::TypedHandle,
     immediate_return::ImmediateReturn,
@@ -34,11 +27,16 @@ use crate::{
     runtime::Runtime,
 };
 
+pub trait OctantFutureResult {}
+
+struct BoxOctantFutureResult;
+
+
 #[derive(DebugClass)]
 pub struct AbstractOctantFutureFields {
     parent: PeerFields,
     #[cfg(side = "server")]
-    sender: RefCell<Option<oneshot::Sender<RawEncoded>>>,
+    sender: RefCell<Option<oneshot::Sender<Box<dyn OctantFutureResult>>>>,
 }
 
 #[class]
@@ -62,7 +60,7 @@ pub trait AbstractOctantFuture: Peer {}
 pub struct OctantFuture<T: FutureReturn> {
     parent: RcAbstractOctantFuture,
     retain: Option<T::Retain>,
-    receiver: oneshot::Receiver<RawEncoded>,
+    receiver: oneshot::Receiver<Box<dyn OctantFutureResult>>,
     phantom: PhantomData<T>,
 }
 
@@ -75,13 +73,12 @@ pub struct OctantFuture<T: FutureReturn> {
     phantom: PhantomData<T>,
 }
 
-#[derive(Serialize, Debug, DeserializeWith)]
+#[derive(Serialize, Debug, Deserialize)]
 pub struct FutureResponse {
     promise: RcAbstractOctantFuture,
-    value: RawEncoded,
+    value: Box<dyn OctantFutureResult>,
 }
 
-define_serde_impl!(FutureResponse: UpMessage);
 impl UpMessage for FutureResponse {
     #[cfg(side = "server")]
     fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()> {
@@ -142,23 +139,23 @@ impl<T: FutureReturn> Future for OctantFuture<T> {
     }
 }
 
-impl Serialize for dyn AbstractOctantFuture {
-    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.raw_handle().serialize(s)
-    }
-}
-
-impl<'de> DeserializeRcWith<'de> for dyn AbstractOctantFuture {
-    fn deserialize_rc_with<D: Deserializer<'de>>(
-        ctx: &DeserializeContext,
-        d: D,
-    ) -> Result<Rc2<Self>, D::Error> {
-        deserialize_object_with(ctx, d)
-    }
-}
+// impl Serialize for dyn AbstractOctantFuture {
+//     fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//         self.raw_handle().serialize(s)
+//     }
+// }
+//
+// impl<'de> DeserializeRcWith<'de> for dyn AbstractOctantFuture {
+//     fn deserialize_rc_with<D: Deserializer<'de>>(
+//         ctx: &DeserializeContext,
+//         d: D,
+//     ) -> Result<Rc2<Self>, D::Error> {
+//         deserialize_object_with(ctx, d)
+//     }
+// }
 
 impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
     type Down = (TypedHandle<dyn AbstractOctantFuture>, T::Down);

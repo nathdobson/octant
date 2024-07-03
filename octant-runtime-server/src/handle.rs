@@ -1,13 +1,17 @@
+use marshal::{
+    context::Context,
+    de::Deserialize,
+    decode::{AnyDecoder, Decoder},
+    encode::{AnyEncoder, Encoder},
+    ser::Serialize,
+    Deserialize, Serialize,
+};
+use octant_object::class::Class;
 use std::{
     any::type_name,
     fmt::{Debug, Formatter},
     marker::{PhantomData, Unsize},
 };
-
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-use octant_object::class::Class;
-use octant_serde::{DeserializeContext, DeserializeWith};
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct RawHandle(pub u64);
@@ -52,38 +56,30 @@ impl<T: ?Sized + Class> TypedHandle<T> {
     }
 }
 
-impl<T: ?Sized + Class> Serialize for TypedHandle<T> {
-    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.0.serialize(s)
+impl<E: Encoder, T: ?Sized + Class> Serialize<E> for TypedHandle<T> {
+    fn serialize<'w, 'en>(
+        &self,
+        e: AnyEncoder<'w, 'en, E>,
+        ctx: Context,
+    ) -> octant_error::reexports::anyhow::Result<()> {
+        self.0.serialize(e, ctx)
     }
 }
 
-impl<'de, T: ?Sized + Class> Deserialize<'de> for TypedHandle<T> {
-    fn deserialize<D>(d: D) -> Result<Self, D::Error>
+impl<D: Decoder, T: ?Sized + Class> Deserialize<D> for TypedHandle<T> {
+    fn deserialize<'p, 'de>(
+        d: AnyDecoder<'p, 'de, D>,
+        ctx: Context,
+    ) -> octant_error::reexports::anyhow::Result<Self>
     where
-        D: Deserializer<'de>,
+        Self: Sized,
     {
-        Ok(TypedHandle(RawHandle::deserialize(d)?, PhantomData))
+        Ok(TypedHandle(RawHandle::deserialize(d, ctx)?, PhantomData))
     }
 }
 
 impl<T: ?Sized + Class> Debug for TypedHandle<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}({:?})", &type_name::<T>(), self.0)
-    }
-}
-
-impl<'de> DeserializeWith<'de> for RawHandle {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error> {
-        Self::deserialize(d)
-    }
-}
-
-impl<'de, T: ?Sized + Class> DeserializeWith<'de> for TypedHandle<T> {
-    fn deserialize_with<D: Deserializer<'de>>(ctx: &DeserializeContext, d: D) -> Result<Self, D::Error> {
-        Self::deserialize(d)
     }
 }

@@ -21,6 +21,10 @@ octant-reffed = {workspace=true}
 cfg-if = {workspace=true}
 octant-error = {workspace=true, features=["wasm"]}
 octant-runtime-derive = {workspace=true}
+marshal = {workspace=true}
+marshal-bin = {workspace=true}
+marshal-json = {workspace=true}
+marshal-object = {workspace=true}
 
 [build-dependencies]
 octant-sys-build = { workspace = true }

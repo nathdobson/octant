@@ -5,7 +5,6 @@ use atomic_refcell::AtomicRefCell;
 use octant_executor::event_loop::EventSpawn;
 use octant_object::{cast::downcast_object, class::Class};
 use octant_reffed::rc::{Rc2, Weak2};
-use octant_serde::DeserializeContext;
 use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
 use octant_error::OctantResult;

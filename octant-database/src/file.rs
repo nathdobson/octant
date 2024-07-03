@@ -14,7 +14,6 @@ use tokio::{
     fs,
     fs::{read_dir, File},
     io::AsyncWriteExt,
-    sync::RwLock,
 };
 
 pub struct DatabaseFile<T: SerializeStream> {

@@ -4,7 +4,6 @@ use std::rc::Rc;
 use atomic_refcell::AtomicRefCell;
 use octant_object::{cast::downcast_object, class::Class};
 use octant_reffed::rc::Rc2;
-use octant_serde::DeserializeContext;
 use tokio::sync::mpsc::UnboundedSender;
 use web_sys::console;
 use octant_error::OctantResult;
@@ -74,13 +73,14 @@ impl Runtime {
         self.state.borrow_mut().handles.remove(&handle);
     }
     pub async fn run_batch(self: &Rc<Self>, messages: DownMessageList) -> OctantResult<()> {
-        let mut ctx = DeserializeContext::new();
-        ctx.insert::<Rc<Runtime>>(self.clone());
-        for message in messages.commands {
-            console::info_1(&format!("{:?}", message).into());
-            let message = message.deserialize_with(&ctx)?;
-            self.run_message(message).await?;
-        }
+        todo!();
+        // let mut ctx = DeserializeContext::new();
+        // ctx.insert::<Rc<Runtime>>(self.clone());
+        // for message in messages.commands {
+        //     console::info_1(&format!("{:?}", message).into());
+        //     let message = message.deserialize_with(&ctx)?;
+        //     self.run_message(message).await?;
+        // }
         Ok(())
     }
     async fn run_message(self: &Rc<Self>, message: Box<dyn DownMessage>) -> OctantResult<()> {

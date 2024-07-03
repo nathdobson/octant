@@ -11,17 +11,18 @@ extern crate self as octant_runtime_client;
 #[cfg(side = "server")]
 extern crate self as octant_runtime_server;
 
+use marshal::de::Deserialize;
+use marshal_bin::decode::full::BinDecoder;
+use marshal_json::decode::full::JsonDecoder;
+use octant_object::class::Class;
+use octant_reffed::rc::Rc2;
 use std::{
     fmt::{Display, Formatter},
     rc::Rc,
 };
-
-use serde::{de::Error, Deserialize, Deserializer};
-
-use octant_object::class::Class;
-use octant_reffed::rc::Rc2;
-use octant_serde::DeserializeContext;
-
+use marshal::ser::Serialize;
+use marshal_bin::encode::full::BinEncoder;
+use marshal_json::encode::full::JsonEncoder;
 use crate::{
     handle::{RawHandle, TypedHandle},
     runtime::Runtime,
@@ -33,11 +34,15 @@ pub mod reexports {
     pub use paste;
     pub use serde;
 
+    pub use ::octant_error;
+    pub use marshal;
     pub use octant_object;
     pub use octant_reffed;
     pub use octant_serde;
-    pub use ::octant_error;
 }
+
+pub trait OctantDeserialize = Deserialize<JsonDecoder> + Deserialize<BinDecoder>;
+pub trait OctantSerialize = Serialize<JsonEncoder> + Serialize<BinEncoder>;
 
 #[cfg(side = "client")]
 pub use octant_runtime_derive::PeerNewClient as PeerNew;
@@ -59,14 +64,14 @@ pub mod octant_future;
 pub mod peer;
 pub mod proto;
 
-pub fn deserialize_object_with<'de, T: ?Sized + Class, D: Deserializer<'de>>(
-    ctx: &DeserializeContext,
-    d: D,
-) -> Result<Rc2<T>, D::Error> {
-    let runtime = ctx.get::<Rc<Runtime>>().map_err(|e| D::Error::custom(e))?;
-    let handle = TypedHandle::<T>::deserialize(d)?;
-    runtime.lookup(handle).map_err(D::Error::custom)
-}
+// pub fn deserialize_object_with<'de, T: ?Sized + Class, D: Deserializer<'de>>(
+//     ctx: &DeserializeContext,
+//     d: D,
+// ) -> Result<Rc2<T>, D::Error> {
+//     let runtime = ctx.get::<Rc<Runtime>>().map_err(|e| D::Error::custom(e))?;
+//     let handle = TypedHandle::<T>::deserialize(d)?;
+//     runtime.lookup(handle).map_err(D::Error::custom)
+// }
 
 pub enum LookupError {
     NotFound(RawHandle),
