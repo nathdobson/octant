@@ -11,7 +11,6 @@ pub mod reexports {
 #[cfg(feature = "wasm")]
 pub mod wasm;
 
-#[derive(Debug)]
 pub struct OctantError(anyhow::Error);
 
 #[macro_export]
@@ -24,6 +23,12 @@ pub type OctantResult<T> = Result<T, OctantError>;
 impl Display for OctantError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         Display::fmt(&self.0, f)
+    }
+}
+
+impl Debug for OctantError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.0, f)
     }
 }
 

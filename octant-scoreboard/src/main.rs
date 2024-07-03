@@ -4,14 +4,12 @@
 #![allow(dead_code)]
 #![feature(arbitrary_self_types)]
 
-use std::{path::Path, sync::Arc, time::Duration};
+use std::{path::Path, time::Duration};
 
 use parking_lot::Mutex;
 
-use octant_account::{
-    AccountDatabase, login::LoginHandler, register::RegisterHandler, SessionTable,
-};
-use octant_database::{database_struct, file::DatabaseFile, tree::Tree};
+use octant_account::{login::LoginHandler, register::RegisterHandler, AccountTable, SessionTable};
+use octant_database::{file::DatabaseFile, table::Database};
 use octant_error::Context;
 use octant_panic::register_handler;
 use octant_runtime_server::reexports::octant_error::OctantResult;
@@ -21,47 +19,32 @@ use crate::score::ScoreHandler;
 
 mod score;
 
-database_struct! {
-    #[derive(Default)]
-    struct ScoreboardDatabase{
-        accounts: Arc<Tree<AccountDatabase>>,
-    }
-}
-
 #[tokio::main]
 async fn main() -> OctantResult<()> {
     simple_logger::SimpleLogger::new().env().init().unwrap();
     register_handler();
     let options = OctantServerOptions::from_command_line();
-    let (db_writer, db) = DatabaseFile::new(
-        Path::new(&options.db_path),
-        <Arc<Tree<ScoreboardDatabase>>>::default,
-    )
-    .await
-    .context("Opening database")?;
-    let forest = db_writer.forest().clone();
+    let (db_writer, db) = DatabaseFile::<Database>::new(Path::new(&options.db_path))
+        .await
+        .context("Opening database")?;
     tokio::spawn(db_writer.serialize_every(Duration::from_secs(1)));
     let mut server = OctantServer::new(options);
     {
-        let forest_read = forest.read().await;
-        let accounts = forest_read.read(&db).accounts.clone();
-        let session_table = SessionTable::new();
-        server.add_handler(ScoreHandler {
-            cookie_router: server.cookie_router().clone(),
-            session_table: session_table.clone(),
-            guesses: Mutex::new(vec![]),
-        });
-        server.add_handler(RegisterHandler {
-            forest: forest.clone(),
-            accounts: accounts.clone(),
-        });
-        server.add_handler(LoginHandler {
-            forest: forest.clone(),
-            accounts: accounts.clone(),
-            cookie_router: server.cookie_router().clone(),
-            session_table,
-        });
+        let mut db = db.write().await;
+        let accounts = db.table::<AccountTable>();
     }
+    let session_table = SessionTable::new();
+    server.add_handler(ScoreHandler {
+        cookie_router: server.cookie_router().clone(),
+        session_table: session_table.clone(),
+        guesses: Mutex::new(vec![]),
+    });
+    server.add_handler(RegisterHandler { db: db.clone() });
+    server.add_handler(LoginHandler {
+        db: db.clone(),
+        cookie_router: server.cookie_router().clone(),
+        session_table,
+    });
     server.run().await?;
     Ok(())
 }

@@ -1,24 +1,20 @@
-use std::{future::Future, sync::Arc};
-use std::rc::Rc;
+use std::{future::Future, rc::Rc, sync::Arc};
 
-use tokio::sync::RwLock;
+use octant_database::table::ArcDatabase;
+use octant_error::{octant_error, OctantResult};
+use octant_server::{cookies::CookieRouter, session::Session, Handler, Page};
+use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
 use url::Url;
 use uuid::Uuid;
 use webauthn_rs::prelude::Passkey;
 
-use octant_database::{forest::Forest, tree::Tree};
-use octant_error::{octant_error, OctantResult};
-use octant_server::{cookies::CookieRouter, Handler, Page, session::Session};
-use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
-
 use crate::{
-    AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, SESSION_COOKIE,
-    SessionTable, VerifiedLogin,
+    build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, AccountTable, SessionTable,
+    VerifiedLogin, SESSION_COOKIE,
 };
 
 pub struct LoginHandler {
-    pub forest: Arc<RwLock<Forest>>,
-    pub accounts: Arc<Tree<AccountDatabase>>,
+    pub db: ArcDatabase,
     pub cookie_router: Arc<CookieRouter>,
     pub session_table: Arc<SessionTable>,
 }
@@ -33,13 +29,13 @@ impl LoginHandler {
         async move {
             let webauthn = build_webauthn(url)?;
             let passkeys: Vec<Passkey> = {
-                let forest = self.forest.read().await;
-                let accounts = forest.read(&self.accounts);
+                let database = self.db.read().await;
+                let accounts = database.table_const::<AccountTable>().unwrap();
                 let user = accounts
                     .users
                     .get(email)
                     .ok_or_else(|| octant_error!("account does not exist"))?;
-                user.passkeys.iter().map(|(k, v)| (*v).clone()).collect()
+                user.passkeys.iter().map(|(k, v)| (***v).clone()).collect()
             };
             let (rcr, skr) = webauthn.start_passkey_authentication(&passkeys)?;
             let options = session.global().new_credential_request_options();

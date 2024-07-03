@@ -103,3 +103,5 @@ marshal-bin = {path="../marshal/marshal-bin"}
 marshal-update = {path="../marshal/marshal-update"}
 marshal-object = {path ="../marshal/marshal-object"}
 marshal-pointer = {path="../marshal/marshal-pointer"}
+marshal-derive = {path="../marshal/marshal-derive"}
+marshal-serde = {path="../marshal/marshal-serde"}

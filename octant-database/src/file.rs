@@ -89,7 +89,6 @@ impl<T: SerializeUpdate<JsonEncoder> + DeserializeUpdate<JsonDecoder> + Default>
         Ok(())
     }
     pub async fn terminate(&mut self) -> OctantResult<()> {
-        let mut ctx = OwnedContext::new();
         let mut output = JsonEncoderBuilder::new().with(|e| e.encode_none())?;
         output.push('\n');
         self.file.write_all(output.as_bytes()).await?;

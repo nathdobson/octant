@@ -4,21 +4,20 @@
 #![allow(unused_variables)]
 #![deny(unused_must_use)]
 
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use base64urlsafedata::HumanBinaryData;
+use marshal_derive::{Deserialize, DeserializeUpdate, Serialize, SerializeStream, SerializeUpdate};
+use marshal_object::derive_variant;
+use marshal_serde::WithSerde;
+use marshal_update::{hash_map::UpdateHashMap, prim::Prim};
+use octant_database::table::{BoxTable, Table};
+use octant_error::{octant_error, OctantResult};
+use octant_server::{cookies::CookieData, session::Session};
 use parking_lot::Mutex;
 use url::Url;
 use uuid::Uuid;
 use webauthn_rs::{prelude::Passkey, Webauthn, WebauthnBuilder};
-
-use octant_database::{
-    tack::Tack,
-    value::{dict::Dict, prim::Prim},
-};
-use octant_error::{octant_error, OctantResult};
-use octant_server::{cookies::CookieData, session::Session};
 
 mod into_auth;
 mod into_octant;
@@ -49,12 +48,11 @@ pub struct SessionTable {
     sessions: Mutex<HashMap<Uuid, Arc<VerifiedLogin>>>,
 }
 
-octant_database::database_struct! {
-    pub struct Account {
-        pub email: Prim<String>,
-        pub name: Prim<String>,
-        pub passkeys: Dict<HumanBinaryData,Prim<Passkey>>,
-    }
+#[derive(Serialize, Deserialize, SerializeStream, SerializeUpdate, DeserializeUpdate)]
+pub struct Account {
+    pub email: Prim<String>,
+    pub name: Prim<String>,
+    pub passkeys: UpdateHashMap<HumanBinaryData, Prim<WithSerde<Passkey>>>,
 }
 
 impl SessionTable {
@@ -76,20 +74,27 @@ impl SessionTable {
 
 impl Account {
     pub fn new(email: String, name: String) -> Self {
-        Account::new_raw(Prim::new(email), Prim::new(name), Dict::new())
+        Account {
+            email: Prim::new(email),
+            name: Prim::new(name),
+            passkeys: UpdateHashMap::new(),
+        }
     }
-    pub fn add_passkey(self: Tack<Self>, passkey: Passkey) {
-        self.passkeys()
-            .insert(passkey.cred_id().clone(), Prim::new(passkey));
+    pub fn add_passkey(&mut self, passkey: Passkey) {
+        self.passkeys.insert(
+            passkey.cred_id().clone(),
+            Prim::new(WithSerde::new(passkey)),
+        );
     }
 }
 
-octant_database::database_struct! {
-    #[derive(Default)]
-    pub struct AccountDatabase{
-        pub users: Dict<String, Account>,
-    }
+#[derive(Default, Serialize, Deserialize, SerializeStream, SerializeUpdate, DeserializeUpdate)]
+pub struct AccountTable {
+    pub users: UpdateHashMap<String, Account>,
 }
+
+derive_variant!(BoxTable, AccountTable);
+impl Table for AccountTable {}
 
 fn build_webauthn(url: &Url) -> OctantResult<Webauthn> {
     let rp_id = url

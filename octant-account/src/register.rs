@@ -1,22 +1,16 @@
-use std::rc::Rc;
-use std::sync::Arc;
+use std::{rc::Rc, sync::Arc};
 
-use tokio::sync::RwLock;
+use octant_database::table::ArcDatabase;
+use octant_error::{octant_error, Context, OctantResult};
+use octant_server::{session::Session, Handler, Page};
+use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
 use url::Url;
 use webauthn_rs::prelude::{Passkey, Uuid};
 
-use octant_database::{forest::Forest, tack::Tack, tree::Tree};
-use octant_error::{Context, octant_error, OctantResult};
-use octant_server::{Handler, Page, session::Session};
-use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
-
-use crate::{
-    Account, AccountDatabase, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant,
-};
+use crate::{build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, Account, AccountTable};
 
 pub struct RegisterHandler {
-    pub forest: Arc<RwLock<Forest>>,
-    pub accounts: Arc<Tree<AccountDatabase>>,
+    pub db: ArcDatabase,
 }
 
 impl RegisterHandler {
@@ -48,15 +42,14 @@ impl RegisterHandler {
         Ok(())
     }
     async fn register(&self, email: String, name: String, passkey: Passkey) -> OctantResult<()> {
-        let read = self.forest.read().await;
-        let mut accounts = read.write(&self.accounts);
-        let users = accounts.get_mut().users();
-        if let Some(account) = users.get(&email) {
+        let mut db = self.db.write().await;
+        let accounts = db.table_mut::<AccountTable>();
+        if let Some(account) = accounts.users.get(&email) {
             return Err(octant_error!("already registered"));
         }
         let mut account = Account::new(email.clone(), name);
-        Tack::new(&mut account).add_passkey(passkey);
-        users.insert(email, account);
+        account.add_passkey(passkey);
+        accounts.users.insert(email, account);
         Ok(())
     }
 }

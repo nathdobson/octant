@@ -4,4 +4,4 @@
 #![feature(unsize)]
 
 pub mod file;
-mod table;
+pub mod table;

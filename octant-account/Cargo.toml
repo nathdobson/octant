@@ -19,3 +19,9 @@ uuid = { workspace = true }
 octant-web-sys-server = { workspace = true }
 octant-reffed = {workspace=true}
 octant-error = {workspace=true, features=["webauthn-rs-core"]}
+marshal-derive = {workspace=true}
+marshal-update = {workspace=true}
+marshal = {workspace=true, features = ["base64urlsafedata"]}
+marshal-object = {workspace=true}
+catalog = {workspace=true}
+marshal-serde = {workspace=true}
