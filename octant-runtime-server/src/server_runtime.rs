@@ -1,20 +1,24 @@
-use std::fmt::{Debug, Formatter};
-use std::rc::Rc;
+use std::{
+    fmt::{Debug, Formatter},
+    rc::Rc,
+};
 
 use atomic_refcell::AtomicRefCell;
+use marshal::context::OwnedContext;
+use marshal_json::decode::full::JsonDecoderBuilder;
+use octant_error::OctantResult;
 use octant_executor::event_loop::EventSpawn;
 use octant_object::{cast::downcast_object, class::Class};
 use octant_reffed::rc::{Rc2, Weak2};
 use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
-use octant_error::OctantResult;
 
 use crate::{
     delete::delete_rpc,
     handle::{RawHandle, TypedHandle},
-    LookupError,
     peer::{Peer, PeerFields},
     proto::{DownMessage, UpMessage, UpMessageList},
+    LookupError,
 };
 
 struct State {
@@ -75,11 +79,12 @@ impl Runtime {
         delete_rpc(self, handle);
     }
     pub fn run_batch(self: &Rc<Self>, batch: UpMessageList) -> OctantResult<()> {
-        let mut ctx = DeserializeContext::new();
-        ctx.insert::<Rc<Runtime>>(self.clone());
+        let mut ctx = OwnedContext::new();
+        ctx.insert_const(self);
         for message in batch.commands {
-            log::info!("Running up message{:?}", message);
-            let message = message.deserialize_with(&ctx)?;
+            let message = JsonDecoderBuilder::new(&message)
+                .deserialize::<Box<dyn UpMessage>>(ctx.borrow())?;
+            log::info!("Running up message {:?}", message);
             self.run_message(message)?;
         }
         Ok(())

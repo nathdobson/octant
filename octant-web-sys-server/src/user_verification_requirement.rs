@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use marshal::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum UserVerificationRequirement {

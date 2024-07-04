@@ -2,11 +2,11 @@ use std::{collections::HashMap, marker::Unsize};
 use std::rc::Rc;
 
 use atomic_refcell::AtomicRefCell;
+use tokio::sync::mpsc::UnboundedSender;
+
+use octant_error::OctantResult;
 use octant_object::{cast::downcast_object, class::Class};
 use octant_reffed::rc::Rc2;
-use tokio::sync::mpsc::UnboundedSender;
-use web_sys::console;
-use octant_error::OctantResult;
 
 use crate::{
     handle::{RawHandle, TypedHandle},

@@ -5,11 +5,11 @@ use std::{
 };
 
 use catalog::{Builder, BuilderFrom, Registry};
+use itertools::Itertools;
+use octant_error::{octant_error, OctantResult};
 use serde::Serialize;
 
 use crate::{DeserializeContext, DeserializeWith, Format, RawEncoded};
-use itertools::Itertools;
-use octant_error::{octant_error, OctantResult};
 
 type DeserializeFn<U> =
     for<'c, 'de> fn(&'c DeserializeContext, &'de RawEncoded) -> OctantResult<Box<U>>;

@@ -1,20 +1,16 @@
-use std::{any::Any, hint::must_use, marker::PhantomData, rc::Rc};
-
-use catalog::register;
+use marshal_pointer::rc_ref::RcRef;
+use octant_runtime::{rpc, runtime::Runtime, PeerNew};
 use safe_once::cell::OnceCell;
-use serde::{Deserialize, Serialize};
-
-use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::{peer::AsNative, rpc, runtime::Runtime, PeerNew};
-use octant_serde::define_serde_impl;
+use std::{any::Any, rc::Rc};
 
 use crate::{
-    credential_creation_options::{CredentialCreationOptionsFields, RcCredentialCreationOptions},
-    credential_request_options::{CredentialRequestOptionsFields, RcCredentialRequestOptions},
-    event_listener::{EventListenerFields, RcEventListener},
-    request::{RcRequest, RequestFields},
-    request_init::{RcRequestInit, RequestInit, RequestInitFields},
-    window::{RcWindow, Window, WindowFields},
+    credential_creation_options::RcCredentialCreationOptions,
+    credential_request_options::RcCredentialRequestOptions,
+    event_listener::RcEventListener,
+    octant_runtime::peer::AsNative,
+    request::RcRequest,
+    request_init::{RcRequestInit, RequestInit},
+    window::{RcWindow, Window},
 };
 
 #[cfg(side = "server")]

@@ -8,13 +8,14 @@
 
 use std::rc::Rc;
 
+use marshal_pointer::rc_ref::RcRef;
+
 use octant_object::{
     base,
     base::{Base, BaseFields},
     cast::downcast_object,
 };
 use octant_object_derive::class;
-use octant_reffed::rc::RcRef;
 
 pub struct AFields {
     parent: BaseFields,

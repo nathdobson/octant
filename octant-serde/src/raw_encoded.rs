@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Formatter};
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use octant_error::OctantResult;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{DeserializeContext, DeserializeWith};
 

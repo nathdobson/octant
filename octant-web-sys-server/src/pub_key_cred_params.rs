@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
+use marshal::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PubKeyCredParams {
-    #[serde(rename = "type")]
+    #[marshal(rename = "type")]
     pub typ: String,
     pub alg: i32,
 }

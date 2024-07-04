@@ -1,34 +1,34 @@
-use std::{
-    future::Future,
-    mem::{ManuallyDrop, MaybeUninit},
-    rc::Rc,
-};
-
-use futures::future::BoxFuture;
+use std::future::Future;
+use std::rc::Rc;
+use marshal_pointer::rc_ref::RcRef;
 use safe_once::cell::OnceCell;
-use serde::{de::DeserializeSeed, Deserialize, Deserializer, Serialize, Serializer};
-
 use octant_error::{OctantError, OctantResult};
 use octant_object::{class, DebugClass};
-use octant_reffed::rc::{Rc2, RcRef};
 use octant_runtime::{
-    future_return::FutureReturn, octant_future::OctantFuture, peer::AsNative, rpc,
-    runtime::Runtime, DeserializePeer, PeerNew, SerializePeer,
+    DeserializePeer, future_return::FutureReturn, octant_future::OctantFuture,
+    PeerNew, rpc, SerializePeer,
 };
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
-
+use octant_runtime::runtime::Runtime;
 use crate::{
-    document::{Document, DocumentFields, RcDocument},
-    navigator::{Navigator, NavigatorFields, RcNavigator},
+    document::{Document, RcDocument},
+    navigator::{Navigator, RcNavigator},
     object::{Object, ObjectFields},
     request::{RcRequest, Request},
-    response::{RcResponse, ResponseFields},
+    response::RcResponse,
 };
 
-#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
+use crate::octant_runtime::peer::AsNative;
+
+#[derive(
+    DebugClass,
+    PeerNew,
+    SerializePeer,
+    DeserializePeer
+)]
 pub struct WindowFields {
     parent: ObjectFields,
     #[cfg(side = "client")]

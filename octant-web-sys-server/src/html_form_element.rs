@@ -1,23 +1,6 @@
-use std::{
-    any::{type_name, Any},
-    fmt::{Debug, Formatter},
-    rc::Rc,
-};
-
-use safe_once::{api::once::OnceEntry, cell::OnceCell};
-use serde::Serialize;
-#[cfg(side = "client")]
-use wasm_bindgen::closure::Closure;
-#[cfg(side = "client")]
-use wasm_bindgen::JsCast;
-#[cfg(side = "client")]
-use web_sys::Event;
-
-use octant_object::{cast::downcast_object, class, DebugClass};
-use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::{
-    peer::AsNative, rpc, runtime::Runtime, DeserializePeer, PeerNew, SerializePeer,
-};
+use marshal_pointer::rc_ref::RcRef;
+use safe_once::cell::OnceCell;
+use std::{fmt::Debug, rc::Rc};
 
 use crate::{
     event_listener::RcEventListener,
@@ -25,7 +8,17 @@ use crate::{
     html_input_element::RcHtmlInputElement,
     node::Node,
     object::Object,
+    octant_runtime::peer::AsNative,
 };
+use octant_object::{cast::downcast_object, class, DebugClass};
+use octant_reffed::rc::{Rc2, Rc2Ref};
+use octant_runtime::{rpc, runtime::Runtime, DeserializePeer, PeerNew, SerializePeer};
+#[cfg(side = "client")]
+use wasm_bindgen::closure::Closure;
+#[cfg(side = "client")]
+use wasm_bindgen::JsCast;
+#[cfg(side = "client")]
+use web_sys::Event;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct HtmlFormElementFields {
@@ -55,7 +48,7 @@ impl dyn HtmlFormElement {
     fn set_listener_impl(self: &RcRef<Self>, runtime: &Rc<Runtime>, listener: RcEventListener) {
         let cb = Closure::<dyn Fn(Event)>::new({
             let listener = Rc2::downgrade(&listener);
-            let this = Rc2::downgrade(&self.rc());
+            let this = Rc2::downgrade(&self.rc2());
             move |e: Event| {
                 e.prevent_default();
                 if let Some(this) = this.upgrade() {

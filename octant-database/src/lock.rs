@@ -1,6 +1,8 @@
-use crate::dirty::DirtyMarker;
 use std::ops::{Deref, DerefMut};
+
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+
+use crate::dirty::DirtyMarker;
 
 pub struct DbLock<T: ?Sized>(RwLock<DirtyMarker<T>>);
 

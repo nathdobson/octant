@@ -25,6 +25,8 @@ marshal = {workspace=true}
 marshal-bin = {workspace=true}
 marshal-json = {workspace=true}
 marshal-object = {workspace=true}
+anyhow = {workspace=true}
+marshal-pointer = {workspace=true}
 
 [build-dependencies]
 octant-sys-build = { workspace = true }

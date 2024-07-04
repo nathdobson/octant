@@ -1,8 +1,7 @@
-use crate::any_value::AnyValueFields;
 use octant_object::{class, DebugClass};
 use octant_runtime::{
-    peer::{Peer, PeerFields},
-    DeserializePeer, PeerNew, SerializePeer,
+    DeserializePeer,
+    peer::{Peer, PeerFields}, PeerNew, SerializePeer,
 };
 
 #[derive(DebugClass, SerializePeer, DeserializePeer)]

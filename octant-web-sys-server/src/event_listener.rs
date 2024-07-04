@@ -1,25 +1,22 @@
+use std::any::{Any, type_name};
+use std::fmt::{Debug, Formatter};
+use std::rc::Rc;
+use marshal::{Deserialize, Serialize};
+use marshal_object::derive_variant;
+use marshal_pointer::rc_ref::RcRef;
 use safe_once::cell::OnceCell;
-use std::{
-    any::{type_name, Any},
-    fmt::{Debug, Formatter},
-    rc::Rc,
-};
-
-use octant_object::{class, DebugClass};
-use serde::Serialize;
 use octant_error::OctantResult;
-
-use crate::object::Object;
-use octant_reffed::rc::RcRef;
-#[cfg(side = "client")]
-use octant_runtime::runtime::RuntimeSink;
+use octant_object::{class, DebugClass};
+use octant_reffed::rc::Rc2Ref;
 use octant_runtime::{
-    peer::{Peer, PeerFields},
-    proto::UpMessage,
-    runtime::Runtime,
-    DeserializePeer, PeerNew, SerializePeer,
+    DeserializePeer,
+    peer::{Peer, PeerFields}
+    ,
+    PeerNew, proto::UpMessage, SerializePeer,
 };
-use octant_serde::{define_serde_impl, DeserializeWith};
+use octant_runtime::proto::BoxUpMessage;
+use octant_runtime::runtime::Runtime;
+use crate::object::Object;
 
 #[cfg(side = "server")]
 trait EventHandlerTrait: 'static + Fn() -> () {
@@ -77,7 +74,8 @@ impl PeerNew for EventListenerFields {
     }
 }
 
-#[class] pub trait EventListener: Peer {}
+#[class]
+pub trait EventListener: Peer {}
 
 #[cfg(side = "server")]
 impl dyn EventListener {
@@ -93,17 +91,18 @@ impl dyn EventListener {
 impl dyn EventListener {
     pub fn fire(self: &RcRef<Self>) {
         self.sink().send(Box::<EventFired>::new(EventFired {
-            listener: self.rc(),
+            listener: self.rc2(),
         }))
     }
 }
 
-#[derive(Serialize, Debug, DeserializeWith)]
+#[derive(Serialize, Debug, Deserialize)]
 struct EventFired {
     listener: RcEventListener,
 }
 
-define_serde_impl!(EventFired : UpMessage);
+derive_variant!(BoxUpMessage, EventFired);
+
 impl UpMessage for EventFired {
     #[cfg(side = "server")]
     fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()> {

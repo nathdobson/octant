@@ -1,15 +1,17 @@
 #![feature(arbitrary_self_types)]
 #![deny(unused_must_use)]
+use std::{mem, path, path::Path};
+
 use marshal::{Deserialize, Serialize};
 use marshal_object::derive_variant;
 use marshal_update::{DeserializeUpdate, SerializeStream, SerializeUpdate};
+
 use octant_database::{
     file::DatabaseFile,
-    table::{BoxTable,  Table},
+    table::{BoxTable, Table},
 };
-use octant_error::OctantResult;
-use std::{mem, path, path::Path};
 use octant_database::database::Database;
+use octant_error::OctantResult;
 
 #[tokio::test]
 async fn test() -> OctantResult<()> {

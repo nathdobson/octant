@@ -10,8 +10,8 @@ use octant_runtime_derive::{DeserializePeer, SerializePeer};
 
 use crate::{
     handle::{RawHandle, TypedHandle},
-    runtime::Runtime,
     PeerNew,
+    runtime::Runtime,
 };
 
 #[derive(DebugClass, SerializePeer, DeserializePeer)]

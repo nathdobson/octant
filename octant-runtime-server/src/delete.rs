@@ -1,6 +1,8 @@
 use std::rc::Rc;
+
 use octant_runtime_derive::rpc;
-use crate::{ handle::RawHandle};
+
+use crate::handle::RawHandle;
 use crate::runtime::Runtime;
 
 #[rpc]

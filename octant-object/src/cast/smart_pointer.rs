@@ -25,7 +25,6 @@ use std::{
     sync::Arc,
 };
 
-use octant_reffed::arc::Arc2;
 use octant_reffed::rc::Rc2;
 
 use crate::cast::repr::{HasRepr, IsRepr, PtrRepr};
@@ -74,17 +73,17 @@ unsafe impl<T: ?Sized> IsSmartPointer for Arc<T> {
     }
 }
 
-unsafe impl<T: ?Sized> IsSmartPointer for Arc2<T> {
-    type SmartTarget = T;
-    type Kind = Arc2<()>;
-    fn trusted_into_raw(this: Self) -> *const Self::SmartTarget {
-        Arc2::into_raw(this)
-    }
-
-    unsafe fn trusted_from_raw(ptr: *const Self::SmartTarget) -> Self {
-        Arc2::from_raw(ptr as *mut Self::SmartTarget)
-    }
-}
+// unsafe impl<T: ?Sized> IsSmartPointer for Arc2<T> {
+//     type SmartTarget = T;
+//     type Kind = Arc2<()>;
+//     fn trusted_into_raw(this: Self) -> *const Self::SmartTarget {
+//         Arc2::into_raw(this)
+//     }
+//
+//     unsafe fn trusted_from_raw(ptr: *const Self::SmartTarget) -> Self {
+//         Arc2::from_raw(ptr as *mut Self::SmartTarget)
+//     }
+// }
 
 unsafe impl<T: ?Sized> IsSmartPointer for Rc2<T> {
     type SmartTarget = T;

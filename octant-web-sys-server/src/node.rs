@@ -1,14 +1,15 @@
+use by_address::ByAddress;
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
-use by_address::ByAddress;
-use octant_object::{class, DebugClass};
-
-use octant_reffed::rc::RcRef;
-use octant_runtime::{
-    peer::AsNative, rpc, runtime::Runtime, DeserializePeer, PeerNew, SerializePeer,
+use crate::{
+    object::{Object, ObjectFields},
+    octant_runtime::peer::AsNative,
 };
-
-use crate::object::{Object, ObjectFields};
+use octant_object::{class, DebugClass};
+use octant_runtime::{
+    reexports::marshal_pointer::rc_ref::RcRef, rpc, runtime::Runtime, DeserializePeer, PeerNew,
+    SerializePeer,
+};
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct NodeFields {

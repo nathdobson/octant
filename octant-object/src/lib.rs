@@ -121,6 +121,8 @@
 #![feature(allocator_api)]
 #![feature(const_type_id)]
 
+pub use octant_object_derive::*;
+
 pub mod base;
 pub mod cast;
 pub mod class;
@@ -132,4 +134,3 @@ pub mod reexports {
     pub use octant_reffed;
 }
 
-pub use octant_object_derive::*;

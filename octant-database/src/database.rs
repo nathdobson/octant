@@ -1,4 +1,5 @@
-use crate::table::{BoxTable, Table};
+use std::sync::Arc;
+
 use marshal::{
     context::Context, de::Deserialize, decode::AnyDecoder, encode::AnyEncoder, ser::Serialize,
 };
@@ -9,8 +10,9 @@ use marshal_update::{
     object_map::ObjectMap,
     ser::{SerializeStream, SerializeUpdate},
 };
-use std::sync::Arc;
+
 use crate::lock::DbLock;
+use crate::table::{BoxTable, Table};
 
 #[derive(Default)]
 pub struct Database {

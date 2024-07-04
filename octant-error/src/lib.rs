@@ -1,7 +1,11 @@
 use std::fmt::{Debug, Display, Formatter};
 
-use anyhow::anyhow;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use marshal::{
+    de::Deserialize,
+    decode::{AnyDecoder, Decoder},
+    encode::{AnyEncoder, Encoder},
+    ser::Serialize,
+};
 
 #[doc(hidden)]
 pub mod reexports {
@@ -55,21 +59,24 @@ impl OctantError {
     }
 }
 
-impl Serialize for OctantError {
-    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.0.to_string().serialize(s)
+impl<E: Encoder> Serialize<E> for OctantError {
+    fn serialize<'w, 'en>(
+        &self,
+        e: AnyEncoder<'w, 'en, E>,
+        ctx: marshal::context::Context,
+    ) -> anyhow::Result<()> {
+        <anyhow::Error as Serialize<E>>::serialize(&self.0, e, ctx)
     }
 }
 
-impl<'de> Deserialize<'de> for OctantError {
-    fn deserialize<D>(d: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        Ok(OctantError(anyhow!(String::deserialize(d)?)))
+impl<D: Decoder> Deserialize<D> for OctantError {
+    fn deserialize<'p, 'de>(
+        d: AnyDecoder<'p, 'de, D>,
+        ctx: marshal::context::Context,
+    ) -> anyhow::Result<Self> {
+        Ok(OctantError(<anyhow::Error as Deserialize<D>>::deserialize(
+            d, ctx,
+        )?))
     }
 }
 

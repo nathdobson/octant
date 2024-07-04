@@ -1,12 +1,11 @@
 use std::{fmt::Formatter, marker::PhantomData};
 
+use octant_error::OctantError;
+use octant_reffed::rc::Rc2;
 use serde::{
     de::{DeserializeSeed, EnumAccess, Error, SeqAccess, VariantAccess, Visitor},
     Deserialize, Deserializer,
 };
-
-use octant_error::OctantError;
-use octant_reffed::rc::Rc2;
 
 use crate::DeserializeContext;
 

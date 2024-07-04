@@ -1,14 +1,5 @@
+use marshal_pointer::rc_ref::RcRef;
 use std::rc::Rc;
-#[cfg(side = "client")]
-use wasm_bindgen_futures::JsFuture;
-
-use octant_error::{OctantError, OctantResult};
-use octant_object::{class, DebugClass};
-use octant_reffed::rc::{Rc2, RcRef};
-use octant_runtime::{
-    future_return::DataReturn, octant_future::OctantFuture, peer::AsNative, rpc, runtime::Runtime,
-    DeserializePeer, PeerNew, SerializePeer,
-};
 
 #[cfg(side = "client")]
 use crate::import::Import;
@@ -17,7 +8,16 @@ use crate::{
     credential_data::CredentialData,
     credential_request_options::RcCredentialRequestOptions,
     object::{Object, ObjectFields},
+    octant_runtime::peer::AsNative,
 };
+use octant_error::{OctantError, OctantResult};
+use octant_object::{class, DebugClass};
+use octant_runtime::{
+    future_return::DataReturn, octant_future::OctantFuture, rpc, runtime::Runtime, DeserializePeer,
+    PeerNew, SerializePeer,
+};
+#[cfg(side = "client")]
+use wasm_bindgen_futures::JsFuture;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct CredentialsContainerFields {
@@ -32,13 +32,13 @@ pub trait CredentialsContainer: Object {}
 #[cfg(side = "server")]
 impl dyn CredentialsContainer {
     pub async fn get_with_options(
-        self: &Rc2<Self>,
+        self: &RcRef<Self>,
         req: RcCredentialRequestOptions,
     ) -> OctantResult<CredentialData> {
         Ok(self.get_with_options_impl(req).await?.into_inner()?)
     }
     pub async fn create_with_options(
-        self: &Rc2<Self>,
+        self: &RcRef<Self>,
         req: RcCredentialCreationOptions,
     ) -> OctantResult<CredentialData> {
         Ok(self.create_with_options_impl(req).await?.into_inner()?)

@@ -1,37 +1,43 @@
 use std::{
-    any::Any,
-    fmt::{Debug, Formatter},
+    fmt::Debug,
     rc::Rc,
 };
-use marshal_object::derive_box_object;
-use octant_error::OctantResult;
-use serde::{
-    de::{Error, MapAccess, Visitor},
-    Deserialize, Deserializer, Serialize,
+use marshal::{Deserialize, Serialize};
+use marshal_bin::{decode::full::BinDecoder, encode::full::BinEncoder};
+use marshal_json::{decode::full::JsonDecoder, encode::full::JsonEncoder};
+use marshal_object::{
+    AsDiscriminant, derive_box_object, derive_deserialize_provider, derive_serialize_provider,
 };
+use marshal_pointer::RawAny;
+use octant_error::OctantResult;
 
 use crate::runtime::Runtime;
 
 #[cfg(side = "client")]
-pub trait DownMessage: Debug + Any {
+pub trait DownMessage: Debug + RawAny + AsDiscriminant<BoxDownMessage> {
     fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()>;
 }
 
 #[cfg(side = "server")]
-pub trait DownMessage: Debug + Any {}
+pub trait DownMessage: Debug + RawAny + AsDiscriminant<BoxDownMessage> {}
 
 #[cfg(side = "client")]
-pub trait UpMessage: Debug + Any {}
+pub trait UpMessage: Debug + RawAny + AsDiscriminant<BoxUpMessage> {}
 
 #[cfg(side = "server")]
-pub trait UpMessage: Debug + Any {
+pub trait UpMessage: Debug + RawAny + AsDiscriminant<BoxUpMessage> {
     fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()>;
 }
 
-struct BoxDownMessage;
+pub struct BoxDownMessage;
 derive_box_object!(BoxDownMessage, DownMessage);
-struct BoxUpMessage;
+derive_serialize_provider!(BoxDownMessage, JsonEncoder, BinEncoder);
+derive_deserialize_provider!(BoxDownMessage, JsonDecoder, BinDecoder);
+
+pub struct BoxUpMessage;
 derive_box_object!(BoxUpMessage, UpMessage);
+derive_serialize_provider!(BoxUpMessage, JsonEncoder, BinEncoder);
+derive_deserialize_provider!(BoxUpMessage, JsonDecoder, BinDecoder);
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UpMessageList {

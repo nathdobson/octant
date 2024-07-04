@@ -5,8 +5,8 @@ use std::{
     panic::{catch_unwind, PanicInfo, UnwindSafe, update_hook},
     sync::Once,
 };
-use octant_error::{octant_error, OctantError, OctantResult};
 
+use octant_error::{octant_error, OctantError, OctantResult};
 
 thread_local! {
     static LAST_ERROR:Cell<Option<OctantError>> = Cell::new(None);

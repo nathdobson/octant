@@ -9,7 +9,7 @@ metabuild = ["octant-sys-build"]
 [dependencies]
 octant-runtime-client = {workspace=true}
 octant-serde = { workspace = true }
-serde = { workspace = true, features = ["derive", "rc"] }
+#serde = { workspace = true, features = ["derive", "rc"] }
 catalog = { workspace = true }
 octant-error = { workspace = true }
 log = { workspace = true }
@@ -54,6 +54,9 @@ octant-reffed = {workspace = true}
 futures = { workspace=true}
 wasm-bindgen-futures = {workspace=true}
 by_address = {workspace=true}
+marshal = {workspace=true,features = ["base64urlsafedata"]}
+marshal-object = {workspace=true}
+marshal-pointer = {workspace=true}
 
 [build-dependencies]
 octant-sys-build = { workspace = true }

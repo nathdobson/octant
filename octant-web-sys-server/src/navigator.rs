@@ -1,18 +1,18 @@
-use octant_object::{class, DebugClass};
-use safe_once::cell::OnceCell;
 use std::rc::Rc;
-
-use octant_reffed::rc::{Rc2, RcRef};
+use marshal_pointer::rc_ref::RcRef;
+use safe_once::cell::OnceCell;
+use octant_object::{class, DebugClass};
 use octant_runtime::{
-    peer::AsNative, rpc, runtime::Runtime, DeserializePeer, PeerNew, SerializePeer,
+    DeserializePeer, PeerNew, rpc, SerializePeer,
 };
-
+use octant_runtime::runtime::Runtime;
 use crate::{
     credentials_container::{
-        CredentialsContainer, CredentialsContainerFields, RcCredentialsContainer,
+        CredentialsContainer, RcCredentialsContainer,
     },
     object::{Object, ObjectFields},
 };
+use crate::octant_runtime::peer::AsNative;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct NavigatorFields {

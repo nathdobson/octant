@@ -1,10 +1,28 @@
-use marshal::{Deserialize, Serialize};
 use std::{cell::RefCell, fmt::Debug, future::Future, marker::PhantomData, rc::Rc};
 #[cfg(side = "server")]
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
+
+use marshal::{
+    context::OwnedContext,
+    de::{rc::DeserializeRc, Deserialize},
+    decode::{AnyDecoder, Decoder},
+    encode::{AnyEncoder, Encoder},
+    ser::{rc::SerializeRc, Serialize},
+    Deserialize, Serialize,
+};
+use marshal_bin::{decode::full::BinDecoder, encode::full::BinEncoder};
+use marshal_json::{
+    decode::full::{JsonDecoder, JsonDecoderBuilder},
+    encode::full::{JsonEncoder, JsonEncoderBuilder},
+};
+use marshal_object::{
+    derive_box_object, derive_deserialize_provider, derive_serialize_provider, derive_variant,
+    AsDiscriminant,
+};
+use marshal_pointer::{rc_ref::RcRef, RawAny};
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
 
@@ -12,31 +30,37 @@ use tokio::sync::oneshot;
 use octant_error::octant_error;
 #[cfg(side = "server")]
 use octant_error::OctantResult;
-
 use octant_object::{class, DebugClass};
 use octant_reffed::rc::Rc2;
 
 #[cfg(side = "server")]
 use crate::immediate_return::AsTypedHandle;
 use crate::{
+    deserialize_peer,
     future_return::FutureReturn,
     handle::TypedHandle,
     immediate_return::ImmediateReturn,
     peer::{Peer, PeerFields},
-    proto::UpMessage,
+    proto::{BoxUpMessage, UpMessage},
     runtime::Runtime,
+    serialize_peer,
 };
 
-pub trait OctantFutureResult {}
+// pub struct BoxOctantFutureResult;
+// derive_box_object!(BoxOctantFutureResult, OctantFutureResult);
+// derive_serialize_provider!(BoxOctantFutureResult, JsonEncoder, BinEncoder);
+// derive_deserialize_provider!(BoxOctantFutureResult, JsonDecoder, BinDecoder);
+// pub trait OctantFutureResult: Debug + AsDiscriminant<BoxOctantFutureResult> + RawAny {}
 
-struct BoxOctantFutureResult;
-
+// type Unit=();
+// derive_variant!(BoxOctantFutureResult, Unit);
+// impl OctantFutureResult for () {}
 
 #[derive(DebugClass)]
 pub struct AbstractOctantFutureFields {
     parent: PeerFields,
     #[cfg(side = "server")]
-    sender: RefCell<Option<oneshot::Sender<Box<dyn OctantFutureResult>>>>,
+    sender: RefCell<Option<oneshot::Sender<Vec<u8>>>>,
 }
 
 #[class]
@@ -60,7 +84,7 @@ pub trait AbstractOctantFuture: Peer {}
 pub struct OctantFuture<T: FutureReturn> {
     parent: RcAbstractOctantFuture,
     retain: Option<T::Retain>,
-    receiver: oneshot::Receiver<Box<dyn OctantFutureResult>>,
+    receiver: oneshot::Receiver<Vec<u8>>,
     phantom: PhantomData<T>,
 }
 
@@ -73,12 +97,24 @@ pub struct OctantFuture<T: FutureReturn> {
     phantom: PhantomData<T>,
 }
 
+// impl<E: Encoder> Serialize<E> for Box<dyn OctantFutureResult> {
+//     fn serialize<'w, 'en>(
+//         &self,
+//         e: AnyEncoder<'w, 'en, E>,
+//         ctx: marshal::context::Context,
+//     ) -> anyhow::Result<()> {
+//         todo!()
+//     }
+// }
 #[derive(Serialize, Debug, Deserialize)]
+// #[serialize(bounds = Box<dyn OctantFutureResult>: Serialize<E>)]
+// #[deserialize(bounds = Box<dyn OctantFutureResult>: Deserialize<D>)]
 pub struct FutureResponse {
     promise: RcAbstractOctantFuture,
-    value: Box<dyn OctantFutureResult>,
+    value: Vec<u8>,
 }
 
+derive_variant!(BoxUpMessage, FutureResponse);
 impl UpMessage for FutureResponse {
     #[cfg(side = "server")]
     fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()> {
@@ -108,12 +144,15 @@ impl<T: Debug + FutureReturn> OctantFuture<T> {
                 let result = f.await;
                 let down = down.borrow_mut().take().unwrap();
                 let up = result.future_produce(&runtime, down);
+                let up = JsonEncoderBuilder::new()
+                    .serialize(&up, OwnedContext::new().borrow())
+                    .unwrap();
                 runtime
                     .sink()
                     .send(Box::<FutureResponse>::new(FutureResponse {
                         promise: parent,
-                        value: Format::default().serialize_raw(&up).unwrap(),
-                    }))
+                        value: up.into_bytes(),
+                    }));
             }
         });
         OctantFuture {
@@ -129,13 +168,33 @@ impl<T: FutureReturn> Future for OctantFuture<T> {
     type Output = OctantResult<T>;
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         if let Poll::Ready(up) = Pin::new(&mut (*self).receiver).poll(cx)? {
-            let mut ctx = DeserializeContext::new();
-            ctx.insert::<Rc<Runtime>>(self.parent.runtime().clone());
-            let up = up.deserialize_as_with::<T::Up>(&ctx)?;
+            let mut ctx = OwnedContext::new();
+            ctx.insert_const((*self).parent.runtime());
+            log::info!("{}", std::str::from_utf8(&up).unwrap());
+            let up = JsonDecoderBuilder::new(&up).deserialize::<T::Up>(ctx.borrow())?;
             let retain = self.retain.take().unwrap();
             return Poll::Ready(Ok(T::future_return(self.parent.runtime(), retain, up)));
         }
         Poll::Pending
+    }
+}
+
+impl<E: Encoder> SerializeRc<E> for dyn AbstractOctantFuture {
+    fn serialize_rc<'w, 'en>(
+        this: &RcRef<Self>,
+        e: AnyEncoder<'w, 'en, E>,
+        ctx: marshal::context::Context,
+    ) -> anyhow::Result<()> {
+        serialize_peer::<E, Self>(this, e, ctx)
+    }
+}
+
+impl<D: Decoder> DeserializeRc<D> for dyn AbstractOctantFuture {
+    fn deserialize_rc<'p, 'de>(
+        d: AnyDecoder<'p, 'de, D>,
+        ctx: marshal::context::Context,
+    ) -> anyhow::Result<Rc<Self>> {
+        deserialize_peer::<D, Self>(d, ctx)
     }
 }
 

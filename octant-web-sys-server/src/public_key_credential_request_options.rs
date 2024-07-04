@@ -1,7 +1,5 @@
 use base64urlsafedata::Base64UrlSafeData;
-use serde::{Deserialize, Deserializer, Serialize};
-
-use octant_serde::{DeserializeContext, DeserializeWith};
+use marshal::{Deserialize, Serialize};
 
 use crate::{
     allow_credentials::AllowCredentials,
@@ -17,13 +15,4 @@ pub struct PublicKeyCredentialRequestOptions {
     pub allow_credentials: Vec<AllowCredentials>,
     pub user_verification: UserVerificationRequirement,
     pub extensions: Option<AuthenticationExtensionsClientInputs>,
-}
-
-impl<'de> DeserializeWith<'de> for PublicKeyCredentialRequestOptions {
-    fn deserialize_with<D: Deserializer<'de>>(
-        ctx: &DeserializeContext,
-        d: D,
-    ) -> Result<Self, D::Error> {
-        Self::deserialize(d)
-    }
 }

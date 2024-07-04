@@ -1,17 +1,19 @@
-use std::{cell::RefCell, rc::Rc};
-
-use octant_object::{class, DebugClass};
-use serde::Serialize;
+use std::cell::RefCell;
+use std::rc::Rc;
+use marshal::{Deserialize, Serialize};
+use marshal_object::derive_variant;
+use marshal_pointer::rc_ref::RcRef;
 use octant_error::OctantResult;
-
-use octant_reffed::rc::RcRef;
+use octant_object::{class, DebugClass};
+use octant_reffed::rc::Rc2Ref;
 use octant_runtime::{
-    peer::AsNative, proto::UpMessage, runtime::Runtime, DeserializePeer, PeerNew, SerializePeer,
+    DeserializePeer, PeerNew, proto::UpMessage, SerializePeer,
 };
-use octant_serde::{define_serde_impl, DeserializeWith};
-
-use crate::{event_listener::RcEventListener, html_element::HtmlElement, object::Object};
+use octant_runtime::proto::BoxUpMessage;
+use octant_runtime::runtime::Runtime;
+use crate::{html_element::HtmlElement, object::Object};
 use crate::html_element::HtmlElementFields;
+use crate::octant_runtime::peer::AsNative;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct HtmlInputElementFields {
@@ -27,7 +29,7 @@ pub trait HtmlInputElement: HtmlElement {
     fn update_value(self: &RcRef<Self>) {
         let this = self as &RcRef<dyn crate::html_input_element::HtmlInputElement>;
         this.sink().send(Box::<SetInput>::new(SetInput {
-            element: self.rc(),
+            element: self.rc2(),
             value: this.native().value(),
         }));
     }
@@ -37,13 +39,13 @@ pub trait HtmlInputElement: HtmlElement {
     }
 }
 
-#[derive(Serialize, Debug, DeserializeWith)]
+#[derive(Serialize, Debug, Deserialize)]
 struct SetInput {
     element: RcHtmlInputElement,
     value: String,
 }
+derive_variant!(BoxUpMessage, SetInput);
 
-define_serde_impl!(SetInput : UpMessage);
 impl UpMessage for SetInput {
     #[cfg(side = "server")]
     fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()> {

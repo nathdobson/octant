@@ -1,6 +1,4 @@
-use std::{
-    fmt::{Debug, Display, Formatter},
-};
+use std::fmt::{Debug, Display, Formatter};
 
 use sendable::SendOption;
 use wasm_bindgen::JsValue;

@@ -7,3 +7,4 @@ edition = "2021"
 paste = { workspace = true }
 octant-reffed=  {workspace=true}
 octant-object-derive = {workspace=true}
+marshal-pointer = {workspace=true}

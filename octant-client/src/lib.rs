@@ -3,21 +3,20 @@
 
 extern crate octant_web_sys_client;
 
-use std::rc::Rc;
-
 use futures::StreamExt;
+use marshal_json::{decode::full::JsonDecoderBuilder, encode::full::JsonEncoderBuilder};
+use std::{borrow::Cow::Owned, rc::Rc};
 use tokio::{sync::mpsc::unbounded_channel, try_join};
 use wasm_bindgen::prelude::*;
 use web_sys::window;
 
+use crate::websocket::WebSocketMessage;
 use octant_error::{octant_error, OctantError, OctantResult};
 use octant_runtime_client::{
-    proto::{DownMessageList, UpMessageList},
+    proto::{DownMessage, DownMessageList, UpMessageList},
+    reexports::marshal::context::OwnedContext,
     runtime::Runtime,
 };
-use octant_serde::{DeserializeContext, Format, RawEncoded};
-
-use crate::websocket::WebSocketMessage;
 
 mod websocket;
 
@@ -73,16 +72,20 @@ pub async fn main_impl() -> OctantResult<!> {
     let recv_fut = async {
         while let Some(next) = rx.next().await {
             let next = next?;
-            let encoded = match next {
-                WebSocketMessage::Text(text) => RawEncoded::Text(text),
-                WebSocketMessage::Binary(_) => todo!(),
+            let message = match next {
+                WebSocketMessage::Text(s) => {
+                    let mut ctx = OwnedContext::new();
+                    JsonDecoderBuilder::new(s.as_bytes())
+                        .deserialize::<DownMessageList>(ctx.borrow())?
+                }
+                WebSocketMessage::Binary(b) => todo!(),
             };
-            let message: DownMessageList = encoded.deserialize_as::<DownMessageList>()?;
-            let mut ctx = DeserializeContext::new();
-            ctx.insert::<Rc<Runtime>>(runtime.clone());
-            for message in message.commands {
-                let message = message.deserialize_with(&ctx)?;
-                message.run(&runtime)?;
+            let mut ctx = OwnedContext::new();
+            ctx.insert_const::<Rc<Runtime>>(&runtime);
+            for command in message.commands {
+                let command = JsonDecoderBuilder::new(&command)
+                    .deserialize::<Box<dyn DownMessage>>(ctx.borrow())?;
+                command.run(&runtime)?;
             }
         }
         Err(octant_error!("Websocket terminated"))
@@ -95,10 +98,20 @@ pub async fn main_impl() -> OctantResult<!> {
             }
             let commands = commands
                 .iter()
-                .map(|x| Format::default().serialize(&**x))
-                .collect::<OctantResult<Vec<_>>>()?;
+                .map(
+                    |x| {
+                        Ok(JsonEncoderBuilder::new()
+                            .serialize(x, OwnedContext::new().borrow())?
+                            .into_bytes())
+                    },
+                )
+                .collect::<anyhow::Result<Vec<_>>>()?;
             let message = UpMessageList { commands };
-            tx.send(WebSocketMessage::Text(serde_json::to_string(&message)?))?;
+            let mut ctx = OwnedContext::new();
+            tx.send(WebSocketMessage::Text(
+                JsonEncoderBuilder::new().serialize(&message, ctx.borrow())?,
+            ))?;
+            // tx.send(WebSocketMessage::Text(serde_json::to_string(&message)?))?;
         }
         Ok(())
     };

@@ -3,6 +3,7 @@
 #![allow(unused_variables)]
 #![deny(unused_must_use)]
 #![feature(trait_alias)]
+#![feature(arbitrary_self_types)]
 
 extern crate core;
 extern crate self as octant_runtime;
@@ -11,31 +12,45 @@ extern crate self as octant_runtime_client;
 #[cfg(side = "server")]
 extern crate self as octant_runtime_server;
 
-use marshal::de::Deserialize;
-use marshal_bin::decode::full::BinDecoder;
-use marshal_json::decode::full::JsonDecoder;
+use crate::{
+    handle::{RawHandle, TypedHandle},
+    immediate_return::AsTypedHandle,
+    runtime::Runtime,
+};
+use marshal::{
+    context::Context,
+    de::Deserialize,
+    decode::{AnyDecoder, Decoder},
+    encode::{AnyEncoder, Encoder},
+    ser::Serialize,
+};
+use marshal_bin::{decode::full::BinDecoder, encode::full::BinEncoder};
+use marshal_json::{decode::full::JsonDecoder, encode::full::JsonEncoder};
+use marshal_pointer::rc_ref::RcRef;
 use octant_object::class::Class;
 use octant_reffed::rc::Rc2;
+#[cfg(side = "client")]
+pub use octant_runtime_derive::PeerNewClient as PeerNew;
+#[cfg(side = "server")]
+pub use octant_runtime_derive::PeerNewServer as PeerNew;
+pub use octant_runtime_derive::*;
 use std::{
     fmt::{Display, Formatter},
     rc::Rc,
 };
-use marshal::ser::Serialize;
-use marshal_bin::encode::full::BinEncoder;
-use marshal_json::encode::full::JsonEncoder;
-use crate::{
-    handle::{RawHandle, TypedHandle},
-    runtime::Runtime,
-};
+
 pub mod handle;
 #[doc(hidden)]
 pub mod reexports {
+    pub use anyhow;
     pub use catalog;
+    pub use marshal;
+    pub use marshal_object;
+    pub use marshal_pointer;
     pub use paste;
     pub use serde;
 
-    pub use ::octant_error;
-    pub use marshal;
+    pub use octant_error;
     pub use octant_object;
     pub use octant_reffed;
     pub use octant_serde;
@@ -43,12 +58,6 @@ pub mod reexports {
 
 pub trait OctantDeserialize = Deserialize<JsonDecoder> + Deserialize<BinDecoder>;
 pub trait OctantSerialize = Serialize<JsonEncoder> + Serialize<BinEncoder>;
-
-#[cfg(side = "client")]
-pub use octant_runtime_derive::PeerNewClient as PeerNew;
-#[cfg(side = "server")]
-pub use octant_runtime_derive::PeerNewServer as PeerNew;
-pub use octant_runtime_derive::*;
 
 #[cfg_attr(side = "client", path = "client_runtime.rs")]
 #[cfg_attr(side = "server", path = "server_runtime.rs")]
@@ -73,6 +82,7 @@ pub mod proto;
 //     runtime.lookup(handle).map_err(D::Error::custom)
 // }
 
+#[derive(Debug)]
 pub enum LookupError {
     NotFound(RawHandle),
     DowncastFailed,
@@ -86,6 +96,8 @@ impl Display for LookupError {
         }
     }
 }
+
+impl std::error::Error for LookupError {}
 
 pub trait PeerNew {
     type Builder;
@@ -101,4 +113,21 @@ where
     fn peer_new(builder: Self::Builder) -> Self {
         Rc2::<T::Fields>::new(T::Fields::peer_new(builder))
     }
+}
+
+pub fn deserialize_peer<'p, 'de, D: Decoder, T: ?Sized + Class>(
+    d: AnyDecoder<'p, 'de, D>,
+    mut ctx: Context,
+) -> anyhow::Result<Rc<T>> {
+    let handle = <TypedHandle<T> as Deserialize<D>>::deserialize(d, ctx.reborrow())?;
+    let runtime = ctx.get_const::<Rc<Runtime>>()?;
+    Ok(runtime.lookup(handle)?.into_rc())
+}
+
+pub fn serialize_peer<'w, 'en, E: Encoder, T: ?Sized + AsTypedHandle>(
+    peer: &RcRef<T>,
+    e: AnyEncoder<'w, 'en, E>,
+    ctx: Context,
+) -> anyhow::Result<()> {
+    <TypedHandle<T> as Serialize<E>>::serialize(&peer.typed_handle(), e, ctx)
 }

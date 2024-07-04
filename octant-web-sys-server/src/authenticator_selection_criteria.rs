@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use marshal::{Deserialize, Serialize};
 
 use crate::{
     authenticator_attachment::AuthenticatorAttachment,

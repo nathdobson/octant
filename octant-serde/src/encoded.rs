@@ -3,10 +3,10 @@ use std::{
     marker::PhantomData,
 };
 
-use serde::{Deserialize, Deserializer, Serialize};
 use octant_error::OctantResult;
+use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::{DESERIALIZE_REGISTRY, DeserializeContext, DeserializeWith,  RawEncoded};
+use crate::{DESERIALIZE_REGISTRY, DeserializeContext, DeserializeWith, RawEncoded};
 
 #[derive(Serialize, Deserialize)]
 pub struct Encoded<U: ?Sized> {

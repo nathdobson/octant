@@ -1,5 +1,5 @@
 use base64urlsafedata::Base64UrlSafeData;
-use serde::{Deserialize, Serialize};
+use marshal::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AuthenticatorAttestationResponse {

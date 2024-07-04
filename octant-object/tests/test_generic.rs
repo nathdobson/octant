@@ -2,9 +2,7 @@
 
 use std::fmt::Debug;
 
-use octant_object::{
-    base::{Base, BaseFields},
-};
+use octant_object::base::{Base, BaseFields};
 use octant_object_derive::{class, DebugClass};
 
 #[derive(DebugClass)]

@@ -1,5 +1,5 @@
 use base64urlsafedata::Base64UrlSafeData;
-use serde::{Deserialize, Serialize};
+use marshal::{Deserialize, Serialize};
 
 use crate::{
     allow_credentials_type::AllowCredentialsType, authenticator_transport::AuthenticatorTransport,

@@ -1,15 +1,17 @@
+use std::rc::Rc;
+use marshal_pointer::rc_ref::RcRef;
+
 use octant_error::{OctantError, OctantResult};
 use octant_object::{class, DebugClass};
-use octant_reffed::rc::RcRef;
 use octant_runtime::{
-    future_return::DataReturn, octant_future::OctantFuture, peer::AsNative, rpc, runtime::Runtime,
-    DeserializePeer, PeerNew, SerializePeer,
+    DeserializePeer, future_return::DataReturn, octant_future::OctantFuture, PeerNew,
+    rpc, SerializePeer,
 };
-use std::rc::Rc;
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
-
+use octant_runtime::runtime::Runtime;
 use crate::object::{Object, ObjectFields};
+use crate::octant_runtime::peer::AsNative;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct ResponseFields {

@@ -1,10 +1,10 @@
-use serde::Serialize;
 use octant_error::OctantResult;
+use serde::Serialize;
 
 use crate::{
     encoded::Encoded,
-    registry::{SerializeDyn, SerializeType},
     RawEncoded,
+    registry::{SerializeDyn, SerializeType},
 };
 
 #[derive(Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]

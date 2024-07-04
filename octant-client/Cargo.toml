@@ -35,3 +35,6 @@ octant-runtime-client = { workspace = true }
 octant-web-sys-client = { workspace = true }
 octant-serde = { workspace = true }
 safe-once = { workspace = true }
+marshal-json= {workspace=true}
+marshal-bin = {workspace=true}
+anyhow = {workspace=true}

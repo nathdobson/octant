@@ -13,6 +13,7 @@ use std::{
 use futures::future::LocalBoxFuture;
 use slab::Slab;
 use tokio::sync::mpsc;
+
 use octant_error::OctantResult;
 
 #[derive(Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash, Debug)]
@@ -195,6 +196,7 @@ mod test {
 
     use parking_lot::Mutex;
     use tokio::task::yield_now;
+
     use octant_error::OctantResult;
 
     use crate::event_loop::EventPool;

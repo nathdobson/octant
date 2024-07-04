@@ -5,12 +5,12 @@
 extern crate proc_macro;
 
 use convert_case::{Case, Casing};
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
-    parse_macro_input, spanned::Spanned, Attribute, Data, DataStruct, DeriveInput, Expr, Field,
-    Fields, FnArg, GenericArgument, GenericParam, Item, ItemStruct, ItemTrait, Path, PathArguments,
-    Signature, Token, TraitItem, TraitItemFn, Type, TypeParamBound,
+    Data, DataStruct, DeriveInput, FnArg, GenericParam
+    , ItemTrait, parse_macro_input, Signature,
+    spanned::Spanned, TraitItem, TraitItemFn, TypeParamBound,
 };
 
 struct Args {}

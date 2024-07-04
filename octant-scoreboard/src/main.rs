@@ -8,9 +8,9 @@ use std::{path::Path, time::Duration};
 
 use parking_lot::Mutex;
 
-use octant_account::{login::LoginHandler, register::RegisterHandler, AccountTable, SessionTable};
-use octant_database::{file::DatabaseFile};
+use octant_account::{AccountTable, login::LoginHandler, register::RegisterHandler, SessionTable};
 use octant_database::database::Database;
+use octant_database::file::DatabaseFile;
 use octant_error::Context;
 use octant_panic::register_handler;
 use octant_runtime_server::reexports::octant_error::OctantResult;

@@ -3,16 +3,16 @@ use std::{fmt::Debug, marker::Unsize, rc::Rc};
 use octant_error::OctantError;
 use octant_object::class::Class;
 use octant_reffed::rc::Rc2;
-
+use crate::{
+    handle::TypedHandle, immediate_return::ImmediateReturn, OctantDeserialize, OctantSerialize,
+    peer::Peer,
+    runtime::Runtime,
+};
+// use crate::octant_future::OctantFutureResult;
 #[cfg(side = "server")]
 use crate::peer::PeerFields;
 #[cfg(side = "server")]
 use crate::PeerNew;
-use crate::{
-    handle::TypedHandle, immediate_return::ImmediateReturn, peer::Peer, runtime::Runtime,
-    OctantDeserialize,
-    OctantSerialize,
-};
 
 pub trait FutureReturn: 'static {
     type Down: 'static + OctantSerialize + OctantDeserialize + Debug;

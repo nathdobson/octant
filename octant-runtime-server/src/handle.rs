@@ -1,17 +1,19 @@
-use marshal::{
-    context::Context,
-    de::Deserialize,
-    decode::{AnyDecoder, Decoder},
-    encode::{AnyEncoder, Encoder},
-    ser::Serialize,
-    Deserialize, Serialize,
-};
-use octant_object::class::Class;
 use std::{
     any::type_name,
     fmt::{Debug, Formatter},
     marker::{PhantomData, Unsize},
 };
+
+use marshal::{
+    context::Context,
+    de::Deserialize,
+    decode::{AnyDecoder, Decoder},
+    Deserialize,
+    encode::{AnyEncoder, Encoder},
+    ser::Serialize, Serialize,
+};
+
+use octant_object::class::Class;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct RawHandle(pub u64);
@@ -57,24 +59,20 @@ impl<T: ?Sized + Class> TypedHandle<T> {
 }
 
 impl<E: Encoder, T: ?Sized + Class> Serialize<E> for TypedHandle<T> {
-    fn serialize<'w, 'en>(
-        &self,
-        e: AnyEncoder<'w, 'en, E>,
-        ctx: Context,
-    ) -> octant_error::reexports::anyhow::Result<()> {
-        self.0.serialize(e, ctx)
+    fn serialize<'w, 'en>(&self, e: AnyEncoder<'w, 'en, E>, ctx: Context) -> anyhow::Result<()> {
+        <RawHandle as Serialize<E>>::serialize(&self.0, e, ctx)
     }
 }
 
 impl<D: Decoder, T: ?Sized + Class> Deserialize<D> for TypedHandle<T> {
-    fn deserialize<'p, 'de>(
-        d: AnyDecoder<'p, 'de, D>,
-        ctx: Context,
-    ) -> octant_error::reexports::anyhow::Result<Self>
+    fn deserialize<'p, 'de>(d: AnyDecoder<'p, 'de, D>, ctx: Context) -> anyhow::Result<Self>
     where
         Self: Sized,
     {
-        Ok(TypedHandle(RawHandle::deserialize(d, ctx)?, PhantomData))
+        Ok(TypedHandle(
+            <RawHandle as Deserialize<D>>::deserialize(d, ctx)?,
+            PhantomData,
+        ))
     }
 }
 

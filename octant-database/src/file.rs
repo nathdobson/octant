@@ -1,4 +1,5 @@
-use crate::lock::DbLock;
+use std::{path::Path, sync::Arc, time::Duration};
+
 use marshal::context::OwnedContext;
 use marshal_json::{
     decode::full::{JsonDecoder, JsonDecoderBuilder},
@@ -8,13 +9,15 @@ use marshal_update::{
     de::DeserializeUpdate,
     ser::{SerializeStream, SerializeUpdate},
 };
-use octant_error::OctantResult;
-use std::{path::Path, sync::Arc, time::Duration};
 use tokio::{
     fs,
-    fs::{read_dir, File},
+    fs::{File, read_dir},
     io::AsyncWriteExt,
 };
+
+use octant_error::OctantResult;
+
+use crate::lock::DbLock;
 
 pub struct DatabaseFile<T: SerializeStream> {
     state: Arc<DbLock<T>>,

@@ -16,7 +16,7 @@ use futures::{
     SinkExt,
 };
 use itertools::Itertools;
-use octant_error::{octant_error, OctantError, OctantResult};
+use marshal_json::{decode::full::JsonDecoderBuilder, encode::full::JsonEncoderBuilder};
 use tokio::{sync::mpsc, try_join};
 use url::Url;
 use uuid::Uuid;
@@ -26,15 +26,16 @@ use warp::{
     Filter, Rejection, Reply,
 };
 
+use octant_error::{octant_error, OctantError, OctantResult};
 use octant_executor::{
     event_loop::EventPool,
     local_set::{LocalSetPool, LocalSetSpawn},
 };
 use octant_runtime_server::{
     proto::{DownMessageList, UpMessageList},
+    reexports::marshal::context::OwnedContext,
     runtime::Runtime,
 };
-use octant_serde::{Format, RawEncoded};
 use octant_web_sys_server::{global::Global, node::RcNode};
 
 use crate::{cookies::CookieRouter, session::Session, sink::BufferedDownMessageSink};
@@ -106,8 +107,8 @@ pub trait IntoWarpHandler {
     fn into_warp_handler(self) -> WarpHandler;
 }
 
-impl<T: 'static + Sync + Send + Filter<Extract = (R,), Error = Rejection>, R: 'static> IntoWarpHandler
-    for T
+impl<T: 'static + Sync + Send + Filter<Extract = (R,), Error = Rejection>, R: 'static>
+    IntoWarpHandler for T
 where
     R: Reply,
 {
@@ -133,19 +134,20 @@ impl OctantServer {
     pub fn add_handler(&mut self, handler: impl Handler) {
         self.handlers.insert(handler.prefix(), Arc::new(handler));
     }
-    async fn encode(x: DownMessageList) -> OctantResult<Message> {
-        match Format::default().serialize_raw(&x)? {
-            RawEncoded::Text(x) => Ok(Message::text(x)),
-        }
+    async fn encode(list: DownMessageList) -> OctantResult<Message> {
+        let mut ctx = OwnedContext::new();
+        Ok(Message::text(
+            JsonEncoderBuilder::new().serialize(&list, ctx.borrow())?,
+        ))
     }
     fn decode(runtime: &Rc<Runtime>, x: Message) -> OctantResult<Option<UpMessageList>> {
         if x.is_close() {
             Ok(None)
         } else if x.is_text() {
-            Ok(Some(
-                RawEncoded::Text(x.to_str().unwrap().to_string())
-                    .deserialize_as::<UpMessageList>()?,
-            ))
+            let mut ctx = OwnedContext::new();
+            let output =
+                JsonDecoderBuilder::new(x.as_bytes()).deserialize::<UpMessageList>(ctx.borrow())?;
+            Ok(Some(output))
         } else if x.is_binary() {
             todo!();
         } else {

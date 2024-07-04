@@ -75,7 +75,7 @@ pub fn metabuild() {
     println!("cargo::rustc-check-cfg=cfg(side, values(\"client\", \"server\"))");
     println!("cargo::rustc-cfg=side=\"{}\"", metadata.side);
     println!(
-        "cargo::rustc-env=OCTANT_SERDE_SHARED_NAME={}",
+        "cargo::rustc-env=MARSHAL_OBJECT_RENAME_CRATE={}",
         metadata.shared_name
     );
 }
