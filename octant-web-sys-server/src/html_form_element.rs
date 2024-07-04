@@ -1,7 +1,7 @@
 use marshal_pointer::rc_ref::RcRef;
 use safe_once::cell::OnceCell;
 use std::{fmt::Debug, rc::Rc};
-
+use marshal_pointer::rcf::Rcf;
 use crate::{
     event_listener::RcEventListener,
     html_element::{HtmlElement, HtmlElementFields},
@@ -11,7 +11,6 @@ use crate::{
     octant_runtime::peer::AsNative,
 };
 use octant_object::{cast::downcast_object, class, DebugClass};
-use octant_reffed::rc::{Rc2, Rc2Ref};
 use octant_runtime::{rpc, runtime::Runtime, DeserializePeer, PeerNew, SerializePeer};
 #[cfg(side = "client")]
 use wasm_bindgen::closure::Closure;
@@ -47,8 +46,8 @@ impl dyn HtmlFormElement {
     #[rpc]
     fn set_listener_impl(self: &RcRef<Self>, runtime: &Rc<Runtime>, listener: RcEventListener) {
         let cb = Closure::<dyn Fn(Event)>::new({
-            let listener = Rc2::downgrade(&listener);
-            let this = Rc2::downgrade(&self.rc2());
+            let listener = Rcf::downgrade(&listener);
+            let this = Rcf::downgrade(&self.rcf());
             move |e: Event| {
                 e.prevent_default();
                 if let Some(this) = this.upgrade() {

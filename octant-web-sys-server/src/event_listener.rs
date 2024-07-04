@@ -7,7 +7,6 @@ use marshal_pointer::rc_ref::RcRef;
 use safe_once::cell::OnceCell;
 use octant_error::OctantResult;
 use octant_object::{class, DebugClass};
-use octant_reffed::rc::Rc2Ref;
 use octant_runtime::{
     DeserializePeer,
     peer::{Peer, PeerFields}
@@ -91,7 +90,7 @@ impl dyn EventListener {
 impl dyn EventListener {
     pub fn fire(self: &RcRef<Self>) {
         self.sink().send(Box::<EventFired>::new(EventFired {
-            listener: self.rc2(),
+            listener: self.rcf(),
         }))
     }
 }

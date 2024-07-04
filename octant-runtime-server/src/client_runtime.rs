@@ -1,11 +1,11 @@
 use std::{collections::HashMap, marker::Unsize, rc::Rc};
 
 use atomic_refcell::AtomicRefCell;
+use marshal_pointer::rcf::Rcf;
 use tokio::sync::mpsc::UnboundedSender;
 
 use octant_error::OctantResult;
 use octant_object::{cast::downcast_object, class::Class};
-use octant_reffed::rc::Rc2;
 
 use crate::{
     handle::{RawHandle, TypedHandle},
@@ -42,9 +42,9 @@ impl Runtime {
     pub fn add<T: ?Sized + Class + Unsize<dyn Peer>>(
         self: &Rc<Self>,
         assign: TypedHandle<T>,
-        value: Rc2<T>,
+        value: Rcf<T>,
     ) {
-        let value = value as Rc2<dyn Peer>;
+        let value = value as Rcf<dyn Peer>;
         value.init(assign.raw(), self.sink.clone());
         assert!(self
             .state
@@ -53,7 +53,7 @@ impl Runtime {
             .insert(assign.raw(), value)
             .is_none());
     }
-    pub fn lookup<T: ?Sized + Class>(&self, handle: TypedHandle<T>) -> Result<Rc2<T>, LookupError> {
+    pub fn lookup<T: ?Sized + Class>(&self, handle: TypedHandle<T>) -> Result<Rcf<T>, LookupError> {
         Ok(downcast_object(
             self.state
                 .borrow()

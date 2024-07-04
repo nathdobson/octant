@@ -295,10 +295,10 @@ fn rpc_fn(args: &RpcArgs, input: &ItemFn) -> syn::Result<TokenStream> {
                             let runtime = self.runtime();
                         });
                         this_capture.push(quote! {
-                            this: ::octant_runtime::reexports::octant_reffed::rc::Rc2::from(self.rc())
+                            this: ::octant_runtime::reexports::marshal_pointer::rcf::Rcf::from(self.rc())
                         });
                         this_field.push(quote! {
-                            this: ::octant_runtime::reexports::octant_reffed::rc::Rc2<#self_type>
+                            this: ::octant_runtime::reexports::marshal_pointer::rcf::Rcf<#self_type>
                         });
                         self_callee.push(quote! {
                             //<::std::rc::Rc<_> as ::octant_runtime::reexports::marshal_pointer::AsFlatRef>::as_flat_ref(&self.this).

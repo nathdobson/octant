@@ -26,7 +26,7 @@ marshal-bin = {workspace=true}
 marshal-json = {workspace=true}
 marshal-object = {workspace=true}
 anyhow = {workspace=true}
-marshal-pointer = {workspace=true}
+marshal-pointer = {workspace=true, features=["weak-table"]}
 
 [build-dependencies]
 octant-sys-build = { workspace = true }

@@ -14,6 +14,7 @@
 //!
 //! Destructors are currently unimplemented, so callers must invoke `into_smart_pointer` instead of dropping a `SmartPointer`.
 
+use crate::cast::repr::{HasRepr, IsRepr, PtrRepr};
 use std::{
     any::{Any, TypeId},
     fmt::{Debug, Formatter},
@@ -24,10 +25,6 @@ use std::{
     rc::Rc,
     sync::Arc,
 };
-
-use octant_reffed::rc::Rc2;
-
-use crate::cast::repr::{HasRepr, IsRepr, PtrRepr};
 
 /// Indicates that a type is convertible to and from a raw pointer (e.g. `Box`, `Arc`, and `Rc`).
 ///
@@ -85,15 +82,15 @@ unsafe impl<T: ?Sized> IsSmartPointer for Arc<T> {
 //     }
 // }
 
-unsafe impl<T: ?Sized> IsSmartPointer for Rc2<T> {
+unsafe impl<T: ?Sized> IsSmartPointer for marshal_pointer::rcf::Rcf<T> {
     type SmartTarget = T;
-    type Kind = Rc2<()>;
+    type Kind = marshal_pointer::rcf::Rcf<()>;
     fn trusted_into_raw(this: Self) -> *const Self::SmartTarget {
-        Rc2::into_raw(this)
+        marshal_pointer::rcf::Rcf::into_raw(this)
     }
 
     unsafe fn trusted_from_raw(ptr: *const Self::SmartTarget) -> Self {
-        Rc2::from_raw(ptr as *mut Self::SmartTarget)
+        marshal_pointer::rcf::Rcf::from_raw(ptr as *mut Self::SmartTarget)
     }
 }
 

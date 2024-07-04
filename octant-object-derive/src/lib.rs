@@ -141,7 +141,6 @@ fn derive_class_impl(args: Args, input: &ItemTrait) -> syn::Result<TokenStream> 
             GenericParam::Const(_) => todo!(),
         })
         .collect::<Vec<_>>();
-
     let output = quote! {
         #(#attrs)*
         #vis #unsafety #auto_token #trait_token #ident <#generic_params> #colon_token #supertraits {
@@ -149,7 +148,7 @@ fn derive_class_impl(args: Args, input: &ItemTrait) -> syn::Result<TokenStream> 
             fn #get_mut(&mut self) -> &mut #fields <#(#generic_args),*>;
             #(#signatures)*
         }
-        pub type #rc_class <#(#generic_args),*> = ::octant_object::reexports::octant_reffed::rc::Rc2<dyn 'static + #class<#(#generic_args),*>>;
+        pub type #rc_class <#(#generic_args),*> = ::octant_object::reexports::marshal_pointer::rcf::Rcf<dyn 'static + #class<#(#generic_args),*>>;
         impl<__super_secret__T, #generic_params> #unsafety #class<#(#generic_args),*> for __super_secret__T where
             __super_secret__T: #supertraits,
             __super_secret__T: octant_object::class::Ranked,

@@ -28,7 +28,6 @@ use marshal_bin::{decode::full::BinDecoder, encode::full::BinEncoder};
 use marshal_json::{decode::full::JsonDecoder, encode::full::JsonEncoder};
 use marshal_pointer::rc_ref::RcRef;
 use octant_object::class::Class;
-use octant_reffed::rc::Rc2;
 #[cfg(side = "client")]
 pub use octant_runtime_derive::PeerNewClient as PeerNew;
 #[cfg(side = "server")]
@@ -38,6 +37,7 @@ use std::{
     fmt::{Display, Formatter},
     rc::Rc,
 };
+use marshal_pointer::rcf::Rcf;
 
 pub mod handle;
 #[doc(hidden)]
@@ -104,14 +104,14 @@ pub trait PeerNew {
     fn peer_new(builder: Self::Builder) -> Self;
 }
 
-impl<T> PeerNew for Rc2<T>
+impl<T> PeerNew for Rcf<T>
 where
     T: ?Sized + Class,
     T::Fields: PeerNew,
 {
     type Builder = <T::Fields as PeerNew>::Builder;
     fn peer_new(builder: Self::Builder) -> Self {
-        Rc2::<T::Fields>::new(T::Fields::peer_new(builder))
+        Rcf::<T::Fields>::new(T::Fields::peer_new(builder))
     }
 }
 
@@ -121,7 +121,7 @@ pub fn deserialize_peer<'p, 'de, D: Decoder, T: ?Sized + Class>(
 ) -> anyhow::Result<Rc<T>> {
     let handle = <TypedHandle<T> as Deserialize<D>>::deserialize(d, ctx.reborrow())?;
     let runtime = ctx.get_const::<Rc<Runtime>>()?;
-    Ok(runtime.lookup(handle)?.into_rc())
+    Ok(runtime.lookup(handle)?.into())
 }
 
 pub fn serialize_peer<'w, 'en, E: Encoder, T: ?Sized + AsTypedHandle>(

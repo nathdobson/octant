@@ -19,6 +19,7 @@ use marshal_json::decode::full::JsonDecoderBuilder;
 use marshal_json::encode::full::JsonEncoderBuilder;
 use marshal_object::derive_variant;
 use marshal_pointer::rc_ref::RcRef;
+use marshal_pointer::rcf::Rcf;
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
 
@@ -27,7 +28,6 @@ use octant_error::octant_error;
 #[cfg(side = "server")]
 use octant_error::OctantResult;
 use octant_object::{class, DebugClass};
-use octant_reffed::rc::Rc2;
 
 #[cfg(side = "server")]
 use crate::immediate_return::AsTypedHandle;
@@ -128,7 +128,7 @@ impl UpMessage for FutureResponse {
 #[cfg(side = "client")]
 impl<T: Debug + FutureReturn> OctantFuture<T> {
     pub fn spawn<F: 'static + Future<Output = T>>(runtime: &Rc<Runtime>, f: F) -> Self {
-        let parent = Rc2::new(AbstractOctantFutureFields {
+        let parent = Rcf::new(AbstractOctantFutureFields {
             parent: PeerFields::new(),
         });
         let down = Rc::new(RefCell::new(None));
@@ -219,7 +219,7 @@ impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
     fn immediate_new(runtime: &Rc<Runtime>) -> (Self, Self::Down) {
         let (retain, down) = T::future_new(runtime);
         let (tx, rx) = oneshot::channel();
-        let peer: Rc2<dyn AbstractOctantFuture> =
+        let peer: Rcf<dyn AbstractOctantFuture> =
             runtime.add::<AbstractOctantFutureFields>(AbstractOctantFutureFields {
                 parent: runtime.add_uninit(),
                 sender: RefCell::new(Some(tx)),

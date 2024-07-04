@@ -1,3 +1,4 @@
+
 #![allow(unused_variables, dead_code)]
 #![feature(trait_alias)]
 #![feature(trait_upcasting)]
@@ -7,9 +8,7 @@
 #![feature(arbitrary_self_types)]
 
 use std::rc::Rc;
-
 use marshal_pointer::rc_ref::RcRef;
-
 use octant_object::{
     base,
     base::{Base, BaseFields},

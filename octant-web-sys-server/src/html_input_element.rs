@@ -5,7 +5,6 @@ use marshal_object::derive_variant;
 use marshal_pointer::rc_ref::RcRef;
 use octant_error::OctantResult;
 use octant_object::{class, DebugClass};
-use octant_reffed::rc::Rc2Ref;
 use octant_runtime::{
     DeserializePeer, PeerNew, proto::UpMessage, SerializePeer,
 };
@@ -29,7 +28,7 @@ pub trait HtmlInputElement: HtmlElement {
     fn update_value(self: &RcRef<Self>) {
         let this = self as &RcRef<dyn crate::html_input_element::HtmlInputElement>;
         this.sink().send(Box::<SetInput>::new(SetInput {
-            element: self.rc2(),
+            element: self.rcf(),
             value: this.native().value(),
         }));
     }

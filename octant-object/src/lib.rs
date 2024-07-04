@@ -131,6 +131,5 @@ pub mod class;
 pub mod reexports {
     pub use paste;
 
-    pub use octant_reffed;
+    pub use marshal_pointer;
 }
-

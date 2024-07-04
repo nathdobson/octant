@@ -8,3 +8,4 @@ serde = {workspace=true}
 weak-table = {workspace=true}
 marshal = {workspace=true}
 anyhow = {workspace=true}
+marshal-pointer = {workspace=true}

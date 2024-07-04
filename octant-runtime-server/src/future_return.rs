@@ -1,8 +1,7 @@
 use std::{fmt::Debug, marker::Unsize, rc::Rc};
-
+use marshal_pointer::rcf::Rcf;
 use octant_error::OctantError;
 use octant_object::class::Class;
-use octant_reffed::rc::Rc2;
 use crate::{
     handle::TypedHandle, immediate_return::ImmediateReturn, OctantDeserialize, OctantSerialize,
     peer::Peer,
@@ -28,7 +27,7 @@ pub trait FutureReturn: 'static {
 }
 
 #[cfg(side = "server")]
-impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Rc2<T>
+impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Rcf<T>
 where
     T::Fields: Peer + PeerNew<Builder = PeerFields> + Unsize<T>,
 {
@@ -44,7 +43,7 @@ where
 }
 
 #[cfg(side = "client")]
-impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Rc2<T>
+impl<T: ?Sized + Class + Unsize<dyn Peer> + Debug> FutureReturn for Rcf<T>
 where
     T::Fields: Peer + Unsize<T>,
 {

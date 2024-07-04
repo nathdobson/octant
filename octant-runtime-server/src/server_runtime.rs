@@ -6,10 +6,10 @@ use std::{
 use atomic_refcell::AtomicRefCell;
 use marshal::context::OwnedContext;
 use marshal_json::decode::full::JsonDecoderBuilder;
+use marshal_pointer::rcf::{Rcf, RcfWeak};
 use octant_error::OctantResult;
 use octant_executor::event_loop::EventSpawn;
 use octant_object::{cast::downcast_object, class::Class};
-use octant_reffed::rc::{Rc2, Weak2};
 use tokio::sync::mpsc::UnboundedSender;
 use weak_table::WeakValueHashMap;
 
@@ -23,7 +23,7 @@ use crate::{
 
 struct State {
     next_handle: u64,
-    handles: WeakValueHashMap<RawHandle, Weak2<dyn Peer>>,
+    handles: WeakValueHashMap<RawHandle, RcfWeak<dyn Peer>>,
 }
 
 pub struct Runtime {
@@ -55,10 +55,10 @@ impl Runtime {
     pub fn spawner(&self) -> &Rc<EventSpawn> {
         &self.spawn
     }
-    pub fn add<T: Peer>(&self, value: T) -> Rc2<T> {
+    pub fn add<T: Peer>(&self, value: T) -> Rcf<T> {
         let handle = ((&value) as &dyn Peer).raw_handle();
         log::info!("Adding handle {:?}", handle);
-        let result = Rc2::new(value);
+        let result = Rcf::new(value);
         self.state
             .borrow_mut()
             .handles
@@ -95,7 +95,7 @@ impl Runtime {
     pub fn lookup<T: ?Sized + Class>(
         self: &Rc<Self>,
         handle: TypedHandle<T>,
-    ) -> Result<Rc2<T>, LookupError> {
+    ) -> Result<Rcf<T>, LookupError> {
         Ok(downcast_object(
             self.state
                 .borrow()
