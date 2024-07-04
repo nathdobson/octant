@@ -6,19 +6,23 @@
 
 use std::{collections::HashMap, sync::Arc};
 
+use crate::login::LoginHandler;
 use base64urlsafedata::HumanBinaryData;
 use marshal_derive::{Deserialize, DeserializeUpdate, Serialize, SerializeStream, SerializeUpdate};
 use marshal_object::derive_variant;
 use marshal_serde::WithSerde;
 use marshal_update::{hash_map::UpdateHashMap, prim::Prim};
+use octant_cookies::{CookieData, CookieRouter};
+use octant_database::{
+    database::ArcDatabase,
+    table::{BoxTable, Table},
+};
+use octant_error::{octant_error, OctantResult};
+use octant_server::{session::Session, OctantServer};
 use parking_lot::Mutex;
 use url::Url;
 use uuid::Uuid;
 use webauthn_rs::{prelude::Passkey, Webauthn, WebauthnBuilder};
-
-use octant_database::table::{BoxTable, Table};
-use octant_error::{octant_error, OctantResult};
-use octant_server::{cookies::CookieData, session::Session};
 
 mod into_auth;
 mod into_octant;
@@ -107,4 +111,28 @@ fn build_webauthn(url: &Url) -> OctantResult<Webauthn> {
         .set_user_presence_only_passkeys(true)
         .build()?;
     Ok(webauthn)
+}
+
+pub struct AccountModule {
+    db: ArcDatabase,
+    cookies: Arc<CookieRouter>,
+    sessions: Arc<SessionTable>,
+}
+
+impl AccountModule {
+    pub async fn new(db: ArcDatabase, cookies: Arc<CookieRouter>, sessions: Arc<SessionTable>) -> Self {
+        db.write().await.table::<AccountTable>();
+        AccountModule {
+            db,
+            cookies,
+            sessions,
+        }
+    }
+    pub fn register(&self, server: &mut OctantServer) {
+        server.add_handler(LoginHandler {
+            db: self.db.clone(),
+            cookies: self.cookies.clone(),
+            sessions: self.sessions.clone(),
+        })
+    }
 }

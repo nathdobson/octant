@@ -1,20 +1,20 @@
-use std::rc::Rc;
-use std::sync::Arc;
+use std::{rc::Rc, sync::Arc};
 
 use parking_lot::Mutex;
 use url::Url;
 
 use octant_account::SessionTable;
+use octant_cookies::CookieRouter;
 use octant_runtime_server::reexports::octant_error::{octant_error, OctantResult};
-use octant_server::{cookies::CookieRouter, Handler, Page, session::Session};
+use octant_server::{session::Session, Handler, Page};
 use octant_web_sys_server::{
     builder::{ElementExt, HtmlFormElementExt, NodeExt},
     element::RcElement,
 };
 
 pub struct ScoreHandler {
-    pub cookie_router: Arc<CookieRouter>,
-    pub session_table: Arc<SessionTable>,
+    pub cookies: Arc<CookieRouter>,
+    pub sessions: Arc<SessionTable>,
     pub guesses: Mutex<Vec<Guess>>,
 }
 
@@ -26,7 +26,7 @@ pub struct Guess {
 impl ScoreHandler {
     pub fn handle_form(&self, session: &Rc<Session>, guess: &str) -> OctantResult<()> {
         let login = self
-            .session_table
+            .sessions
             .get(session)
             .ok_or_else(|| octant_error!("not logged in"))?;
         self.guesses.lock().push(Guess {
@@ -70,8 +70,8 @@ impl ScoreHandler {
             );
         }
         page.child(form);
-        self.cookie_router.update(&session).await?;
-        let user = self.session_table.get(&session);
+        self.cookies.update(&session).await?;
+        let user = self.sessions.get(&session);
         log::info!("verified user = {:?}", user);
         Ok(())
     }

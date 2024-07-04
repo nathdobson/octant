@@ -1,17 +1,21 @@
+use cookie::Cookie;
+use parking_lot::Mutex;
 use std::{
     collections::HashMap,
     future::Future,
+    rc::Rc,
     sync::{Arc, Weak},
 };
-use std::rc::Rc;
-
-use parking_lot::Mutex;
 use uuid::Uuid;
+use warp::Filter;
 use weak_table::WeakValueHashMap;
 
+use itertools::Itertools;
 use octant_runtime_server::reexports::octant_error::OctantResult;
-
-use crate::session::{Session, SessionData};
+use octant_server::{
+    session::{Session, SessionData},
+    IntoWarpHandler, OctantServer, WarpHandler,
+};
 
 pub struct CookieRouter {
     create_cookies: Mutex<HashMap<Uuid, String>>,
@@ -69,9 +73,10 @@ impl CookieRouter {
     }
     pub fn update_start(&self, session: &Rc<Session>) -> (Uuid, CookieUpdateGuard) {
         let update_token = Uuid::new_v4();
-        self.update_cookies
-            .lock()
-            .insert(update_token, session.data::<CookieData>().shared_cookies.clone());
+        self.update_cookies.lock().insert(
+            update_token,
+            session.data::<CookieData>().shared_cookies.clone(),
+        );
         (
             update_token,
             CookieUpdateGuard {
@@ -123,6 +128,45 @@ impl CookieRouter {
             .await?;
         log::info!("Cookies: {:?}", session.data::<CookieData>());
         Ok(())
+    }
+
+    pub fn create_cookie_filter(self: &Arc<Self>) -> WarpHandler {
+        warp::path("create_cookie")
+            .and(warp::query::<HashMap<String, String>>())
+            .map({
+                let this = self.clone();
+                move |q: HashMap<String, String>| {
+                    let token: Uuid = q.get("token").unwrap().parse().unwrap();
+                    let cookie = this.create_finish(token).unwrap();
+                    let res = warp::reply::json(&());
+                    let res = warp::reply::with_header(res, "set-cookie", format!("{}", cookie));
+                    res
+                }
+            })
+            .into_warp_handler()
+    }
+    pub fn update_cookie_filter(self: &Arc<Self>) -> WarpHandler {
+        warp::path("update_cookie")
+            .and(warp::query::<HashMap<String, String>>())
+            .and(warp::header("Cookie"))
+            .map({
+                let this = self.clone();
+                move |q: HashMap<String, String>, cookie: String| {
+                    let cookies = Cookie::split_parse(&cookie)
+                        .map_ok(|x| (x.name().to_string(), Arc::new(x.value().to_string())))
+                        .collect::<Result<HashMap<_, _>, _>>()
+                        .unwrap();
+                    let token: Uuid = q.get("token").unwrap().parse().unwrap();
+                    this.update_finish(token, cookies);
+                    let res = warp::reply::json(&());
+                    res
+                }
+            })
+            .into_warp_handler()
+    }
+    pub fn register(self: &Arc<Self>, server: &mut OctantServer) {
+        server.add_warp_handler(self.create_cookie_filter());
+        server.add_warp_handler(self.update_cookie_filter());
     }
 }
 

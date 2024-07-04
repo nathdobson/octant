@@ -30,7 +30,7 @@ pub fn catch_error<T>(f: impl UnwindSafe + FnOnce() -> T) -> OctantResult<T> {
 
 static REGISTER: Once = Once::new();
 
-pub fn register_handler() {
+pub fn register_panic_handler() {
     REGISTER.call_once(|| update_hook(Box::new(panic_handler)))
 }
 

@@ -4,15 +4,11 @@
 #![allow(dead_code)]
 #![feature(arbitrary_self_types)]
 
-use std::{path::Path, time::Duration};
-
 use parking_lot::Mutex;
 
-use octant_account::{AccountTable, login::LoginHandler, register::RegisterHandler, SessionTable};
-use octant_database::database::Database;
-use octant_database::file::DatabaseFile;
-use octant_error::Context;
-use octant_panic::register_handler;
+use octant_account::{AccountModule, SessionTable};
+use octant_cookies::CookieRouter;
+use octant_panic::register_panic_handler;
 use octant_runtime_server::reexports::octant_error::OctantResult;
 use octant_server::{OctantServer, OctantServerOptions};
 
@@ -23,28 +19,17 @@ mod score;
 #[tokio::main]
 async fn main() -> OctantResult<()> {
     simple_logger::SimpleLogger::new().env().init().unwrap();
-    register_handler();
+    register_panic_handler();
     let options = OctantServerOptions::from_command_line();
-    let (db_writer, db) = DatabaseFile::<Database>::new(Path::new(&options.db_path))
-        .await
-        .context("Opening database")?;
-    tokio::spawn(db_writer.serialize_every(Duration::from_secs(1)));
-    let mut server = OctantServer::new(options);
-    {
-        let mut db = db.write().await;
-        let accounts = db.table::<AccountTable>();
-    }
-    let session_table = SessionTable::new();
+    let mut server = OctantServer::new(options).await?;
+    let cookies = CookieRouter::new();
+    cookies.register(&mut server);
+    let sessions = SessionTable::new();
+    AccountModule::new(server.database().clone(), cookies.clone(), sessions.clone()).await.register(&mut server);
     server.add_handler(ScoreHandler {
-        cookie_router: server.cookie_router().clone(),
-        session_table: session_table.clone(),
+        cookies: cookies.clone(),
+        sessions: sessions.clone(),
         guesses: Mutex::new(vec![]),
-    });
-    server.add_handler(RegisterHandler { db: db.clone() });
-    server.add_handler(LoginHandler {
-        db: db.clone(),
-        cookie_router: server.cookie_router().clone(),
-        session_table,
     });
     server.run().await?;
     Ok(())

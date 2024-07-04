@@ -18,7 +18,6 @@ octant-executor = { workspace = true }
 parking_lot = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 weak-table = { workspace = true }
-cookie = { workspace = true }
 itertools = { workspace = true }
 octant-web-sys-server = { workspace = true }
 octant-serde = {workspace=true}
@@ -26,3 +25,4 @@ octant-reffed = {workspace=true}
 octant-error = {workspace=true,features=["warp","url"]}
 marshal-json = {workspace=true}
 marshal-bin = {workspace=true}
+octant-database = {workspace = true}

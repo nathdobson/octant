@@ -166,7 +166,6 @@ impl<T: FutureReturn> Future for OctantFuture<T> {
         if let Poll::Ready(up) = Pin::new(&mut (*self).receiver).poll(cx)? {
             let mut ctx = OwnedContext::new();
             ctx.insert_const((*self).parent.runtime());
-            log::info!("{}", std::str::from_utf8(&up).unwrap());
             let up = JsonDecoderBuilder::new(&up).deserialize::<T::Up>(ctx.borrow())?;
             let retain = self.retain.take().unwrap();
             return Poll::Ready(Ok(T::future_return(self.parent.runtime(), retain, up)));

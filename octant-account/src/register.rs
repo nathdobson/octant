@@ -11,7 +11,7 @@ use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
 use crate::{Account, AccountTable, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant};
 
 pub struct RegisterHandler {
-    pub db: ArcDatabase,
+    pub(crate) db: ArcDatabase,
 }
 
 impl RegisterHandler {

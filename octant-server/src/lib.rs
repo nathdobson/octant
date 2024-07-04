@@ -4,29 +4,18 @@
 #![feature(trait_upcasting)]
 #![feature(never_type)]
 
-use std::{
-    collections::HashMap, future::pending, net::SocketAddr, rc::Rc, sync::Arc,
-    thread::available_parallelism,
-};
-
+use crate::{session::Session, sink::BufferedDownMessageSink};
 use clap::Parser;
-use cookie::Cookie;
 use futures::{
     stream::{SplitSink, SplitStream, StreamExt},
     SinkExt,
 };
-use itertools::Itertools;
 use marshal_json::{decode::full::JsonDecoderBuilder, encode::full::JsonEncoderBuilder};
-use tokio::{sync::mpsc, try_join};
-use url::Url;
-use uuid::Uuid;
-use warp::{
-    filters::BoxedFilter,
-    ws::{Message, WebSocket},
-    Filter, Rejection, Reply,
+use octant_database::{
+    database::{ArcDatabase, Database},
+    file::DatabaseFile,
 };
-
-use octant_error::{octant_error, OctantError, OctantResult};
+use octant_error::{octant_error, Context, OctantError, OctantResult};
 use octant_executor::{
     event_loop::EventPool,
     local_set::{LocalSetPool, LocalSetSpawn},
@@ -37,10 +26,19 @@ use octant_runtime_server::{
     runtime::Runtime,
 };
 use octant_web_sys_server::{global::Global, node::RcNode};
+use parking_lot::Mutex;
+use std::{
+    collections::HashMap, future::pending, net::SocketAddr, path::Path, rc::Rc, sync::Arc,
+    thread::available_parallelism, time::Duration,
+};
+use tokio::{sync::mpsc, try_join};
+use url::Url;
+use warp::{
+    filters::BoxedFilter,
+    ws::{Message, WebSocket},
+    Filter, Rejection, Reply,
+};
 
-use crate::{cookies::CookieRouter, session::Session, sink::BufferedDownMessageSink};
-
-pub mod cookies;
 pub mod session;
 mod sink;
 
@@ -60,8 +58,9 @@ pub struct OctantServerOptions {
 
 pub struct OctantServer {
     options: OctantServerOptions,
+    database: ArcDatabase,
     handlers: HashMap<String, Arc<dyn Handler>>,
-    cookie_router: Arc<CookieRouter>,
+    warp_handlers: Mutex<Vec<WarpHandler>>,
     spawn: Arc<LocalSetSpawn>,
 }
 
@@ -101,7 +100,7 @@ impl OctantApplication {
     }
 }
 
-type WarpHandler = BoxedFilter<(Box<dyn Reply>,)>;
+pub type WarpHandler = BoxedFilter<(Box<dyn Reply>,)>;
 
 pub trait IntoWarpHandler {
     fn into_warp_handler(self) -> WarpHandler;
@@ -118,21 +117,29 @@ where
 }
 
 impl OctantServer {
-    pub fn new(options: OctantServerOptions) -> Self {
+    pub async fn new(options: OctantServerOptions) -> OctantResult<Self> {
         let (spawn, pool) = LocalSetPool::new(available_parallelism().unwrap().get());
         pool.detach();
-        OctantServer {
+        let (db_writer, db) = DatabaseFile::<Database>::new(Path::new(&options.db_path))
+            .await
+            .context("Opening database")?;
+        tokio::spawn(db_writer.serialize_every(Duration::from_secs(1)));
+        Ok(OctantServer {
             options,
+            database: db,
             handlers: HashMap::new(),
-            cookie_router: CookieRouter::new(),
+            warp_handlers: Mutex::new(vec![]),
             spawn,
-        }
+        })
     }
-    pub fn cookie_router(&self) -> &Arc<CookieRouter> {
-        &self.cookie_router
+    pub fn database(&self) -> &ArcDatabase {
+        &self.database
     }
     pub fn add_handler(&mut self, handler: impl Handler) {
         self.handlers.insert(handler.prefix(), Arc::new(handler));
+    }
+    pub fn add_warp_handler(&mut self, handler: WarpHandler) {
+        self.warp_handlers.get_mut().push(handler);
     }
     async fn encode(list: DownMessageList) -> OctantResult<Message> {
         let mut ctx = OwnedContext::new();
@@ -230,34 +237,6 @@ impl OctantServer {
         let site = warp::path("site")
             .and(warp::fs::file("./target/www/index.html"))
             .map(Self::add_header);
-        let create_cookie = warp::path("create_cookie")
-            .and(warp::query::<HashMap<String, String>>())
-            .map({
-                let this = self.clone();
-                move |q: HashMap<String, String>| {
-                    let token: Uuid = q.get("token").unwrap().parse().unwrap();
-                    let cookie = this.cookie_router.create_finish(token).unwrap();
-                    let res = warp::reply::json(&());
-                    let res = warp::reply::with_header(res, "set-cookie", format!("{}", cookie));
-                    res
-                }
-            });
-        let update_cookie = warp::path("update_cookie")
-            .and(warp::query::<HashMap<String, String>>())
-            .and(warp::header("Cookie"))
-            .map({
-                let this = self.clone();
-                move |q: HashMap<String, String>, cookie: String| {
-                    let cookies = Cookie::split_parse(&cookie)
-                        .map_ok(|x| (x.name().to_string(), Arc::new(x.value().to_string())))
-                        .collect::<Result<HashMap<_, _>, _>>()
-                        .unwrap();
-                    let token: Uuid = q.get("token").unwrap().parse().unwrap();
-                    this.cookie_router.update_finish(token, cookies);
-                    let res = warp::reply::json(&());
-                    res
-                }
-            });
         let socket = warp::path("socket")
             .and(warp::path::param())
             .and(warp::ws())
@@ -275,11 +254,10 @@ impl OctantServer {
                     })
                 }
             });
-        let routes = statik
-            .or(site)
-            .or(create_cookie)
-            .or(update_cookie)
-            .or(socket);
+        let mut routes: WarpHandler = statik.or(site).or(socket).into_warp_handler();
+        for x in self.warp_handlers.lock().drain(..) {
+            routes = routes.or(x).into_warp_handler();
+        }
         let http = async {
             if let Some(bind_http) = self.options.bind_http {
                 warp::serve(routes.clone()).run(bind_http).await;

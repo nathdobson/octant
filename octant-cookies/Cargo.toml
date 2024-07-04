@@ -1,0 +1,15 @@
+[package]
+name = "octant-cookies"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+parking_lot = {workspace = true}
+uuid = { workspace = true, features = ["v4"] }
+octant-runtime-server = {workspace=true}
+weak-table = {workspace = true}
+octant-server = {workspace=true}
+warp = {workspace = true}
+cookie = { workspace = true }
+log = {workspace = true}
+itertools = {workspace = true}

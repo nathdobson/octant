@@ -17,7 +17,13 @@ members = [
     "octant-serde",
     "octant-web-sys-client",
     "octant-web-sys-server",
-    "octant-sys-build", "octant-runtime-client", "octant-runtime-server", "octant-serde-derive", "octant-object-derive", "octant-runtime-derive",
+    "octant-sys-build",
+    "octant-runtime-client",
+    "octant-runtime-server",
+    "octant-serde-derive",
+    "octant-object-derive",
+    "octant-runtime-derive",
+    "octant-cookies",
 ]
 
 [profile.release]
@@ -105,3 +111,4 @@ marshal-object = {path ="../marshal/marshal-object"}
 marshal-pointer = {path="../marshal/marshal-pointer"}
 marshal-derive = {path="../marshal/marshal-derive"}
 marshal-serde = {path="../marshal/marshal-serde"}
+octant-cookies = {path="octant-cookies"}

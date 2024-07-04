@@ -25,3 +25,4 @@ marshal = {workspace=true, features = ["base64urlsafedata"]}
 marshal-object = {workspace=true}
 catalog = {workspace=true}
 marshal-serde = {workspace=true}
+octant-cookies = {workspace=true}

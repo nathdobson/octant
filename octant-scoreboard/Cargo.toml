@@ -19,3 +19,4 @@ octant-database = { workspace = true }
 parking_lot = { workspace = true }
 octant-web-sys-server = { workspace = true }
 octant-error = {workspace=true}
+octant-cookies = {workspace = true}
