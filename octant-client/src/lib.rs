@@ -5,7 +5,7 @@ extern crate octant_web_sys_client;
 
 use futures::StreamExt;
 use marshal_json::{decode::full::JsonDecoderBuilder, encode::full::JsonEncoderBuilder};
-use std::{borrow::Cow::Owned, rc::Rc};
+use std::{ rc::Rc};
 use tokio::{sync::mpsc::unbounded_channel, try_join};
 use wasm_bindgen::prelude::*;
 use web_sys::window;
@@ -78,7 +78,7 @@ pub async fn main_impl() -> OctantResult<!> {
                     JsonDecoderBuilder::new(s.as_bytes())
                         .deserialize::<DownMessageList>(ctx.borrow())?
                 }
-                WebSocketMessage::Binary(b) => todo!(),
+                WebSocketMessage::Binary(_) => todo!(),
             };
             let mut ctx = OwnedContext::new();
             ctx.insert_const::<Rc<Runtime>>(&runtime);

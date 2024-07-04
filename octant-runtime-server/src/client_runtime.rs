@@ -1,5 +1,4 @@
-use std::{collections::HashMap, marker::Unsize};
-use std::rc::Rc;
+use std::{collections::HashMap, marker::Unsize, rc::Rc};
 
 use atomic_refcell::AtomicRefCell;
 use tokio::sync::mpsc::UnboundedSender;
@@ -10,11 +9,10 @@ use octant_reffed::rc::Rc2;
 
 use crate::{
     handle::{RawHandle, TypedHandle},
+    peer::{Peer, RcPeer},
+    proto::UpMessage,
     LookupError,
-    peer::Peer,
-    proto::{DownMessage, DownMessageList, UpMessage},
 };
-use crate::peer::RcPeer;
 
 struct State {
     handles: HashMap<RawHandle, RcPeer>,
@@ -55,10 +53,7 @@ impl Runtime {
             .insert(assign.raw(), value)
             .is_none());
     }
-    pub fn lookup<T: ?Sized + Class>(
-        &self,
-        handle: TypedHandle<T>,
-    ) -> Result<Rc2<T>, LookupError> {
+    pub fn lookup<T: ?Sized + Class>(&self, handle: TypedHandle<T>) -> Result<Rc2<T>, LookupError> {
         Ok(downcast_object(
             self.state
                 .borrow()
@@ -72,21 +67,21 @@ impl Runtime {
     pub fn delete(self: &Rc<Self>, handle: RawHandle) {
         self.state.borrow_mut().handles.remove(&handle);
     }
-    pub async fn run_batch(self: &Rc<Self>, messages: DownMessageList) -> OctantResult<()> {
-        todo!();
-        // let mut ctx = DeserializeContext::new();
-        // ctx.insert::<Rc<Runtime>>(self.clone());
-        // for message in messages.commands {
-        //     console::info_1(&format!("{:?}", message).into());
-        //     let message = message.deserialize_with(&ctx)?;
-        //     self.run_message(message).await?;
-        // }
-        Ok(())
-    }
-    async fn run_message(self: &Rc<Self>, message: Box<dyn DownMessage>) -> OctantResult<()> {
-        message.run(self)?;
-        Ok(())
-    }
+    // pub async fn run_batch(self: &Rc<Self>, messages: DownMessageList) -> OctantResult<()> {
+    //     todo!();
+    //     // let mut ctx = DeserializeContext::new();
+    //     // ctx.insert::<Rc<Runtime>>(self.clone());
+    //     // for message in messages.commands {
+    //     //     console::info_1(&format!("{:?}", message).into());
+    //     //     let message = message.deserialize_with(&ctx)?;
+    //     //     self.run_message(message).await?;
+    //     // }
+    //     Ok(())
+    // }
+    // async fn run_message(self: &Rc<Self>, message: Box<dyn DownMessage>) -> OctantResult<()> {
+    //     message.run(self)?;
+    //     Ok(())
+    // }
     pub fn sink(&self) -> &Rc<RuntimeSink> {
         &self.sink
     }

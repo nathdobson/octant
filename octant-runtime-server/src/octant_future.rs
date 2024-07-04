@@ -7,22 +7,18 @@ use std::{
 
 use marshal::{
     context::OwnedContext,
-    de::{rc::DeserializeRc, Deserialize},
+    de::rc::DeserializeRc,
     decode::{AnyDecoder, Decoder},
     encode::{AnyEncoder, Encoder},
-    ser::{rc::SerializeRc, Serialize},
+    ser::rc::SerializeRc,
     Deserialize, Serialize,
 };
-use marshal_bin::{decode::full::BinDecoder, encode::full::BinEncoder};
-use marshal_json::{
-    decode::full::{JsonDecoder, JsonDecoderBuilder},
-    encode::full::{JsonEncoder, JsonEncoderBuilder},
-};
-use marshal_object::{
-    derive_box_object, derive_deserialize_provider, derive_serialize_provider, derive_variant,
-    AsDiscriminant,
-};
-use marshal_pointer::{rc_ref::RcRef, RawAny};
+#[cfg(side = "server")]
+use marshal_json::decode::full::JsonDecoderBuilder;
+#[cfg(side = "client")]
+use marshal_json::encode::full::JsonEncoderBuilder;
+use marshal_object::derive_variant;
+use marshal_pointer::rc_ref::RcRef;
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
 
