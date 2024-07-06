@@ -10,17 +10,18 @@ use octant_runtime::{
     reexports::marshal_pointer::RcfRef, rpc, runtime::Runtime, DeserializePeer, PeerNew,
     SerializePeer,
 };
+use crate::event_target::{EventTarget, EventTargetFields};
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct NodeFields {
-    parent: ObjectFields,
+    parent: EventTargetFields,
     #[cfg(side = "client")]
     any_value: web_sys::Node,
     children: RefCell<HashSet<ByAddress<RcNode>>>,
 }
 
 #[class]
-pub trait Node: Object {
+pub trait Node: EventTarget {
     fn children(self: &RcfRef<Self>) -> Vec<RcNode> {
         self.node()
             .children

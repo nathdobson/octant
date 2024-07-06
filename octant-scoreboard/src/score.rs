@@ -46,6 +46,9 @@ impl ScoreHandler {
         navbar.register("a", || {
             todo!();
         });
+        navbar.register("b", || {
+            todo!();
+        });
         // let d = session.global().window().document();
         // let input = d.create_input_element().attr("type", "text");
         // let form = d

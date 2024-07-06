@@ -1,20 +1,24 @@
-use marshal_pointer::RcfRef;
-use octant_runtime::{rpc, runtime::Runtime, PeerNew};
-use safe_once::cell::OnceCell;
-use std::{any::Any, rc::Rc};
-
+#[cfg(side = "server")]
+use crate::event_listener::new_event_listener;
 use crate::{
     credential_creation_options::RcCredentialCreationOptions,
     credential_request_options::RcCredentialRequestOptions,
-    event_listener::RcEventListener,
-    js_value::RcJsValue,
+    event_listener::{EventListener, EventListenerFields, RcEventListener},
+    js_value::{JsValue, RcJsValue},
+    null::RcNull,
     octant_runtime::peer::AsNative,
     request::RcRequest,
     request_init::{RcRequestInit, RequestInit},
     window::{RcWindow, Window},
 };
-use crate::js_value::JsValue;
-use crate::null::RcNull;
+use marshal_pointer::{EmptyRcf, Rcf, RcfRef};
+use octant_runtime::{rpc, runtime::Runtime, PeerNew};
+use safe_once::cell::OnceCell;
+use std::{any::Any, rc::Rc};
+#[cfg(side = "client")]
+use wasm_bindgen::closure::Closure;
+#[cfg(side = "client")]
+use web_sys::Event;
 
 #[cfg(side = "server")]
 pub struct Global {
@@ -59,7 +63,7 @@ impl Global {
     }
     pub fn new_event_listener(&self, handler: impl 'static + Any + Fn()) -> RcEventListener {
         let listener = new_event_listener(self.runtime());
-        listener.set_handler(handler);
+        listener.set_handler(Box::new(handler));
         listener
     }
 }
@@ -98,9 +102,4 @@ fn new_credential_creation_options(_: &Rc<Runtime>) -> RcCredentialCreationOptio
     Ok(RcCredentialCreationOptions::peer_new(
         web_sys::CredentialCreationOptions::new(),
     ))
-}
-
-#[rpc]
-fn new_event_listener(_: &Rc<Runtime>) -> RcEventListener {
-    Ok(RcEventListener::peer_new(()))
 }

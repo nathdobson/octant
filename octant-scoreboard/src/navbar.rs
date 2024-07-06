@@ -2,12 +2,13 @@ use octant_runtime_server::reexports::marshal_pointer::RcfRef;
 use octant_web_sys_server::{
     document::RcDocument,
     global::Global,
-    html_div_element::{RcHtmlDivElement},
+    html_div_element::RcHtmlDivElement,
     node::{Node, RcNode},
 };
 use std::rc::Rc;
 
 pub struct Navbar {
+    global: Rc<Global>,
     document: RcDocument,
     node: RcHtmlDivElement,
     top: RcHtmlDivElement,
@@ -20,6 +21,7 @@ impl Navbar {
         let top = document.create_div_element();
         node.append_child(top.clone());
         Navbar {
+            global: global.clone(),
             document: document.strong(),
             node,
             top,
@@ -30,7 +32,12 @@ impl Navbar {
         anchor.set_href(name.to_owned());
         let text = self.document.create_text_node(name.to_owned());
         anchor.append_child(text);
-        self.top.append_child(anchor);
+        self.top.append_child(anchor.clone());
+        let listener = self.global.new_event_listener(|| {
+            log::info!("Clicked");
+        });
+        listener.set_prevent_default(true);
+        anchor.add_listener("click", listener);
     }
     pub fn node(&self) -> &RcfRef<dyn Node> {
         &*self.node

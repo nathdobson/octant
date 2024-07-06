@@ -1,36 +1,30 @@
-use std::future::Future;
-use std::rc::Rc;
+use crate::{
+    document::{Document, RcDocument},
+    event_target::{EventTarget, EventTargetFields},
+    history::{History, RcHistory},
+    navigator::{Navigator, RcNavigator},
+    object::{Object, ObjectFields},
+    octant_runtime::peer::AsNative,
+    request::{RcRequest, Request},
+    response::RcResponse,
+};
 use marshal_pointer::RcfRef;
-use safe_once::cell::OnceCell;
 use octant_error::{OctantError, OctantResult};
 use octant_object::{class, DebugClass};
 use octant_runtime::{
-    DeserializePeer, future_return::FutureReturn, octant_future::OctantFuture,
-    PeerNew, rpc, SerializePeer,
+    future_return::FutureReturn, octant_future::OctantFuture, rpc, runtime::Runtime,
+    DeserializePeer, PeerNew, SerializePeer,
 };
+use safe_once::cell::OnceCell;
+use std::{future::Future, rc::Rc};
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use wasm_bindgen_futures::JsFuture;
-use octant_runtime::runtime::Runtime;
-use crate::{
-    document::{Document, RcDocument},
-    navigator::{Navigator, RcNavigator},
-    object::{Object, ObjectFields},
-    request::{RcRequest, Request},
-    response::RcResponse,
-};
-use crate::history::{History, RcHistory};
-use crate::octant_runtime::peer::AsNative;
 
-#[derive(
-    DebugClass,
-    PeerNew,
-    SerializePeer,
-    DeserializePeer
-)]
+#[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct WindowFields {
-    parent: ObjectFields,
+    parent: EventTargetFields,
     #[cfg(side = "client")]
     any_value: web_sys::Window,
     #[cfg(side = "server")]
@@ -61,7 +55,7 @@ impl FetchFutureTrait for () {
 }
 
 #[class]
-pub trait Window: Object {
+pub trait Window: EventTarget {
     #[cfg(side = "server")]
     fn fetch<'a>(self: &'a RcfRef<Self>, request: RcRequest) -> FetchFuture<'a> {
         <()>::fetch(self, request)

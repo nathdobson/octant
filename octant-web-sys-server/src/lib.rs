@@ -71,3 +71,5 @@ mod html_anchor_element;
 mod location;
 mod history;
 mod null;
+mod event_target;
+mod event_handler;
