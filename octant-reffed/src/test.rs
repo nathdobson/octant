@@ -1,5 +1,5 @@
 // use crate::arc::{Arc2, ArcRef};
-// use crate::rc::{Rc2, RcRef};
+// use crate::rc::{Rc2, RcfRef};
 //
 // #[test]
 // fn test_arc() {
@@ -19,10 +19,10 @@
 // fn test_rc() {
 //     let x: Rc2<u32> = Rc2::new(42);
 //     trait Foo {
-//         fn foo(self: &RcRef<Self>) -> u32;
+//         fn foo(self: &RcfRef<Self>) -> u32;
 //     }
 //     impl Foo for u32 {
-//         fn foo(self: &RcRef<Self>) -> u32 {
+//         fn foo(self: &RcfRef<Self>) -> u32 {
 //             **self.rc()
 //         }
 //     }

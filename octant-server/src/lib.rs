@@ -206,7 +206,7 @@ impl OctantServer {
         spawn.spawn({
             let global = global.clone();
             async move {
-                let url = global.window().document().location().await?;
+                let url = global.window().document().location().href().await?;
                 log::info!("url = {}", url);
                 let page = app.create_page(&url, global)?;
                 pending::<!>().await;

@@ -15,6 +15,7 @@ use octant_server::{OctantServer, OctantServerOptions};
 use crate::score::ScoreHandler;
 
 mod score;
+mod navbar;
 
 #[tokio::main]
 async fn main() -> OctantResult<()> {

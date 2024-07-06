@@ -1,4 +1,4 @@
-use marshal_pointer::rc_ref::RcRef;
+use marshal_pointer::RcfRef;
 use std::rc::Rc;
 
 use crate::{
@@ -23,7 +23,7 @@ pub struct CredentialRequestOptionsFields {
 #[class]
 pub trait CredentialRequestOptions: Object {
     #[cfg(side = "server")]
-    fn public_key(self: &RcRef<Self>, options: PublicKeyCredentialRequestOptions) {
+    fn public_key(self: &RcfRef<Self>, options: PublicKeyCredentialRequestOptions) {
         self.public_key_impl(options);
     }
 }
@@ -32,7 +32,7 @@ pub trait CredentialRequestOptions: Object {
 impl dyn CredentialRequestOptions {
     #[rpc]
     fn public_key_impl(
-        self: &RcRef<Self>,
+        self: &RcfRef<Self>,
         _: &Rc<Runtime>,
         public_key_arg: PublicKeyCredentialRequestOptions,
     ) {

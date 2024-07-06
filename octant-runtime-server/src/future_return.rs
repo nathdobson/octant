@@ -1,5 +1,5 @@
 use std::{fmt::Debug, marker::Unsize, rc::Rc};
-use marshal_pointer::rcf::Rcf;
+use marshal_pointer::Rcf;
 use octant_error::OctantError;
 use octant_object::class::Class;
 use crate::{

@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use marshal_pointer::rc_ref::RcRef;
+use marshal_pointer::RcfRef;
 
 use octant_error::{OctantError, OctantResult};
 use octant_object::{class, DebugClass};
@@ -25,7 +25,7 @@ pub trait Response: Object {}
 
 #[cfg(side = "server")]
 impl dyn Response {
-    pub async fn text(self: &RcRef<Self>) -> OctantResult<String> {
+    pub async fn text(self: &RcfRef<Self>) -> OctantResult<String> {
         Ok(self.text_impl().await?.into_inner()?)
     }
 }
@@ -34,10 +34,10 @@ impl dyn Response {
 impl dyn Response {
     #[rpc]
     fn text_impl(
-        self: &RcRef<Self>,
+        self: &RcfRef<Self>,
         runtime: &Rc<Runtime>,
     ) -> OctantFuture<DataReturn<Result<String, OctantError>>> {
-        let this = self.rc();
+        let this = self.strong();
         Ok(OctantFuture::spawn(runtime, async move {
             DataReturn::new(
                 try {

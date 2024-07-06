@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use marshal_pointer::rc_ref::RcRef;
+use marshal_pointer::RcfRef;
 
 use octant_object::{class, DebugClass};
 use octant_runtime::{DeserializePeer, PeerNew, rpc, SerializePeer};
@@ -15,7 +15,7 @@ pub struct ElementFields {
 #[class]
 pub trait Element: Node {
     #[cfg(side = "server")]
-    fn set_attribute(self: &RcRef<Self>, key: &str, value: &str) {
+    fn set_attribute(self: &RcfRef<Self>, key: &str, value: &str) {
         self.set_attribute_impl(key.to_string(), value.to_string())
     }
 }
@@ -24,7 +24,7 @@ pub trait Element: Node {
 impl dyn Element {
     #[rpc]
     fn set_attribute_impl(
-        self: &RcRef<dyn Element>,
+        self: &RcfRef<dyn Element>,
         _: &Rc<Runtime>,
         key: String,
         value: String,

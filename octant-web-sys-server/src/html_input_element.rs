@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use marshal::{Deserialize, Serialize};
 use marshal_object::derive_variant;
-use marshal_pointer::rc_ref::RcRef;
+use marshal_pointer::RcfRef;
 use octant_error::OctantResult;
 use octant_object::{class, DebugClass};
 use octant_runtime::{
@@ -25,10 +25,10 @@ pub struct HtmlInputElementFields {
 #[class]
 pub trait HtmlInputElement: HtmlElement {
     #[cfg(side = "client")]
-    fn update_value(self: &RcRef<Self>) {
-        let this = self as &RcRef<dyn crate::html_input_element::HtmlInputElement>;
+    fn update_value(self: &RcfRef<Self>) {
+        let this = self as &RcfRef<dyn crate::html_input_element::HtmlInputElement>;
         this.sink().send(Box::<SetInput>::new(SetInput {
-            element: self.rcf(),
+            element: self.strong(),
             value: this.native().value(),
         }));
     }

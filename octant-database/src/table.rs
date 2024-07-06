@@ -1,14 +1,13 @@
 use marshal::{context::Context, encode::AnyEncoder};
 use marshal_json::{decode::full::JsonDecoder, encode::full::JsonEncoder};
 use marshal_object::{
-    AsDiscriminant, derive_box_object, derive_deserialize_provider, derive_serialize_provider,
+    derive_box_object, derive_deserialize_provider, derive_serialize_provider, AsDiscriminant,
 };
-use marshal_pointer::RawAny;
+use marshal_pointer::raw_any::RawAny;
 use marshal_update::{
     de::DeserializeUpdate,
     ser::{SerializeStream, SerializeUpdate, SerializeUpdateDyn},
 };
-
 pub struct BoxTable;
 derive_box_object!(BoxTable, Table);
 derive_serialize_provider!(BoxTable, JsonEncoder);

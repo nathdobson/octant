@@ -1,5 +1,5 @@
 use std::{marker::Unsize, rc::Rc};
-use marshal_pointer::rcf::Rcf;
+use marshal_pointer::Rcf;
 use octant_object::class::Class;
 
 use crate::{handle::TypedHandle, OctantDeserialize, peer::Peer, runtime::Runtime};

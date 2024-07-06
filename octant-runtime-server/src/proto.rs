@@ -8,7 +8,7 @@ use marshal_json::{decode::full::JsonDecoder, encode::full::JsonEncoder};
 use marshal_object::{
     AsDiscriminant, derive_box_object, derive_deserialize_provider, derive_serialize_provider,
 };
-use marshal_pointer::RawAny;
+use marshal_pointer::raw_any::RawAny;
 use octant_error::OctantResult;
 
 use crate::runtime::Runtime;

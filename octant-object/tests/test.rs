@@ -8,13 +8,13 @@
 #![feature(arbitrary_self_types)]
 
 use std::rc::Rc;
-use marshal_pointer::rc_ref::RcRef;
 use octant_object::{
     base,
     base::{Base, BaseFields},
     cast::downcast_object,
 };
 use octant_object_derive::class;
+use marshal_pointer::RcfRef;
 
 pub struct AFields {
     parent: BaseFields,
@@ -26,7 +26,7 @@ pub trait A: Base + Sync + Send {
     fn get_x(&self) -> &u32 {
         &self.a().x
     }
-    fn fooble<'a>(self: &'a RcRef<Self>) -> &'a u32 {
+    fn fooble<'a>(self: &'a RcfRef<Self>) -> &'a u32 {
         &self.x
     }
 }

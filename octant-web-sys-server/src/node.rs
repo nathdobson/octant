@@ -7,7 +7,7 @@ use crate::{
 };
 use octant_object::{class, DebugClass};
 use octant_runtime::{
-    reexports::marshal_pointer::rc_ref::RcRef, rpc, runtime::Runtime, DeserializePeer, PeerNew,
+    reexports::marshal_pointer::RcfRef, rpc, runtime::Runtime, DeserializePeer, PeerNew,
     SerializePeer,
 };
 
@@ -21,7 +21,7 @@ pub struct NodeFields {
 
 #[class]
 pub trait Node: Object {
-    fn children(self: &RcRef<Self>) -> Vec<RcNode> {
+    fn children(self: &RcfRef<Self>) -> Vec<RcNode> {
         self.node()
             .children
             .borrow()
@@ -30,7 +30,7 @@ pub trait Node: Object {
             .collect()
     }
     #[cfg(side = "server")]
-    fn append_child(self: &RcRef<Self>, e: RcNode) {
+    fn append_child(self: &RcfRef<Self>, e: RcNode) {
         self.node()
             .children
             .borrow_mut()
@@ -38,7 +38,7 @@ pub trait Node: Object {
         self.append_child_impl(e);
     }
     #[cfg(side = "server")]
-    fn remove_child(self: &RcRef<Self>, e: RcNode) {
+    fn remove_child(self: &RcfRef<Self>, e: RcNode) {
         self.node()
             .children
             .borrow_mut()
@@ -50,7 +50,7 @@ pub trait Node: Object {
 #[rpc]
 impl dyn Node {
     #[rpc]
-    fn append_child_impl(self: &RcRef<Self>, _: &Rc<Runtime>, add: RcNode) -> () {
+    fn append_child_impl(self: &RcfRef<Self>, _: &Rc<Runtime>, add: RcNode) -> () {
         self.node()
             .children
             .borrow_mut()
@@ -59,7 +59,7 @@ impl dyn Node {
         Ok(())
     }
     #[rpc]
-    fn remove_child_impl(self: &RcRef<Self>, _: &Rc<Runtime>, add: RcNode) -> () {
+    fn remove_child_impl(self: &RcfRef<Self>, _: &Rc<Runtime>, add: RcNode) -> () {
         self.node()
             .children
             .borrow_mut()

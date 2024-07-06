@@ -1,4 +1,4 @@
-use marshal_pointer::rcf::Rcf;
+use marshal_pointer::Rcf;
 use crate::{
     element::Element,
     event_listener::{EventListener, RcEventListener},

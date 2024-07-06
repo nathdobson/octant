@@ -153,12 +153,12 @@ fn derive_serialize_peer_impl(input: DeriveInput) -> syn::Result<TokenStream> {
     let any_encoder = quote!(octant_runtime::reexports::marshal::encode::AnyEncoder);
     let context = quote!(octant_runtime::reexports::marshal::context::Context);
     let anyhow = quote!(octant_runtime::reexports::anyhow);
-    let rc_ref = quote!(octant_runtime::reexports::marshal_pointer::rc_ref::RcRef);
+    let rcf_ref = quote!(octant_runtime::reexports::marshal_pointer::RcfRef);
     let serialize_trait = quote!(octant_runtime::reexports::marshal::ser::Serialize);
     let raw_handle = quote!(octant_runtime::handle::RawHandle);
     output = quote! {
         impl <E:#encoder_trait> #serialize_rc_trait<E> for dyn #class {
-            fn serialize_rc<'w,'en>(this: &#rc_ref<Self>, e:#any_encoder<'w,'en,E>, ctx: #context)->#anyhow::Result<()>{
+            fn serialize_rc<'w,'en>(this: &#rcf_ref<Self>, e:#any_encoder<'w,'en,E>, ctx: #context)->#anyhow::Result<()>{
                 <#raw_handle as #serialize_trait<E>>::serialize(&(**this).raw_handle(),e,ctx)
                 // (**this).serialize
                 // todo!("derive_serialize_peer_impl");
@@ -195,10 +195,10 @@ fn derive_deserialize_peer_impl(input: DeriveInput) -> syn::Result<TokenStream> 
     let any_decoder = quote!(::octant_runtime::reexports::marshal::decode::AnyDecoder);
     let context = quote!(::octant_runtime::reexports::marshal::context::Context);
     let anyhow = quote!(::octant_runtime::reexports::anyhow);
-    let rc = quote!(::std::rc::Rc);
+    let rcf = quote!(::octant_runtime::reexports::marshal_pointer::Rcf);
     output = quote! {
         impl<D:#decoder> ::octant_runtime::reexports::marshal::de::rc::DeserializeRc<D> for dyn #class {
-            fn deserialize_rc<'p,'de>(d:#any_decoder<'p,'de,D>, ctx: #context)->#anyhow::Result<#rc<Self>>{
+            fn deserialize_rc<'p,'de>(d:#any_decoder<'p,'de,D>, ctx: #context)->#anyhow::Result<#rcf<Self>>{
                 ::octant_runtime::deserialize_peer::<D,dyn #class>(d,ctx)
             }
         }
@@ -295,10 +295,10 @@ fn rpc_fn(args: &RpcArgs, input: &ItemFn) -> syn::Result<TokenStream> {
                             let runtime = self.runtime();
                         });
                         this_capture.push(quote! {
-                            this: ::octant_runtime::reexports::marshal_pointer::rcf::Rcf::from(self.rc())
+                            this: ::octant_runtime::reexports::marshal_pointer::Rcf::from(self.strong())
                         });
                         this_field.push(quote! {
-                            this: ::octant_runtime::reexports::marshal_pointer::rcf::Rcf<#self_type>
+                            this: ::octant_runtime::reexports::marshal_pointer::Rcf<#self_type>
                         });
                         self_callee.push(quote! {
                             //<::std::rc::Rc<_> as ::octant_runtime::reexports::marshal_pointer::AsFlatRef>::as_flat_ref(&self.this).

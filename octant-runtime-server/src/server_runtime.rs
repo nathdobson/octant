@@ -6,7 +6,7 @@ use std::{
 use atomic_refcell::AtomicRefCell;
 use marshal::context::OwnedContext;
 use marshal_json::decode::full::JsonDecoderBuilder;
-use marshal_pointer::rcf::{Rcf, RcfWeak};
+use marshal_pointer::{Rcf, RcfWeak};
 use octant_error::OctantResult;
 use octant_executor::event_loop::EventSpawn;
 use octant_object::{cast::downcast_object, class::Class};

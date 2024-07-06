@@ -1,7 +1,3 @@
-use marshal_pointer::rc_ref::RcRef;
-use safe_once::cell::OnceCell;
-use std::{fmt::Debug, rc::Rc};
-use marshal_pointer::rcf::Rcf;
 use crate::{
     event_listener::RcEventListener,
     html_element::{HtmlElement, HtmlElementFields},
@@ -10,8 +6,11 @@ use crate::{
     object::Object,
     octant_runtime::peer::AsNative,
 };
+use marshal_pointer::{Rcf, RcfRef};
 use octant_object::{cast::downcast_object, class, DebugClass};
 use octant_runtime::{rpc, runtime::Runtime, DeserializePeer, PeerNew, SerializePeer};
+use safe_once::cell::OnceCell;
+use std::{fmt::Debug, rc::Rc};
 #[cfg(side = "client")]
 use wasm_bindgen::closure::Closure;
 #[cfg(side = "client")]
@@ -33,7 +32,7 @@ pub struct HtmlFormElementFields {
 #[class]
 pub trait HtmlFormElement: HtmlElement {
     #[cfg(side = "server")]
-    fn set_listener(self: &RcRef<Self>, listener: RcEventListener) {
+    fn set_listener(self: &RcfRef<Self>, listener: RcEventListener) {
         self.html_form_element()
             .listener
             .get_or_init(|| listener.clone());
@@ -44,10 +43,10 @@ pub trait HtmlFormElement: HtmlElement {
 #[rpc]
 impl dyn HtmlFormElement {
     #[rpc]
-    fn set_listener_impl(self: &RcRef<Self>, runtime: &Rc<Runtime>, listener: RcEventListener) {
+    fn set_listener_impl(self: &RcfRef<Self>, runtime: &Rc<Runtime>, listener: RcEventListener) {
         let cb = Closure::<dyn Fn(Event)>::new({
             let listener = Rcf::downgrade(&listener);
-            let this = Rcf::downgrade(&self.rcf());
+            let this = Rcf::downgrade(&self.strong());
             move |e: Event| {
                 e.prevent_default();
                 if let Some(this) = this.upgrade() {

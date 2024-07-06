@@ -1,7 +1,7 @@
 use std::{collections::HashMap, marker::Unsize, rc::Rc};
 
 use atomic_refcell::AtomicRefCell;
-use marshal_pointer::rcf::Rcf;
+use marshal_pointer::Rcf;
 use tokio::sync::mpsc::UnboundedSender;
 
 use octant_error::OctantResult;

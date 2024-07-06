@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use marshal_pointer::rc_ref::RcRef;
+use marshal_pointer::RcfRef;
 use safe_once::cell::OnceCell;
 use octant_object::{class, DebugClass};
 use octant_runtime::{
@@ -26,7 +26,7 @@ pub struct NavigatorFields {
 #[class]
 pub trait Navigator: Object {
     #[cfg(side = "server")]
-    fn credentials<'a>(self: &'a RcRef<Self>) -> &'a RcCredentialsContainer {
+    fn credentials<'a>(self: &'a RcfRef<Self>) -> &'a RcCredentialsContainer {
         self.navigator()
             .credentials_container
             .get_or_init(|| self.credentials_impl())
@@ -36,7 +36,7 @@ pub trait Navigator: Object {
 #[rpc]
 impl dyn Navigator {
     #[rpc]
-    fn credentials_impl(self: &RcRef<Self>, _: &Rc<Runtime>) -> RcCredentialsContainer {
+    fn credentials_impl(self: &RcfRef<Self>, _: &Rc<Runtime>) -> RcCredentialsContainer {
         Ok(RcCredentialsContainer::peer_new(
             self.native().credentials(),
         ))

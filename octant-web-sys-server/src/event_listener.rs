@@ -3,7 +3,7 @@ use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 use marshal::{Deserialize, Serialize};
 use marshal_object::derive_variant;
-use marshal_pointer::rc_ref::RcRef;
+use marshal_pointer::RcfRef;
 use safe_once::cell::OnceCell;
 use octant_error::OctantResult;
 use octant_object::{class, DebugClass};
@@ -88,9 +88,9 @@ impl dyn EventListener {
 
 #[cfg(side = "client")]
 impl dyn EventListener {
-    pub fn fire(self: &RcRef<Self>) {
+    pub fn fire(self: &RcfRef<Self>) {
         self.sink().send(Box::<EventFired>::new(EventFired {
-            listener: self.rcf(),
+            listener: self.strong(),
         }))
     }
 }

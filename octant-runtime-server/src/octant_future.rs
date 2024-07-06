@@ -18,8 +18,7 @@ use marshal_json::decode::full::JsonDecoderBuilder;
 #[cfg(side = "client")]
 use marshal_json::encode::full::JsonEncoderBuilder;
 use marshal_object::derive_variant;
-use marshal_pointer::rc_ref::RcRef;
-use marshal_pointer::rcf::Rcf;
+use marshal_pointer::{Rcf, RcfRef};
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
 
@@ -176,7 +175,7 @@ impl<T: FutureReturn> Future for OctantFuture<T> {
 
 impl<E: Encoder> SerializeRc<E> for dyn AbstractOctantFuture {
     fn serialize_rc<'w, 'en>(
-        this: &RcRef<Self>,
+        this: &RcfRef<Self>,
         e: AnyEncoder<'w, 'en, E>,
         ctx: marshal::context::Context,
     ) -> anyhow::Result<()> {
@@ -188,7 +187,7 @@ impl<D: Decoder> DeserializeRc<D> for dyn AbstractOctantFuture {
     fn deserialize_rc<'p, 'de>(
         d: AnyDecoder<'p, 'de, D>,
         ctx: marshal::context::Context,
-    ) -> anyhow::Result<Rc<Self>> {
+    ) -> anyhow::Result<Rcf<Self>> {
         deserialize_peer::<D, Self>(d, ctx)
     }
 }

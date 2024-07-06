@@ -1,4 +1,4 @@
-use marshal_pointer::rc_ref::RcRef;
+use marshal_pointer::rc_ref::RcfRef;
 use marshal_pointer::rcf::{Rcf, RcfWeak};
 
 // use std::{
@@ -14,14 +14,14 @@ use marshal_pointer::rcf::{Rcf, RcfWeak};
 //     de::{rc::DeserializeRc, Deserialize},
 //     decode::{AnyDecoder, Decoder},
 //     encode::{AnyEncoder, Encoder},
-//     reexports::marshal_pointer::{rc_ref::RcRef, AsFlatRef},
+//     reexports::marshal_pointer::{rc_ref::RcfRef, AsFlatRef},
 //     ser::{rc::SerializeRc, Serialize},
 // };
 // use weak_table::traits::{WeakElement, WeakKey};
 //
 pub type Rc2<T> = Rcf<T>;
 pub type Weak2<T> = RcfWeak<T>;
-pub type Rc2Ref<T> = RcRef<T>;
+pub type Rc2Ref<T> = RcfRef<T>;
 //
 // pub struct Rc2<T: ?Sized> {
 //     rc: Rc<T>,
@@ -32,7 +32,7 @@ pub type Rc2Ref<T> = RcRef<T>;
 // }
 //
 // impl<T: ?Sized> Deref for Rc2<T> {
-//     type Target = RcRef<T>;
+//     type Target = RcfRef<T>;
 //     fn deref(&self) -> &Self::Target {
 //         self.rc.as_flat_ref()
 //     }
@@ -76,7 +76,7 @@ pub type Rc2Ref<T> = RcRef<T>;
 //     fn rc2(&self) -> Rc2<Self::Inner>;
 // }
 //
-// impl<T: ?Sized> Rc2Ref for RcRef<T> {
+// impl<T: ?Sized> Rc2Ref for RcfRef<T> {
 //     type Inner = T;
 //     fn rc2(&self) -> Rc2<Self::Inner> {
 //         Rc2 { rc: self.rc() }

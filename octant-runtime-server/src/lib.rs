@@ -26,7 +26,7 @@ use marshal::{
 };
 use marshal_bin::{decode::full::BinDecoder, encode::full::BinEncoder};
 use marshal_json::{decode::full::JsonDecoder, encode::full::JsonEncoder};
-use marshal_pointer::rc_ref::RcRef;
+use marshal_pointer::{Rcf, RcfRef};
 use octant_object::class::Class;
 #[cfg(side = "client")]
 pub use octant_runtime_derive::PeerNewClient as PeerNew;
@@ -37,7 +37,6 @@ use std::{
     fmt::{Display, Formatter},
     rc::Rc,
 };
-use marshal_pointer::rcf::Rcf;
 
 pub mod handle;
 #[doc(hidden)]
@@ -118,14 +117,14 @@ where
 pub fn deserialize_peer<'p, 'de, D: Decoder, T: ?Sized + Class>(
     d: AnyDecoder<'p, 'de, D>,
     mut ctx: Context,
-) -> anyhow::Result<Rc<T>> {
+) -> anyhow::Result<Rcf<T>> {
     let handle = <TypedHandle<T> as Deserialize<D>>::deserialize(d, ctx.reborrow())?;
     let runtime = ctx.get_const::<Rc<Runtime>>()?;
     Ok(runtime.lookup(handle)?.into())
 }
 
 pub fn serialize_peer<'w, 'en, E: Encoder, T: ?Sized + AsTypedHandle>(
-    peer: &RcRef<T>,
+    peer: &RcfRef<T>,
     e: AnyEncoder<'w, 'en, E>,
     ctx: Context,
 ) -> anyhow::Result<()> {

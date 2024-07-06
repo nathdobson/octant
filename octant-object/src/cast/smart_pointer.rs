@@ -13,8 +13,8 @@
 //! However, `SmartPointer` can be extended to support any type of smart pointer via the [IsSmartPointer] trait.
 //!
 //! Destructors are currently unimplemented, so callers must invoke `into_smart_pointer` instead of dropping a `SmartPointer`.
-
 use crate::cast::repr::{HasRepr, IsRepr, PtrRepr};
+use marshal_pointer::Rcf;
 use std::{
     any::{Any, TypeId},
     fmt::{Debug, Formatter},
@@ -82,15 +82,15 @@ unsafe impl<T: ?Sized> IsSmartPointer for Arc<T> {
 //     }
 // }
 
-unsafe impl<T: ?Sized> IsSmartPointer for marshal_pointer::rcf::Rcf<T> {
+unsafe impl<T: ?Sized> IsSmartPointer for Rcf<T> {
     type SmartTarget = T;
-    type Kind = marshal_pointer::rcf::Rcf<()>;
+    type Kind = Rcf<()>;
     fn trusted_into_raw(this: Self) -> *const Self::SmartTarget {
-        marshal_pointer::rcf::Rcf::into_raw(this)
+        Rcf::into_raw(this)
     }
 
     unsafe fn trusted_from_raw(ptr: *const Self::SmartTarget) -> Self {
-        marshal_pointer::rcf::Rcf::from_raw(ptr as *mut Self::SmartTarget)
+        Rcf::from_raw(ptr as *mut Self::SmartTarget)
     }
 }
 

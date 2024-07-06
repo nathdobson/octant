@@ -1,4 +1,4 @@
-use marshal_pointer::rc_ref::RcRef;
+use marshal_pointer::RcfRef;
 use std::rc::Rc;
 
 #[cfg(side = "client")]
@@ -32,13 +32,13 @@ pub trait CredentialsContainer: Object {}
 #[cfg(side = "server")]
 impl dyn CredentialsContainer {
     pub async fn get_with_options(
-        self: &RcRef<Self>,
+        self: &RcfRef<Self>,
         req: RcCredentialRequestOptions,
     ) -> OctantResult<CredentialData> {
         Ok(self.get_with_options_impl(req).await?.into_inner()?)
     }
     pub async fn create_with_options(
-        self: &RcRef<Self>,
+        self: &RcfRef<Self>,
         req: RcCredentialCreationOptions,
     ) -> OctantResult<CredentialData> {
         Ok(self.create_with_options_impl(req).await?.into_inner()?)
@@ -49,7 +49,7 @@ impl dyn CredentialsContainer {
 impl dyn CredentialsContainer {
     #[rpc]
     fn get_with_options_impl(
-        self: &RcRef<Self>,
+        self: &RcfRef<Self>,
         runtime: &Rc<Runtime>,
         options: RcCredentialRequestOptions,
     ) -> OctantFuture<DataReturn<Result<CredentialData, OctantError>>> {
@@ -65,7 +65,7 @@ impl dyn CredentialsContainer {
 
     #[rpc]
     fn create_with_options_impl(
-        self: &RcRef<Self>,
+        self: &RcfRef<Self>,
         runtime: &Rc<Runtime>,
         options: RcCredentialCreationOptions,
     ) -> OctantFuture<DataReturn<Result<CredentialData, OctantError>>> {

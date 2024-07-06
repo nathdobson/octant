@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use marshal_pointer::rc_ref::RcRef;
+use marshal_pointer::RcfRef;
 
 use octant_object::{class, DebugClass};
 use octant_runtime::{
@@ -24,7 +24,7 @@ pub struct CredentialCreationOptionsFields {
 #[class]
 pub trait CredentialCreationOptions: Object {
     #[cfg(side = "server")]
-    fn public_key(self: &RcRef<Self>, options: PublicKeyCredentialCreationOptions) {
+    fn public_key(self: &RcfRef<Self>, options: PublicKeyCredentialCreationOptions) {
         self.public_key_impl(options);
     }
 }
@@ -33,7 +33,7 @@ pub trait CredentialCreationOptions: Object {
 impl dyn CredentialCreationOptions {
     #[rpc]
     fn public_key_impl(
-        self: &RcRef<Self>,
+        self: &RcfRef<Self>,
         _: &Rc<Runtime>,
         public_key_arg: PublicKeyCredentialCreationOptions,
     ) {

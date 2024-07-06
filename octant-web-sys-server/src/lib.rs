@@ -67,3 +67,7 @@ pub mod text;
 pub mod user_verification_requirement;
 pub mod window;
 mod event_listener;
+mod html_anchor_element;
+mod location;
+mod history;
+mod null;

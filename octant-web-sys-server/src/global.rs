@@ -1,4 +1,4 @@
-use marshal_pointer::rc_ref::RcRef;
+use marshal_pointer::RcfRef;
 use octant_runtime::{rpc, runtime::Runtime, PeerNew};
 use safe_once::cell::OnceCell;
 use std::{any::Any, rc::Rc};
@@ -7,16 +7,20 @@ use crate::{
     credential_creation_options::RcCredentialCreationOptions,
     credential_request_options::RcCredentialRequestOptions,
     event_listener::RcEventListener,
+    js_value::RcJsValue,
     octant_runtime::peer::AsNative,
     request::RcRequest,
     request_init::{RcRequestInit, RequestInit},
     window::{RcWindow, Window},
 };
+use crate::js_value::JsValue;
+use crate::null::RcNull;
 
 #[cfg(side = "server")]
 pub struct Global {
     runtime: Rc<Runtime>,
     window: OnceCell<RcWindow>,
+    null: OnceCell<RcJsValue>,
 }
 
 #[cfg(side = "server")]
@@ -28,14 +32,18 @@ impl Global {
         Rc::new(Global {
             runtime,
             window: OnceCell::new(),
+            null: OnceCell::new(),
         })
     }
 }
 
 #[cfg(side = "server")]
 impl Global {
-    pub fn window(&self) -> &RcRef<dyn Window> {
+    pub fn window(&self) -> &RcfRef<dyn Window> {
         self.window.get_or_init(|| window(&self.runtime))
+    }
+    pub fn null(&self) -> &RcfRef<dyn JsValue> {
+        self.null.get_or_init(|| new_null(&self.runtime))
     }
     pub fn new_request_init(&self) -> RcRequestInit {
         new_request_init(&self.runtime)
@@ -59,6 +67,11 @@ impl Global {
 #[rpc]
 fn window(_: &Rc<Runtime>) -> RcWindow {
     Ok(RcWindow::peer_new(web_sys::window().unwrap()))
+}
+
+#[rpc]
+fn new_null(_: &Rc<Runtime>) -> RcNull {
+    Ok(RcNull::peer_new(wasm_bindgen::JsValue::null()))
 }
 
 #[rpc]
