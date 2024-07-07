@@ -26,3 +26,6 @@ octant-error = {workspace=true,features=["warp","url"]}
 marshal-json = {workspace=true}
 marshal-bin = {workspace=true}
 octant-database = {workspace = true}
+safe-once = {workspace=true}
+marshal-pointer = {workspace=true}
+marshal = {workspace=true}

@@ -4,8 +4,6 @@
 #![allow(unused_variables)]
 #![deny(unused_must_use)]
 
-use std::{collections::HashMap, sync::Arc};
-
 use crate::login::LoginHandler;
 use base64urlsafedata::HumanBinaryData;
 use marshal_derive::{Deserialize, DeserializeUpdate, Serialize, SerializeStream, SerializeUpdate};
@@ -18,8 +16,12 @@ use octant_database::{
     table::{BoxTable, Table},
 };
 use octant_error::{octant_error, OctantResult};
-use octant_server::{session::Session, OctantServer};
+use octant_server::{
+    session::{Session, UrlPrefix},
+    OctantServer,
+};
 use parking_lot::Mutex;
+use std::{collections::HashMap, rc::Rc, sync::Arc};
 use url::Url;
 use uuid::Uuid;
 use webauthn_rs::{prelude::Passkey, Webauthn, WebauthnBuilder};
@@ -101,9 +103,10 @@ pub struct AccountTable {
 derive_variant!(BoxTable, AccountTable);
 impl Table for AccountTable {}
 
-fn build_webauthn(url: &Url) -> OctantResult<Webauthn> {
-    let rp_id = url
-        .host()
+fn build_webauthn(session: &Rc<Session>) -> OctantResult<Webauthn> {
+    let url = session.try_data::<UrlPrefix>()?.url();
+    let host = url.host();
+    let rp_id = host
         .ok_or_else(|| octant_error!("host not included in URL"))?
         .to_string();
     let rp_origin = url.join("/")?;
@@ -120,7 +123,11 @@ pub struct AccountModule {
 }
 
 impl AccountModule {
-    pub async fn new(db: ArcDatabase, cookies: Arc<CookieRouter>, sessions: Arc<SessionTable>) -> Self {
+    pub async fn new(
+        db: ArcDatabase,
+        cookies: Arc<CookieRouter>,
+        sessions: Arc<SessionTable>,
+    ) -> Self {
         db.write().await.table::<AccountTable>();
         AccountModule {
             db,
@@ -129,10 +136,11 @@ impl AccountModule {
         }
     }
     pub fn register(&self, server: &mut OctantServer) {
-        server.add_handler(LoginHandler {
-            db: self.db.clone(),
-            cookies: self.cookies.clone(),
-            sessions: self.sessions.clone(),
-        })
+        // todo!();
+        // server.add_handler(LoginHandler {
+        //     db: self.db.clone(),
+        //     cookies: self.cookies.clone(),
+        //     sessions: self.sessions.clone(),
+        // })
     }
 }

@@ -1,28 +1,30 @@
 use std::{rc::Rc, sync::Arc};
-
+use marshal_pointer::Rcf;
 use url::Url;
 use webauthn_rs::prelude::{Passkey, Uuid};
 
+use crate::{build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, Account, AccountTable};
 use octant_database::database::ArcDatabase;
-use octant_error::{Context, octant_error, OctantResult};
-use octant_server::{Handler, Page, session::Session};
-use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
+use octant_error::{octant_error, Context, OctantResult};
+use octant_runtime_server::reexports::marshal_pointer::RcfRef;
+use octant_server::{session::Session, PathHandler, UrlPart};
+use octant_web_sys_server::{
+    builder::{ElementExt, HtmlFormElementExt, NodeExt},
+    node::{Node, RcNode},
+};
 
-use crate::{Account, AccountTable, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant};
-
-pub struct RegisterHandler {
+pub struct RegisterApplication {
     pub(crate) db: ArcDatabase,
 }
 
-impl RegisterHandler {
+impl RegisterApplication {
     pub async fn do_register(
         self: &Arc<Self>,
         session: Rc<Session>,
-        url: &Url,
         email: String,
         name: String,
     ) -> OctantResult<()> {
-        let webauthn = build_webauthn(url)?;
+        let webauthn = build_webauthn(&session)?;
         let (ccr, skr) =
             webauthn.start_passkey_registration(Uuid::new_v4(), &email, &name, None)?;
         let options = session.global().new_credential_creation_options();
@@ -55,14 +57,19 @@ impl RegisterHandler {
     }
 }
 
-impl Handler for RegisterHandler {
-    fn prefix(&self) -> String {
-        "register".to_string()
+pub struct RegisterHandler {
+    app: Arc<RegisterApplication>,
+    session: Rc<Session>,
+}
+
+impl PathHandler for RegisterHandler {
+    fn node(self: Arc<Self>) -> Rcf<dyn Node> {
+        todo!()
     }
 
-    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> OctantResult<Page> {
-        let url = url.clone();
-        let d = session.global().window().document();
+    fn handle_path(self: Arc<Self>, url: UrlPart) -> OctantResult<()> {
+        let app = self.app.clone();
+        let d = self.session.global().window().document();
         let text = d.create_text_node(format!("Register"));
         let email = d
             .create_input_element()
@@ -86,22 +93,20 @@ impl Handler for RegisterHandler {
                     .attr("value", "Register"),
             )
             .handler({
-                let session = session.clone();
+                let session = self.session.clone();
                 let email = email.clone();
                 let name = name.clone();
                 session.global().new_event_listener({
                     let session = session.clone();
                     move || {
-                        let this = self.clone();
+                        let app = app.clone();
                         let session = session.clone();
-                        let url = url.clone();
                         let email = email.clone();
                         let name = name.clone();
                         let spawner = session.global().runtime().spawner().clone();
                         spawner.spawn(async move {
-                            this.do_register(
+                            app.do_register(
                                 session.clone(),
-                                &url,
                                 (*email.input_value()).clone(),
                                 (*name.input_value()).clone(),
                             )
@@ -111,6 +116,7 @@ impl Handler for RegisterHandler {
                 })
             });
         let page = d.create_div_element().child(text).child(form);
-        Ok(Page::new(session.global().clone(), page))
+        d.body().append_child(page);
+        Ok(())
     }
 }

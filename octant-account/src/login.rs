@@ -1,34 +1,36 @@
-use std::{future::Future, rc::Rc, sync::Arc};
-
-use url::Url;
-use uuid::Uuid;
-use webauthn_rs::prelude::Passkey;
-use octant_cookies::CookieRouter;
-use octant_database::database::ArcDatabase;
-use octant_error::{octant_error, OctantResult};
-use octant_server::{session::Session, Handler, Page};
-use octant_web_sys_server::builder::{ElementExt, HtmlFormElementExt, NodeExt};
-
 use crate::{
     build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, AccountTable, SessionTable,
     VerifiedLogin, SESSION_COOKIE,
 };
+use marshal_pointer::Rcf;
+use octant_cookies::CookieRouter;
+use octant_database::database::ArcDatabase;
+use octant_error::{octant_error, OctantResult};
+use octant_runtime_server::reexports::marshal_pointer::RcfRef;
+use octant_server::{session::Session, PathHandler, UrlPart};
+use octant_web_sys_server::{
+    builder::{ElementExt, HtmlFormElementExt, NodeExt},
+    node::{Node, RcNode},
+};
+use std::{future::Future, rc::Rc, sync::Arc};
+use url::Url;
+use uuid::Uuid;
+use webauthn_rs::prelude::Passkey;
 
-pub struct LoginHandler {
+pub struct LoginApplication {
     pub(crate) db: ArcDatabase,
     pub(crate) cookies: Arc<CookieRouter>,
     pub(crate) sessions: Arc<SessionTable>,
 }
 
-impl LoginHandler {
+impl LoginApplication {
     pub fn do_login<'a>(
         self: Arc<Self>,
         session: Rc<Session>,
-        url: &'a Url,
         email: &'a str,
     ) -> impl 'a + Future<Output = OctantResult<()>> {
         async move {
-            let webauthn = build_webauthn(url)?;
+            let webauthn = build_webauthn(&session)?;
             let passkeys: Vec<Passkey> = {
                 let database = self.db.read().await;
                 let accounts = database.table_const::<AccountTable>().unwrap();
@@ -73,20 +75,25 @@ impl LoginHandler {
     }
 }
 
-impl Handler for LoginHandler {
-    fn prefix(&self) -> String {
-        "login".to_string()
+pub struct LoginHandler {
+    app: Arc<LoginApplication>,
+    session: Rc<Session>,
+}
+
+impl PathHandler for LoginHandler {
+    fn node(self: Arc<Self>) -> Rcf<dyn Node> {
+        todo!()
     }
 
-    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> OctantResult<Page> {
-        let url = url.clone();
-        let d = session.global().window().document();
+    fn handle_path(self: Arc<Self>, url: UrlPart) -> OctantResult<()> {
+        let d = self.session.global().window().document();
         let text = d.create_text_node(format!("Register"));
         let email = d
             .create_input_element()
             .attr("type", "text")
             .attr("placeholder", "Email")
             .attr("required", "true");
+        let app = self.app.clone();
         let form = d
             .create_form_element()
             .child(email.clone())
@@ -96,21 +103,20 @@ impl Handler for LoginHandler {
                     .attr("type", "submit")
                     .attr("value", "Login"),
             )
-            .handler(session.global().new_event_listener({
-                let session = session.clone();
+            .handler(self.session.global().new_event_listener({
+                let session = self.session.clone();
                 move || {
-                    let url = url.clone();
                     let session = session.clone();
                     let email = email.clone();
-                    let this = self.clone();
+                    let app = app.clone();
                     let spawner = session.global().runtime().spawner().clone();
                     spawner.spawn(async move {
-                        this.do_login(session.clone(), &url, &email.input_value())
-                            .await
+                        app.do_login(session.clone(), &email.input_value()).await
                     });
                 }
             }));
         let page = d.create_div_element().child(text).child(form);
-        Ok(Page::new(session.global().clone(), page))
+        d.body().append_child(page);
+        Ok(())
     }
 }

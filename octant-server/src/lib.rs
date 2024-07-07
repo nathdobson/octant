@@ -10,7 +10,9 @@ use futures::{
     stream::{SplitSink, SplitStream, StreamExt},
     SinkExt,
 };
+use marshal::context::OwnedContext;
 use marshal_json::{decode::full::JsonDecoderBuilder, encode::full::JsonEncoderBuilder};
+use marshal_pointer::{Rcf, RcfRef};
 use octant_database::{
     database::{ArcDatabase, Database},
     file::DatabaseFile,
@@ -22,11 +24,16 @@ use octant_executor::{
 };
 use octant_runtime_server::{
     proto::{DownMessageList, UpMessageList},
-    reexports::marshal::context::OwnedContext,
     runtime::Runtime,
+    PeerNew,
 };
-use octant_web_sys_server::{global::Global, node::RcNode};
+use octant_web_sys_server::{
+    event_listener::RcEventListener,
+    global::Global,
+    node::{Node, RcNode},
+};
 use parking_lot::Mutex;
+use safe_once::sync::OnceLock;
 use std::{
     collections::HashMap, future::pending, net::SocketAddr, path::Path, rc::Rc, sync::Arc,
     thread::available_parallelism, time::Duration,
@@ -56,10 +63,52 @@ pub struct OctantServerOptions {
     pub db_path: String,
 }
 
+pub trait OctantApplication: Sync + Send {
+    fn create_path_handler(
+        self: Arc<Self>,
+        session: Rc<Session>,
+    ) -> OctantResult<Arc<dyn PathHandler>>;
+}
+
+pub struct UrlPart<'a> {
+    path: &'a str,
+    query: Option<&'a str>,
+    fragment: Option<&'a str>,
+}
+
+impl<'a> UrlPart<'a> {
+    pub fn new(url: &'a Url) -> Self {
+        UrlPart {
+            path: url.path().trim_start_matches("/site/"),
+            query: url.query(),
+            fragment: url.fragment(),
+        }
+    }
+    pub fn pop(&self) -> (&'a str, Self) {
+        let (first, second) = if let Some(pair) = self.path.split_once("/") {
+            pair
+        } else {
+            (self.path, "")
+        };
+        (
+            first,
+            UrlPart {
+                path: second,
+                query: self.query,
+                fragment: self.fragment,
+            },
+        )
+    }
+}
+
+pub trait PathHandler {
+    fn node(self: Arc<Self>) -> Rcf<dyn Node>;
+    fn handle_path(self: Arc<Self>, path: UrlPart) -> OctantResult<()>;
+}
+
 pub struct OctantServer {
     options: OctantServerOptions,
     database: ArcDatabase,
-    handlers: HashMap<String, Arc<dyn Handler>>,
     warp_handlers: Mutex<Vec<WarpHandler>>,
     spawn: Arc<LocalSetSpawn>,
 }
@@ -67,36 +116,6 @@ pub struct OctantServer {
 impl OctantServerOptions {
     pub fn from_command_line() -> Self {
         Self::parse()
-    }
-}
-
-pub trait Handler: 'static + Sync + Send {
-    fn prefix(&self) -> String;
-    fn handle(self: Arc<Self>, url: &Url, session: Rc<Session>) -> OctantResult<Page>;
-}
-
-struct OctantApplication {
-    server: Arc<OctantServer>,
-    session: Rc<Session>,
-}
-
-impl OctantApplication {
-    fn create_page(&self, url: &str, _global: Rc<Global>) -> OctantResult<Page> {
-        let url = Url::parse(url)?;
-        let prefix = url
-            .path_segments()
-            .map(|mut x| {
-                x.next();
-                x.next()
-            })
-            .flatten()
-            .ok_or_else(|| OctantError::msg("Cannot find path prefix"))?;
-        self.server
-            .handlers
-            .get(prefix)
-            .ok_or_else(|| OctantError::msg("Cannot find handler"))?
-            .clone()
-            .handle(&url, self.session.clone())
     }
 }
 
@@ -127,7 +146,7 @@ impl OctantServer {
         Ok(OctantServer {
             options,
             database: db,
-            handlers: HashMap::new(),
+            // handlers: HashMap::new(),
             warp_handlers: Mutex::new(vec![]),
             spawn,
         })
@@ -135,9 +154,9 @@ impl OctantServer {
     pub fn database(&self) -> &ArcDatabase {
         &self.database
     }
-    pub fn add_handler(&mut self, handler: impl Handler) {
-        self.handlers.insert(handler.prefix(), Arc::new(handler));
-    }
+    // pub fn add_handler(&mut self, handler: impl Handler) {
+    //     self.handlers.insert(handler.prefix(), Arc::new(handler));
+    // }
     pub fn add_warp_handler(&mut self, handler: WarpHandler) {
         self.warp_handlers.get_mut().push(handler);
     }
@@ -163,19 +182,21 @@ impl OctantServer {
     }
     pub async fn run_socket(
         self: Arc<Self>,
+        app: Arc<dyn OctantApplication>,
         tx: SplitSink<WebSocket, Message>,
         rx: SplitStream<WebSocket>,
     ) -> OctantResult<()> {
         let spawn = self.spawn.clone();
         spawn
             .spawn_async(move || async move {
-                self.run_socket_local(tx, rx).await?;
+                self.run_socket_local(app, tx, rx).await?;
                 Ok(())
             })
             .await?
     }
     pub async fn run_socket_local(
         self: Arc<Self>,
+        app: Arc<dyn OctantApplication>,
         tx: SplitSink<WebSocket, Message>,
         mut rx: SplitStream<WebSocket>,
     ) -> OctantResult<()> {
@@ -185,10 +206,6 @@ impl OctantServer {
         let runtime = Rc::new(Runtime::new(tx_inner, spawn.clone()));
         let global = Global::new(runtime);
         let session = Rc::new(Session::new(global.clone()));
-        let app = Rc::new(OctantApplication {
-            server: self,
-            session,
-        });
         spawn.spawn({
             let runtime = global.runtime().clone();
             async move {
@@ -208,7 +225,34 @@ impl OctantServer {
             async move {
                 let url = global.window().document().location().href().await?;
                 log::info!("url = {}", url);
-                let page = app.create_page(&url, global)?;
+                let mut handler = app.create_path_handler(session)?;
+                global
+                    .window()
+                    .document()
+                    .body()
+                    .append_child(handler.clone().node().strong());
+                handler
+                    .clone()
+                    .handle_path(UrlPart::new(&Url::parse(&url)?))?;
+
+                let listener = global.new_event_listener({
+                    let global = Rc::downgrade(&global);
+                    let handler = Arc::downgrade(&handler);
+                    move || {
+                        if let (Some(global), Some(handler)) = (global.upgrade(), handler.upgrade())
+                        {
+                            global.runtime().spawner().spawn({
+                                let global = global.clone();
+                                async move {
+                                    let url = global.window().document().location().href().await?;
+                                    handler.handle_path(UrlPart::new(&Url::parse(&url)?))?;
+                                    Ok(())
+                                }
+                            });
+                        }
+                    }
+                });
+                global.window().add_listener("popstate", listener);
                 pending::<!>().await;
                 Ok(())
             }
@@ -218,8 +262,8 @@ impl OctantServer {
         log::info!("Done running pool");
         Ok(())
     }
-    pub async fn run(self) -> OctantResult<()> {
-        Arc::new(self).run_arc().await?;
+    pub async fn run(self, app: Arc<dyn OctantApplication>) -> OctantResult<()> {
+        Arc::new(self).run_arc(app).await?;
         Ok(())
     }
     fn add_header(reply: impl Reply) -> impl Reply {
@@ -232,7 +276,7 @@ impl OctantServer {
             .map(|x| Box::new(x) as Box<dyn Reply>)
             .boxed()
     }
-    pub async fn run_arc(self: Arc<Self>) -> OctantResult<()> {
+    pub async fn run_arc(self: Arc<Self>, app: Arc<dyn OctantApplication>) -> OctantResult<()> {
         let statik = Self::statik();
         let site = warp::path("site")
             .and(warp::fs::file("./target/www/index.html"))
@@ -242,13 +286,15 @@ impl OctantServer {
             .and(warp::ws())
             .map({
                 let this = self.clone();
+                let app = app.clone();
                 move |name: String, ws: warp::ws::Ws| {
                     log::info!("Handling");
                     let this = this.clone();
+                    let app = app.clone();
                     ws.on_upgrade(|websocket| async move {
                         log::info!("Upgraded");
                         let (tx, rx) = websocket.split();
-                        if let Err(e) = this.run_socket(tx, rx).await {
+                        if let Err(e) = this.run_socket(app, tx, rx).await {
                             log::error!("Error handling websocket: {:?}", e);
                         }
                     })
@@ -288,31 +334,5 @@ impl OctantServer {
         };
         try_join!(http, https)?;
         Ok(())
-    }
-}
-
-pub trait Application: 'static + Sync + Send {
-    fn create_page(&self, url: &str, global: Arc<Global>) -> OctantResult<Page>;
-}
-
-pub struct Page {
-    global: Rc<Global>,
-    node: RcNode,
-}
-
-impl Page {
-    pub fn new(global: Rc<Global>, node: RcNode) -> Page {
-        global.window().document().body().append_child(node.clone());
-        Page { global, node }
-    }
-}
-
-impl Drop for Page {
-    fn drop(&mut self) {
-        self.global
-            .window()
-            .document()
-            .body()
-            .remove_child(self.node.clone());
     }
 }

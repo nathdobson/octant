@@ -5,17 +5,17 @@
 #![feature(arbitrary_self_types)]
 
 use parking_lot::Mutex;
+use std::sync::Arc;
 
+use crate::score::ScoreApplication;
 use octant_account::{AccountModule, SessionTable};
 use octant_cookies::CookieRouter;
 use octant_panic::register_panic_handler;
 use octant_runtime_server::reexports::octant_error::OctantResult;
 use octant_server::{OctantServer, OctantServerOptions};
 
-use crate::score::ScoreHandler;
-
-mod score;
 mod navbar;
+mod score;
 
 #[tokio::main]
 async fn main() -> OctantResult<()> {
@@ -26,12 +26,14 @@ async fn main() -> OctantResult<()> {
     let cookies = CookieRouter::new();
     cookies.register(&mut server);
     let sessions = SessionTable::new();
-    AccountModule::new(server.database().clone(), cookies.clone(), sessions.clone()).await.register(&mut server);
-    server.add_handler(ScoreHandler {
+    AccountModule::new(server.database().clone(), cookies.clone(), sessions.clone())
+        .await
+        .register(&mut server);
+    let app = Arc::new(ScoreApplication {
         cookies: cookies.clone(),
         sessions: sessions.clone(),
         guesses: Mutex::new(vec![]),
     });
-    server.run().await?;
+    server.run(app).await?;
     Ok(())
 }
