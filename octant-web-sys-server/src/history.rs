@@ -26,6 +26,7 @@ use std::{
 };
 #[cfg(side = "client")]
 use web_sys::window;
+use crate::event_target::EventTarget;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct HistoryFields {
@@ -33,21 +34,27 @@ pub struct HistoryFields {
     #[cfg(side = "client")]
     wasm: web_sys::History,
     #[cfg(side = "server")]
-    handler: OnceCell<Box<dyn EventHandler<String>>>,
+    push_state_handler: OnceCell<Box<dyn EventHandler<String>>>,
 }
 
 #[class]
 pub trait History: Object {
     #[cfg(side = "server")]
     fn set_push_state_handler(&self, handler: Box<dyn EventHandler<String>>) {
-        self.handler.set(handler).ok().unwrap();
+        self.push_state_handler.set(handler).ok().unwrap();
     }
     #[cfg(side = "client")]
     fn push_state(self: &RcfRef<Self>, url: &str) -> OctantResult<()> {
         self.native()
             .push_state_with_url(&wasm_bindgen::JsValue::null(), "", Some(url))
             .unwrap();
-        let url = window().unwrap().document().unwrap().location().unwrap().href()?;
+        let url = window()
+            .unwrap()
+            .document()
+            .unwrap()
+            .location()
+            .unwrap()
+            .href()?;
         self.sink().send(Box::new(PushState {
             history: self.strong(),
             url,
@@ -67,7 +74,7 @@ derive_variant!(BoxUpMessage, PushState);
 impl UpMessage for PushState {
     #[cfg(side = "server")]
     fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()> {
-        if let Some(handler) = self.history.handler.get() {
+        if let Some(handler) = self.history.push_state_handler.get() {
             (handler)(self.url)?;
         }
         Ok(())

@@ -1,3 +1,5 @@
+#[cfg(side = "server")]
+use crate::event_handler::EventHandler;
 use crate::{
     document::{Document, RcDocument},
     event_target::{EventTarget, EventTargetFields},
@@ -8,15 +10,23 @@ use crate::{
     request::{RcRequest, Request},
     response::RcResponse,
 };
+use marshal::{Deserialize, Serialize};
+use marshal_object::derive_variant;
 use marshal_pointer::RcfRef;
 use octant_error::{OctantError, OctantResult};
 use octant_object::{class, DebugClass};
 use octant_runtime::{
-    future_return::FutureReturn, octant_future::OctantFuture, rpc, runtime::Runtime,
+    future_return::FutureReturn,
+    octant_future::OctantFuture,
+    proto::{BoxUpMessage, UpMessage},
+    rpc,
+    runtime::Runtime,
     DeserializePeer, PeerNew, SerializePeer,
 };
 use safe_once::cell::OnceCell;
 use std::{future::Future, rc::Rc};
+#[cfg(side = "client")]
+use wasm_bindgen::closure::Closure;
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
@@ -33,6 +43,8 @@ pub struct WindowFields {
     navigator: OnceCell<RcNavigator>,
     #[cfg(side = "server")]
     history: OnceCell<RcHistory>,
+    #[cfg(side = "server")]
+    pop_state_handler: OnceCell<Box<dyn EventHandler<String>>>,
 }
 
 #[cfg(side = "server")]
@@ -76,6 +88,12 @@ pub trait Window: EventTarget {
     fn alert(self: &RcfRef<Self>, message: String) {
         self.alert_impl(message);
     }
+
+    #[cfg(side = "server")]
+    fn set_pop_state_handler(self: &RcfRef<Self>, handler: Box<dyn EventHandler<String>>) {
+        self.pop_state_handler.set(handler).ok().unwrap();
+        self.set_pop_state_handler_impl();
+    }
 }
 
 #[rpc]
@@ -113,5 +131,45 @@ impl dyn Window {
                     .map_err(OctantError::from)?,
             ))
         }))
+    }
+    #[rpc]
+    fn set_pop_state_handler_impl(self: &RcfRef<Self>, runtime: &Rc<Runtime>) {
+        let this = self.weak();
+        self.add_listener(
+            "popstate",
+            Closure::new(move |e| {
+                if let Some(this) = this.upgrade() {
+                    this.sink().send(Box::new(PopState {
+                        window: this.clone(),
+                        url: this
+                            .native()
+                            .document()
+                            .unwrap()
+                            .location()
+                            .unwrap()
+                            .href()
+                            .unwrap(),
+                    }));
+                }
+            }),
+        )?;
+        Ok(())
+    }
+}
+#[derive(Serialize, Debug, Deserialize)]
+struct PopState {
+    window: RcWindow,
+    url: String,
+}
+
+derive_variant!(BoxUpMessage, PopState);
+
+impl UpMessage for PopState {
+    #[cfg(side = "server")]
+    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()> {
+        if let Some(handler) = self.window.pop_state_handler.get() {
+            (handler)(self.url)?;
+        }
+        Ok(())
     }
 }

@@ -236,12 +236,18 @@ impl OctantServer {
                 global
                     .window()
                     .history()
-                    .set_push_state_handler(Box::new(move |url| {
+                    .set_push_state_handler(Box::new({let handler=handler.clone();move |url| {
                         handler
                             .clone()
                             .handle_path(UrlPart::new(&Url::parse(&url)?))?;
                         Ok(())
-                    }));
+                    }}));
+                global.window().set_pop_state_handler({let handler=handler.clone();Box::new(move |url| {
+                    handler
+                        .clone()
+                        .handle_path(UrlPart::new(&Url::parse(&url)?))?;
+                    Ok(())
+                })});
 
                 // let listener = global.new_event_listener({
                 //     let global = Rc::downgrade(&global);
