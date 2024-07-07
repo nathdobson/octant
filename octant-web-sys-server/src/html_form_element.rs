@@ -1,5 +1,7 @@
 #[cfg(side = "server")]
 use crate::event_handler::EventHandler;
+#[cfg(side = "client")]
+use crate::event_target::ClientEventHandler;
 use crate::{
     html_element::{HtmlElement, HtmlElementFields},
     html_input_element::RcHtmlInputElement,
@@ -49,7 +51,7 @@ pub trait HtmlFormElement: HtmlElement {
 impl dyn HtmlFormElement {
     #[rpc]
     fn set_form_submit_handler_impl(self: &RcfRef<Self>, runtime: &Rc<Runtime>) {
-        let cb = Closure::<dyn Fn(Event)>::new({
+        let cb = ClientEventHandler::new({
             let this = Rcf::downgrade(&self.strong());
             move |e: Event| {
                 e.prevent_default();
@@ -59,8 +61,10 @@ impl dyn HtmlFormElement {
                             child.update_value();
                         }
                     }
-                    this.sink().send(Box::new(SubmitForm { form: this.clone() }))
+                    this.sink()
+                        .send(Box::new(SubmitForm { form: this.clone() }));
                 }
+                Ok(())
             }
         });
         self.add_listener("submit", cb)?;

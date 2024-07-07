@@ -1,5 +1,7 @@
 #[cfg(side = "server")]
 use crate::event_handler::EventHandler;
+#[cfg(side = "client")]
+use crate::event_target::ClientEventHandler;
 use crate::{
     document::{Document, RcDocument},
     event_target::{EventTarget, EventTargetFields},
@@ -137,7 +139,7 @@ impl dyn Window {
         let this = self.weak();
         self.add_listener(
             "popstate",
-            Closure::new(move |e| {
+            ClientEventHandler::new(move |e| {
                 if let Some(this) = this.upgrade() {
                     this.sink().send(Box::new(PopState {
                         window: this.clone(),
@@ -151,6 +153,7 @@ impl dyn Window {
                             .unwrap(),
                     }));
                 }
+                Ok(())
             }),
         )?;
         Ok(())

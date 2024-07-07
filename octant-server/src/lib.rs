@@ -4,7 +4,11 @@
 #![feature(trait_upcasting)]
 #![feature(never_type)]
 
-use crate::{session::Session, sink::BufferedDownMessageSink};
+use std::{
+    future::pending, net::SocketAddr, path::Path, rc::Rc, sync::Arc, thread::available_parallelism,
+    time::Duration,
+};
+
 use clap::Parser;
 use futures::{
     stream::{SplitSink, SplitStream, StreamExt},
@@ -12,7 +16,16 @@ use futures::{
 };
 use marshal::context::OwnedContext;
 use marshal_json::{decode::full::JsonDecoderBuilder, encode::full::JsonEncoderBuilder};
-use marshal_pointer::{Rcf, RcfRef};
+use marshal_pointer::Rcf;
+use parking_lot::Mutex;
+use tokio::{sync::mpsc, try_join};
+use url::Url;
+use warp::{
+    filters::BoxedFilter,
+    ws::{Message, WebSocket},
+    Filter, Rejection, Reply,
+};
+
 use octant_database::{
     database::{ArcDatabase, Database},
     file::DatabaseFile,
@@ -25,24 +38,12 @@ use octant_executor::{
 use octant_runtime_server::{
     proto::{DownMessageList, UpMessageList},
     runtime::Runtime,
-    PeerNew,
 };
-use octant_web_sys_server::{
-    global::Global,
-    node::{Node, RcNode},
-};
-use parking_lot::Mutex;
-use safe_once::sync::OnceLock;
-use std::{
-    collections::HashMap, future::pending, net::SocketAddr, path::Path, rc::Rc, sync::Arc,
-    thread::available_parallelism, time::Duration,
-};
-use tokio::{sync::mpsc, try_join};
-use url::Url;
-use warp::{
-    filters::BoxedFilter,
-    ws::{Message, WebSocket},
-    Filter, Rejection, Reply,
+use octant_web_sys_server::{global::Global, node::Node};
+
+use crate::{
+    session::{Session, UrlPrefix},
+    sink::BufferedDownMessageSink,
 };
 
 pub mod session;
@@ -223,31 +224,34 @@ impl OctantServer {
             let global = global.clone();
             async move {
                 let url = global.window().document().location().href().await?;
+                let url = Url::parse(&url)?;
+                session.insert_data(UrlPrefix::new(url.join("/")?));
                 log::info!("url = {}", url);
-                let mut handler = app.create_path_handler(session)?;
+                let handler = app.create_path_handler(session)?;
                 global
                     .window()
                     .document()
                     .body()
                     .append_child(handler.clone().node().strong());
-                handler
-                    .clone()
-                    .handle_path(UrlPart::new(&Url::parse(&url)?))?;
-                global
-                    .window()
-                    .history()
-                    .set_push_state_handler(Box::new({let handler=handler.clone();move |url| {
+                handler.clone().handle_path(UrlPart::new(&url))?;
+                global.window().history().set_push_state_handler(Box::new({
+                    let handler = handler.clone();
+                    move |url| {
                         handler
                             .clone()
                             .handle_path(UrlPart::new(&Url::parse(&url)?))?;
                         Ok(())
-                    }}));
-                global.window().set_pop_state_handler({let handler=handler.clone();Box::new(move |url| {
-                    handler
-                        .clone()
-                        .handle_path(UrlPart::new(&Url::parse(&url)?))?;
-                    Ok(())
-                })});
+                    }
+                }));
+                global.window().set_pop_state_handler({
+                    let handler = handler.clone();
+                    Box::new(move |url| {
+                        handler
+                            .clone()
+                            .handle_path(UrlPart::new(&Url::parse(&url)?))?;
+                        Ok(())
+                    })
+                });
 
                 // let listener = global.new_event_listener({
                 //     let global = Rc::downgrade(&global);

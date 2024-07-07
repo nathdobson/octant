@@ -1,3 +1,5 @@
+#[cfg(side = "client")]
+use crate::event_target::ClientEventHandler;
 use crate::{
     history::RcHistory,
     html_element::{HtmlElement, HtmlElementFields},
@@ -44,11 +46,12 @@ impl dyn HtmlAnchorElement {
         let history = history.weak();
         self.add_listener(
             "click",
-            Closure::new(move |e: Event| {
+            ClientEventHandler::new(move |e: Event| {
                 e.prevent_default();
-                if let (Some(this),Some(history)) = (this.upgrade(),history.upgrade()) {
-                    history.push_state(&this.href.borrow()).unwrap();
+                if let (Some(this), Some(history)) = (this.upgrade(), history.upgrade()) {
+                    history.push_state(&this.href.borrow())?;
                 }
+                Ok(())
             }),
         )?;
         Ok(())

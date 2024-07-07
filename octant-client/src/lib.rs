@@ -5,7 +5,7 @@ extern crate octant_web_sys_client;
 
 use futures::StreamExt;
 use marshal_json::{decode::full::JsonDecoderBuilder, encode::full::JsonEncoderBuilder};
-use std::{ rc::Rc};
+use std::rc::Rc;
 use tokio::{sync::mpsc::unbounded_channel, try_join};
 use wasm_bindgen::prelude::*;
 use web_sys::window;
@@ -38,6 +38,8 @@ pub async fn main() {
         }
     }
 }
+
+
 
 pub async fn main_impl() -> OctantResult<!> {
     let location = window().expect("no window").location();
@@ -98,13 +100,11 @@ pub async fn main_impl() -> OctantResult<!> {
             }
             let commands = commands
                 .iter()
-                .map(
-                    |x| {
-                        Ok(JsonEncoderBuilder::new()
-                            .serialize(x, OwnedContext::new().borrow())?
-                            .into_bytes())
-                    },
-                )
+                .map(|x| {
+                    Ok(JsonEncoderBuilder::new()
+                        .serialize(x, OwnedContext::new().borrow())?
+                        .into_bytes())
+                })
                 .collect::<anyhow::Result<Vec<_>>>()?;
             let message = UpMessageList { commands };
             let mut ctx = OwnedContext::new();

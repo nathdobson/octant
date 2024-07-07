@@ -1,12 +1,13 @@
 use std::{
-    any::{Any, TypeId},
+    any::{type_name, Any, TypeId},
     rc::Rc,
 };
-use std::any::type_name;
+
 use memo_map::MemoMap;
-use octant_error::{OctantError, OctantResult};
-use octant_web_sys_server::global::Global;
 use url::Url;
+
+use octant_error::OctantError;
+use octant_web_sys_server::global::Global;
 
 pub struct Session {
     global: Rc<Global>,
@@ -31,6 +32,9 @@ impl Session {
             .downcast_ref()
             .unwrap()
     }
+    pub fn insert_data<T: SessionData>(&self, value: T) {
+        self.data.insert(TypeId::of::<T>(), Box::new(value));
+    }
     pub fn try_data<T: SessionData>(&self) -> Result<&T, MissingData> {
         if let Some(data) = self.data.get(&TypeId::of::<T>()) {
             Ok(data.downcast_ref().unwrap())
@@ -49,6 +53,12 @@ impl From<MissingData> for OctantError {
 
 pub struct UrlPrefix {
     url: Url,
+}
+
+impl UrlPrefix {
+    pub fn new(url: Url) -> Self {
+        UrlPrefix { url }
+    }
 }
 
 impl SessionData for UrlPrefix {}
