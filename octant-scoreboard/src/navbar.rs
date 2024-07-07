@@ -1,3 +1,4 @@
+use marshal_pointer::Rcf;
 use octant_error::{octant_error, OctantResult};
 use octant_runtime_server::reexports::marshal_pointer::RcfRef;
 use octant_server::{PathHandler, UrlPart};
@@ -7,9 +8,13 @@ use octant_web_sys_server::{
     html_div_element::RcHtmlDivElement,
     node::{Node, RcNode},
 };
-use std::{collections::HashMap, ops::Deref, rc::Rc};
-use std::sync::Arc;
-use marshal_pointer::Rcf;
+use std::{
+    cell::{Cell, RefCell},
+    collections::HashMap,
+    ops::Deref,
+    rc::Rc,
+    sync::Arc,
+};
 
 type Content = Box<dyn Fn() -> Arc<dyn PathHandler>>;
 pub struct Navbar {
@@ -18,6 +23,7 @@ pub struct Navbar {
     node: RcHtmlDivElement,
     top: RcHtmlDivElement,
     callbacks: HashMap<String, Content>,
+    child: Cell<Option<RcNode>>,
 }
 
 impl Navbar {
@@ -32,31 +38,18 @@ impl Navbar {
             node,
             top,
             callbacks: HashMap::new(),
+            child: Cell::new(None),
         }
     }
     pub fn register(&mut self, name: &str, title: &str, url: &str, content: Content) {
         let anchor = self.document.create_anchor_element();
-        anchor.set_href(name.to_owned());
+        anchor.set_href(url.to_owned());
         let text = self.document.create_text_node(name.to_owned());
         anchor.append_child(text);
         self.top.append_child(anchor.clone());
         let global = Rc::downgrade(&self.global);
         let title = title.to_owned();
-
-        let listener = self.global.new_event_listener({
-            let url = url.to_owned();
-            move || {
-                if let Some(global) = global.upgrade() {
-                    global
-                        .window()
-                        .history()
-                        .push_state(title.clone(), Some(url.clone()));
-                }
-                //
-            }
-        });
-        listener.set_prevent_default(true);
-        anchor.add_listener("click", listener);
+        anchor.set_push_state_handler(self.global.window().history().strong());
         self.callbacks.insert(url.to_owned(), content);
     }
     pub fn node(&self) -> &RcfRef<dyn Node> {
@@ -76,7 +69,12 @@ impl PathHandler for Navbar {
             .get(part)
             .ok_or_else(|| octant_error!("not found"))?;
         let mut handler = (cb)();
-        self.node.append_child(handler.clone().node().strong());
+        if let Some(old) = self.child.take() {
+            self.node.remove_child(old);
+        }
+        let new = handler.clone().node().strong();
+        self.child.set(Some(new.clone()));
+        self.node.append_child(new);
         handler.handle_path(rest)?;
         Ok(())
     }

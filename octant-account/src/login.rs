@@ -103,9 +103,9 @@ impl PathHandler for LoginHandler {
                     .attr("type", "submit")
                     .attr("value", "Login"),
             )
-            .handler(self.session.global().new_event_listener({
+            .form_submit_handler({
                 let session = self.session.clone();
-                move || {
+                Box::new(move |()| {
                     let session = session.clone();
                     let email = email.clone();
                     let app = app.clone();
@@ -113,8 +113,9 @@ impl PathHandler for LoginHandler {
                     spawner.spawn(async move {
                         app.do_login(session.clone(), &email.input_value()).await
                     });
-                }
-            }));
+                    Ok(())
+                })
+            });
         let page = d.create_div_element().child(text).child(form);
         d.body().append_child(page);
         Ok(())

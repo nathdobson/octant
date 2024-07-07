@@ -1,14 +1,23 @@
+#[cfg(side = "server")]
+use crate::event_handler::EventHandler;
 use crate::{
-    event_listener::RcEventListener,
     html_element::{HtmlElement, HtmlElementFields},
     html_input_element::RcHtmlInputElement,
     node::Node,
     object::Object,
     octant_runtime::peer::AsNative,
 };
+use marshal::{Deserialize, Serialize};
+use marshal_object::derive_variant;
 use marshal_pointer::{Rcf, RcfRef};
+use octant_error::OctantResult;
 use octant_object::{cast::downcast_object, class, DebugClass};
-use octant_runtime::{rpc, runtime::Runtime, DeserializePeer, PeerNew, SerializePeer};
+use octant_runtime::{
+    proto::{BoxUpMessage, UpMessage},
+    rpc,
+    runtime::Runtime,
+    DeserializePeer, PeerNew, SerializePeer,
+};
 use safe_once::cell::OnceCell;
 use std::{fmt::Debug, rc::Rc};
 #[cfg(side = "client")]
@@ -23,29 +32,24 @@ pub struct HtmlFormElementFields {
     parent: HtmlElementFields,
     #[cfg(side = "client")]
     any_value: web_sys::HtmlFormElement,
-    #[cfg(side = "client")]
-    closure: OnceCell<Closure<dyn Fn(Event)>>,
     #[cfg(side = "server")]
-    listener: OnceCell<RcEventListener>,
+    handler: OnceCell<Box<dyn EventHandler<()>>>,
 }
 
 #[class]
 pub trait HtmlFormElement: HtmlElement {
     #[cfg(side = "server")]
-    fn set_listener(self: &RcfRef<Self>, listener: RcEventListener) {
-        self.html_form_element()
-            .listener
-            .get_or_init(|| listener.clone());
-        self.set_listener_impl(listener);
+    fn set_form_submit_handler(self: &RcfRef<Self>, handler: Box<dyn EventHandler<()>>) {
+        self.handler.set(handler).ok().unwrap();
+        self.set_form_submit_handler_impl();
     }
 }
 
 #[rpc]
 impl dyn HtmlFormElement {
     #[rpc]
-    fn set_listener_impl(self: &RcfRef<Self>, runtime: &Rc<Runtime>, listener: RcEventListener) {
+    fn set_form_submit_handler_impl(self: &RcfRef<Self>, runtime: &Rc<Runtime>) {
         let cb = Closure::<dyn Fn(Event)>::new({
-            let listener = Rcf::downgrade(&listener);
             let this = Rcf::downgrade(&self.strong());
             move |e: Event| {
                 e.prevent_default();
@@ -55,16 +59,28 @@ impl dyn HtmlFormElement {
                             child.update_value();
                         }
                     }
-                }
-                if let Some(listener) = listener.upgrade() {
-                    listener.fire();
+                    this.sink().send(Box::new(SubmitForm { form: this.clone() }))
                 }
             }
         });
-        self.native()
-            .add_event_listener_with_callback("submit", cb.as_ref().unchecked_ref())
-            .unwrap();
-        self.html_form_element().closure.get_or_init(|| cb);
+        self.add_listener("submit", cb)?;
+        Ok(())
+    }
+}
+
+#[derive(Serialize, Debug, Deserialize)]
+struct SubmitForm {
+    form: RcHtmlFormElement,
+}
+
+derive_variant!(BoxUpMessage, SubmitForm);
+
+impl UpMessage for SubmitForm {
+    #[cfg(side = "server")]
+    fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()> {
+        if let Some(handler) = self.form.handler.try_get() {
+            (handler)(())?;
+        }
         Ok(())
     }
 }

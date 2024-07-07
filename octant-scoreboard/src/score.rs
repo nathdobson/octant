@@ -1,6 +1,6 @@
-use std::{rc::Rc, sync::Arc};
 use marshal_pointer::Rcf;
 use parking_lot::Mutex;
+use std::{rc::Rc, sync::Arc};
 use url::Url;
 
 use crate::navbar::Navbar;
@@ -13,7 +13,9 @@ use octant_runtime_server::reexports::{
 use octant_server::{session::Session, OctantApplication, PathHandler, UrlPart};
 use octant_web_sys_server::{
     element::RcElement,
+    global::Global,
     node::{Node, RcNode},
+    text::{RcText, Text},
 };
 
 pub struct ScoreApplication {
@@ -25,6 +27,28 @@ pub struct ScoreApplication {
 pub struct Guess {
     email: String,
     guess: String,
+}
+
+struct TextPathHandler {
+    node: RcText,
+}
+
+impl TextPathHandler {
+    pub fn new(global: &Rc<Global>, text: String) -> Arc<Self> {
+        Arc::new(TextPathHandler {
+            node: global.window().document().create_text_node(text),
+        })
+    }
+}
+
+impl PathHandler for TextPathHandler {
+    fn node(self: Arc<Self>) -> Rcf<dyn Node> {
+        self.node.clone()
+    }
+
+    fn handle_path(self: Arc<Self>, path: UrlPart) -> OctantResult<()> {
+        Ok(())
+    }
 }
 
 impl OctantApplication for ScoreApplication {
@@ -40,30 +64,16 @@ impl OctantApplication for ScoreApplication {
             "a",
             Box::new({
                 let global = session.global().clone();
-                move || {
-                    struct A(RcNode);
-                    impl PathHandler for A {
-                        fn node(self: Arc<Self>) -> Rcf<dyn Node> {
-                            self.0.clone()
-                        }
-
-                        fn handle_path(self: Arc<Self>, path: UrlPart) -> OctantResult<()> {
-                            Ok(())
-                        }
-                    }
-                    Arc::new(A(global
-                        .window()
-                        .document()
-                        .create_text_node("a".to_owned())))
-                }
+                move || TextPathHandler::new(&global, "a".to_owned())
             }),
         );
         navbar.register(
             "b button",
             "b title",
             "b",
-            Box::new(|| {
-                todo!();
+            Box::new({
+                let global = session.global().clone();
+                move || TextPathHandler::new(&global, "b".to_owned())
             }),
         );
 

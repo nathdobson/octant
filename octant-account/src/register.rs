@@ -1,5 +1,5 @@
-use std::{rc::Rc, sync::Arc};
 use marshal_pointer::Rcf;
+use std::{rc::Rc, sync::Arc};
 use url::Url;
 use webauthn_rs::prelude::{Passkey, Uuid};
 
@@ -92,27 +92,25 @@ impl PathHandler for RegisterHandler {
                     .attr("type", "submit")
                     .attr("value", "Register"),
             )
-            .handler({
+            .form_submit_handler({
                 let session = self.session.clone();
                 let email = email.clone();
                 let name = name.clone();
-                session.global().new_event_listener({
+                Box::new(move |()| {
+                    let app = app.clone();
                     let session = session.clone();
-                    move || {
-                        let app = app.clone();
-                        let session = session.clone();
-                        let email = email.clone();
-                        let name = name.clone();
-                        let spawner = session.global().runtime().spawner().clone();
-                        spawner.spawn(async move {
-                            app.do_register(
-                                session.clone(),
-                                (*email.input_value()).clone(),
-                                (*name.input_value()).clone(),
-                            )
-                            .await
-                        });
-                    }
+                    let email = email.clone();
+                    let name = name.clone();
+                    let spawner = session.global().runtime().spawner().clone();
+                    spawner.spawn(async move {
+                        app.do_register(
+                            session.clone(),
+                            (*email.input_value()).clone(),
+                            (*name.input_value()).clone(),
+                        )
+                        .await
+                    });
+                    Ok(())
                 })
             });
         let page = d.create_div_element().child(text).child(form);

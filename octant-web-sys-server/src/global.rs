@@ -1,15 +1,16 @@
 #[cfg(side = "server")]
-use crate::event_listener::new_event_listener;
+use crate::event_handler::EventHandler;
 use crate::{
     credential_creation_options::RcCredentialCreationOptions,
-    credential_request_options::RcCredentialRequestOptions,
-    event_listener::{EventListener, EventListenerFields, RcEventListener},
+    credential_request_options::RcCredentialRequestOptions, null::RcNull,
+    octant_runtime::peer::AsNative, request::RcRequest, request_init::RcRequestInit,
+    window::RcWindow,
+};
+#[cfg(side = "server")]
+use crate::{
     js_value::{JsValue, RcJsValue},
-    null::RcNull,
-    octant_runtime::peer::AsNative,
-    request::RcRequest,
-    request_init::{RcRequestInit, RequestInit},
-    window::{RcWindow, Window},
+    request_init::RequestInit,
+    window::Window,
 };
 use marshal_pointer::{EmptyRcf, Rcf, RcfRef};
 use octant_runtime::{rpc, runtime::Runtime, PeerNew};
@@ -61,11 +62,16 @@ impl Global {
     pub fn new_credential_creation_options(&self) -> RcCredentialCreationOptions {
         new_credential_creation_options(self.runtime())
     }
-    pub fn new_event_listener(&self, handler: impl 'static + Any + Fn()) -> RcEventListener {
-        let listener = new_event_listener(self.runtime());
-        listener.set_handler(Box::new(handler));
-        listener
-    }
+    // pub fn new_form_submit_listener(&self, handler: Box<dyn EventHandler>) -> RcFormSubmitListener {
+    //     let result = new_form_submit_listener(self.runtime());
+    //     result.set_handler(handler);
+    //     result
+    // }
+    // pub fn new_anchor_click_listener(&self) -> RcAnchorClickListener {
+    //     let result = new_form_submit_listener(self.runtime());
+    //     result.set_handler(handler);
+    //     result
+    // }
 }
 
 #[rpc]

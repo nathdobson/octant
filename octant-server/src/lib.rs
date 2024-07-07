@@ -28,7 +28,6 @@ use octant_runtime_server::{
     PeerNew,
 };
 use octant_web_sys_server::{
-    event_listener::RcEventListener,
     global::Global,
     node::{Node, RcNode},
 };
@@ -234,25 +233,35 @@ impl OctantServer {
                 handler
                     .clone()
                     .handle_path(UrlPart::new(&Url::parse(&url)?))?;
+                global
+                    .window()
+                    .history()
+                    .set_push_state_handler(Box::new(move |url| {
+                        handler
+                            .clone()
+                            .handle_path(UrlPart::new(&Url::parse(&url)?))?;
+                        Ok(())
+                    }));
 
-                let listener = global.new_event_listener({
-                    let global = Rc::downgrade(&global);
-                    let handler = Arc::downgrade(&handler);
-                    move || {
-                        if let (Some(global), Some(handler)) = (global.upgrade(), handler.upgrade())
-                        {
-                            global.runtime().spawner().spawn({
-                                let global = global.clone();
-                                async move {
-                                    let url = global.window().document().location().href().await?;
-                                    handler.handle_path(UrlPart::new(&Url::parse(&url)?))?;
-                                    Ok(())
-                                }
-                            });
-                        }
-                    }
-                });
-                global.window().add_listener("popstate", listener);
+                // let listener = global.new_event_listener({
+                //     let global = Rc::downgrade(&global);
+                //     let handler = Arc::downgrade(&handler);
+                //     move || {
+                //         if let (Some(global), Some(handler)) = (global.upgrade(), handler.upgrade())
+                //         {
+                //             global.runtime().spawner().spawn({
+                //                 let global = global.clone();
+                //                 async move {
+                //                     let url = global.window().document().location().href().await?;
+                //                     handler.handle_path(UrlPart::new(&Url::parse(&url)?))?;
+                //                     Ok(())
+                //                 }
+                //             });
+                //         }
+                //     }
+                // });
+                // global.window().add_listener("popstate", listener);
+                // todo!();
                 pending::<!>().await;
                 Ok(())
             }
