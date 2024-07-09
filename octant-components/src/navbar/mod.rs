@@ -1,5 +1,6 @@
+pub mod style;
+
 use crate::{
-    css_scope::{CssScope, CssScopeSet},
     PathComponent, PathComponentBuilder,
 };
 use linked_hash_map::LinkedHashMap;
@@ -12,8 +13,7 @@ use octant_web_sys_server::{
 };
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use url::Url;
-
-pub struct NavbarStyle(CssScope);
+use crate::navbar::style::NavbarStyle;
 
 struct NavbarChildBuilder {
     name: String,
@@ -45,39 +45,7 @@ struct NavbarState {
     component: Rcf<dyn PathComponent>,
 }
 
-impl NavbarStyle {
-    pub fn new(set: &mut CssScopeSet) -> Self {
-        NavbarStyle(set.add(
-            "navbar",
-            None,
-            r##"
-                :scope {
-                    list-style-type: none;
-                    margin: 0;
-                    padding: 0;
-                    overflow: hidden;
-                    background-color: #BBF;
-                }
-                a {
-                    display: block;
-                    text-decoration: none;
-                    text-align: center;
-                    padding: 14px 16px;
-                }
-                li {
-                    float: left;
-                    background-color: #BBF;
-                }
-                li:hover {
-                    background-color: #BFB;
-                }
-                li.selected {
-                    background-color: #FBB;
-                }
-        "##,
-        ))
-    }
-}
+
 
 impl NavbarBuilder {
     pub fn new(global: Rc<Global>, style: Rc<NavbarStyle>) -> Self {
@@ -109,7 +77,7 @@ impl PathComponentBuilder for NavbarBuilder {
         let d = self.global.window().document();
         let node = d.create_div_element();
         let top = d.create_u_list_element();
-        top.class_list().add(self.style.0.name());
+        top.class_list().add(self.style.name());
         node.append_child(top.clone());
         let mut children = HashMap::new();
         for (key, child) in self.children.iter() {
