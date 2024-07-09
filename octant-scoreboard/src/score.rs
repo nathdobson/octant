@@ -1,17 +1,18 @@
 use std::{rc::Rc, sync::Arc};
 
-use marshal_pointer::Rcf;
-use parking_lot::Mutex;
-
-use crate::{
-    css_scope::CssScopeSet,
-    navbar::{Navbar, NavbarStyle},
-};
+use marshal_pointer::{Rcf, RcfRef};
 use octant_account::SessionTable;
+use octant_components::{
+    css_scope::CssScopeSet,
+    navbar::{Navbar, NavbarBuilder, NavbarStyle},
+    PathComponent, PathComponentBuilder,
+};
 use octant_cookies::CookieRouter;
 use octant_runtime_server::reexports::octant_error::OctantResult;
-use octant_server::{session::Session, OctantApplication, PathHandler, UrlPart};
+use octant_server::{session::Session, OctantApplication};
 use octant_web_sys_server::{global::Global, node::Node, text::RcText};
+use parking_lot::Mutex;
+use url::Url;
 
 pub struct ScoreApplication {
     pub cookies: Arc<CookieRouter>,
@@ -24,81 +25,82 @@ pub struct Guess {
     guess: String,
 }
 
-struct TextPathHandler {
+struct TextPathComponentBuilder {
+    global: Rc<Global>,
+    userdata: String,
+}
+
+struct TextPathComponent {
+    userdata: String,
+    self_path: String,
     node: RcText,
 }
 
-impl TextPathHandler {
-    pub fn new(global: &Rc<Global>, text: String) -> Arc<Self> {
-        Arc::new(TextPathHandler {
-            node: global.window().document().create_text_node(text),
-        })
+impl TextPathComponentBuilder {
+    pub fn new(global: Rc<Global>, userdata: String) -> Rcf<Self> {
+        Rcf::new(TextPathComponentBuilder { global, userdata })
     }
 }
 
-impl PathHandler for TextPathHandler {
-    fn node(self: Arc<Self>) -> Rcf<dyn Node> {
-        self.node.clone()
+impl PathComponentBuilder for TextPathComponentBuilder {
+    fn build(self: &RcfRef<Self>, self_path: &str) -> OctantResult<Rcf<dyn PathComponent>> {
+        Ok(Rcf::new(TextPathComponent {
+            userdata: self.userdata.clone(),
+            self_path: self_path.to_string(),
+            node: self
+                .global
+                .window()
+                .document()
+                .create_text_node("uninit".to_string()),
+        }))
+    }
+}
+
+impl PathComponent for TextPathComponent {
+    fn node<'a>(self: &'a RcfRef<Self>) -> &'a RcfRef<dyn Node> {
+        &*self.node
     }
 
-    fn handle_path(self: Arc<Self>, path: UrlPart) -> OctantResult<()> {
+    fn update_path(self: &RcfRef<Self>, path: &Url) -> OctantResult<()> {
+        self.node
+            .set_node_value(format!("{} {} {}", self.userdata, self.self_path, path));
         Ok(())
     }
 }
 
 impl OctantApplication for ScoreApplication {
-    fn create_path_handler(
+    fn create_path_component_builder(
         self: Arc<Self>,
         session: Rc<Session>,
-    ) -> OctantResult<Arc<dyn PathHandler>> {
-        let mut scopes = CssScopeSet::new(session.global().clone());
-        let style = Arc::new(NavbarStyle::new(&mut scopes));
-        let mut navbar = Navbar::new(session.global().clone(), &style);
+    ) -> OctantResult<Rcf<dyn PathComponentBuilder>> {
+        let global = session.global();
+        let mut scopes = CssScopeSet::new(global.clone());
+        let style = Rc::new(NavbarStyle::new(&mut scopes));
+        let mut navbar = NavbarBuilder::new(global.clone(), style.clone());
 
-        navbar.register(
-            "First",
-            "a title",
-            "a",
-            Box::new({
-                let global = session.global().clone();
-                let style = style.clone();
-                move || {
-                    let mut navbar = Navbar::new(global.clone(), &style);
-                    navbar.register(
-                        "Part X",
-                        "ax",
-                        "x",
-                        Box::new({
-                            let global = global.clone();
-                            move || TextPathHandler::new(&global, "hi".to_string())
-                        }),
-                    );
-                    Arc::new(navbar)
-                }
-            }),
+        let mut child_navbar = NavbarBuilder::new(global.clone(), style.clone());
+        child_navbar.register(
+            "Part X",
+            "ax",
+            "x",
+            TextPathComponentBuilder::new(session.global().clone(), "hi".to_string()),
         );
+
+        navbar.register("First", "a title", "a", Rcf::new(child_navbar));
         navbar.register(
             "Second",
             "b title",
             "b",
-            Box::new({
-                let global = session.global().clone();
-                move || TextPathHandler::new(&global, "b".to_owned())
-            }),
+            TextPathComponentBuilder::new(global.clone(), "b".to_owned()),
         );
         navbar.register(
             "Third",
             "c title",
             "c",
-            Box::new({
-                let global = session.global().clone();
-                move || TextPathHandler::new(&global, "c".to_owned())
-            }),
+            TextPathComponentBuilder::new(global.clone(), "c".to_owned()),
         );
 
-        Ok(Arc::new(navbar))
-        // self.session.global().window().document().create_div_element();
-        // Box::new(ScoreHandler { app: self })
+        Ok(Rcf::new(navbar))
     }
 }
 

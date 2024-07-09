@@ -1,8 +1,13 @@
+use crate::{
+    node::{Node, NodeFields},
+    object::Object,
+};
+use marshal_pointer::RcfRef;
 use octant_object::{class, DebugClass};
-use octant_runtime::{DeserializePeer, PeerNew, SerializePeer};
+use octant_runtime::{rpc, runtime::Runtime, DeserializePeer, PeerNew, SerializePeer};
+use std::rc::Rc;
 
-use crate::{node::Node, object::Object};
-use crate::node::NodeFields;
+use crate::octant_runtime::peer::AsNative;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct TextFields {
@@ -13,3 +18,12 @@ pub struct TextFields {
 
 #[class]
 pub trait Text: Node {}
+
+#[rpc]
+impl dyn Text {
+    #[rpc]
+    pub fn set_node_value(self: &RcfRef<Self>, _: &Rc<Runtime>, value: String) {
+        self.native().set_node_value(Some(&value));
+        Ok(())
+    }
+}

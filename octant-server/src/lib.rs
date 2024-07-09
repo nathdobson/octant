@@ -17,15 +17,7 @@ use futures::{
 use marshal::context::OwnedContext;
 use marshal_json::{decode::full::JsonDecoderBuilder, encode::full::JsonEncoderBuilder};
 use marshal_pointer::Rcf;
-use parking_lot::Mutex;
-use tokio::{sync::mpsc, try_join};
-use url::Url;
-use warp::{
-    filters::BoxedFilter,
-    ws::{Message, WebSocket},
-    Filter, Rejection, Reply,
-};
-
+use octant_components::PathComponentBuilder;
 use octant_database::{
     database::{ArcDatabase, Database},
     file::DatabaseFile,
@@ -39,7 +31,15 @@ use octant_runtime_server::{
     proto::{DownMessageList, UpMessageList},
     runtime::Runtime,
 };
-use octant_web_sys_server::{global::Global, node::Node};
+use octant_web_sys_server::{global::Global};
+use parking_lot::Mutex;
+use tokio::{sync::mpsc, try_join};
+use url::Url;
+use warp::{
+    filters::BoxedFilter,
+    ws::{Message, WebSocket},
+    Filter, Rejection, Reply,
+};
 
 use crate::{
     session::{Session, UrlPrefix},
@@ -64,46 +64,10 @@ pub struct OctantServerOptions {
 }
 
 pub trait OctantApplication: Sync + Send {
-    fn create_path_handler(
+    fn create_path_component_builder(
         self: Arc<Self>,
         session: Rc<Session>,
-    ) -> OctantResult<Arc<dyn PathHandler>>;
-}
-
-pub struct UrlPart<'a> {
-    path: &'a str,
-    query: Option<&'a str>,
-    fragment: Option<&'a str>,
-}
-
-impl<'a> UrlPart<'a> {
-    pub fn new(url: &'a Url) -> Self {
-        UrlPart {
-            path: url.path().trim_start_matches("/site/"),
-            query: url.query(),
-            fragment: url.fragment(),
-        }
-    }
-    pub fn pop(&self) -> (&'a str, Self) {
-        let (first, second) = if let Some(pair) = self.path.split_once("/") {
-            pair
-        } else {
-            (self.path, "")
-        };
-        (
-            first,
-            UrlPart {
-                path: second,
-                query: self.query,
-                fragment: self.fragment,
-            },
-        )
-    }
-}
-
-pub trait PathHandler {
-    fn node(self: Arc<Self>) -> Rcf<dyn Node>;
-    fn handle_path(self: Arc<Self>, path: UrlPart) -> OctantResult<()>;
+    ) -> OctantResult<Rcf<dyn PathComponentBuilder>>;
 }
 
 pub struct OctantServer {
@@ -227,51 +191,32 @@ impl OctantServer {
                 let url = Url::parse(&url)?;
                 session.insert_data(UrlPrefix::new(url.join("/")?));
                 log::info!("url = {}", url);
-                let handler = app.create_path_handler(session)?;
+                let component_builder = app.create_path_component_builder(session)?;
+                let component = component_builder.build("/site")?;
                 global
                     .window()
                     .document()
                     .body()
-                    .append_child(handler.clone().node().strong());
-                handler.clone().handle_path(UrlPart::new(&url))?;
+                    .append_child(component.node().strong());
+                component.update_path(&url)?;
                 global.window().history().set_push_state_handler(Box::new({
-                    let handler = handler.clone();
+                    let component = Rcf::downgrade(&component);
                     move |url| {
-                        handler
-                            .clone()
-                            .handle_path(UrlPart::new(&Url::parse(&url)?))?;
+                        if let Some(component) = component.upgrade() {
+                            component.update_path(&Url::parse(&url)?)?;
+                        }
                         Ok(())
                     }
                 }));
                 global.window().set_pop_state_handler({
-                    let handler = handler.clone();
+                    let component = Rcf::downgrade(&component);
                     Box::new(move |url| {
-                        handler
-                            .clone()
-                            .handle_path(UrlPart::new(&Url::parse(&url)?))?;
+                        if let Some(component) = component.upgrade() {
+                            component.update_path(&Url::parse(&url)?)?;
+                        }
                         Ok(())
                     })
                 });
-
-                // let listener = global.new_event_listener({
-                //     let global = Rc::downgrade(&global);
-                //     let handler = Arc::downgrade(&handler);
-                //     move || {
-                //         if let (Some(global), Some(handler)) = (global.upgrade(), handler.upgrade())
-                //         {
-                //             global.runtime().spawner().spawn({
-                //                 let global = global.clone();
-                //                 async move {
-                //                     let url = global.window().document().location().href().await?;
-                //                     handler.handle_path(UrlPart::new(&Url::parse(&url)?))?;
-                //                     Ok(())
-                //                 }
-                //             });
-                //         }
-                //     }
-                // });
-                // global.window().add_listener("popstate", listener);
-                // todo!();
                 pending::<!>().await;
                 Ok(())
             }

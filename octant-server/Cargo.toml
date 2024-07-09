@@ -29,3 +29,4 @@ octant-database = {workspace = true}
 safe-once = {workspace=true}
 marshal-pointer = {workspace=true}
 marshal = {workspace=true}
+octant-components={workspace = true}

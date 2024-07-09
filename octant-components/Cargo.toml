@@ -1,0 +1,13 @@
+[package]
+name = "octant-components"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+marshal-pointer = {workspace = true}
+octant-runtime-server = {workspace = true}
+octant-web-sys-server = {workspace = true}
+octant-error = {workspace = true}
+url = {workspace = true}
+safe-once = {workspace = true}
+linked-hash-map = {workspace = true}

@@ -1,17 +1,17 @@
 use std::{rc::Rc, sync::Arc};
 
-use marshal_pointer::Rcf;
-use webauthn_rs::prelude::{Passkey, Uuid};
-
+use marshal_pointer::{Rcf, RcfRef};
+use url::Url;
 use octant_database::database::ArcDatabase;
-use octant_error::{Context, octant_error, OctantResult};
-use octant_server::{PathHandler, session::Session, UrlPart};
+use octant_error::{octant_error, Context, OctantResult};
+use octant_server::session::Session;
 use octant_web_sys_server::{
     builder::{ElementExt, HtmlFormElementExt, NodeExt},
     node::Node,
 };
-
-use crate::{Account, AccountTable, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant};
+use webauthn_rs::prelude::{Passkey, Uuid};
+use octant_components::PathComponent;
+use crate::{build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, Account, AccountTable};
 
 pub struct RegisterApplication {
     pub(crate) db: ArcDatabase,
@@ -62,12 +62,12 @@ pub struct RegisterHandler {
     session: Rc<Session>,
 }
 
-impl PathHandler for RegisterHandler {
-    fn node(self: Arc<Self>) -> Rcf<dyn Node> {
+impl PathComponent for RegisterHandler {
+    fn node<'a>(self: &'a RcfRef<Self>) -> &'a RcfRef<dyn Node> {
         todo!()
     }
 
-    fn handle_path(self: Arc<Self>, url: UrlPart) -> OctantResult<()> {
+    fn update_path(self: &RcfRef<Self>, url: &Url) -> OctantResult<()> {
         let app = self.app.clone();
         let d = self.session.global().window().document();
         let text = d.create_text_node(format!("Register"));

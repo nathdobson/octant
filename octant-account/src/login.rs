@@ -1,21 +1,22 @@
 use std::{future::Future, rc::Rc, sync::Arc};
 
-use marshal_pointer::Rcf;
+use marshal_pointer::{Rcf, RcfRef};
+use url::Url;
 use uuid::Uuid;
 use webauthn_rs::prelude::Passkey;
-
+use octant_components::PathComponent;
 use octant_cookies::CookieRouter;
 use octant_database::database::ArcDatabase;
 use octant_error::{octant_error, OctantResult};
-use octant_server::{PathHandler, session::Session, UrlPart};
+use octant_server::{session::Session};
 use octant_web_sys_server::{
     builder::{ElementExt, HtmlFormElementExt, NodeExt},
     node::Node,
 };
 
 use crate::{
-    AccountTable, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, SESSION_COOKIE,
-    SessionTable, VerifiedLogin,
+    build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, AccountTable, SessionTable,
+    VerifiedLogin, SESSION_COOKIE,
 };
 
 pub struct LoginApplication {
@@ -81,12 +82,12 @@ pub struct LoginHandler {
     session: Rc<Session>,
 }
 
-impl PathHandler for LoginHandler {
-    fn node(self: Arc<Self>) -> Rcf<dyn Node> {
+impl PathComponent for LoginHandler {
+    fn node<'a>(self: &'a RcfRef<Self>) -> &'a RcfRef<dyn Node> {
         todo!()
     }
 
-    fn handle_path(self: Arc<Self>, url: UrlPart) -> OctantResult<()> {
+    fn update_path(self: &RcfRef<Self>, url: &Url) -> OctantResult<()> {
         let d = self.session.global().window().document();
         let text = d.create_text_node(format!("Register"));
         let email = d
