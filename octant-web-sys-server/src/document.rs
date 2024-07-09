@@ -4,8 +4,10 @@ use crate::{
     html_div_element::{HtmlDivElement, RcHtmlDivElement},
     html_element::{HtmlElement, RcHtmlElement},
     html_form_element::RcHtmlFormElement,
+    html_head_element::{HtmlHeadElement, RcHtmlHeadElement},
     html_input_element::RcHtmlInputElement,
     html_li_element::RcHtmlLiElement,
+    html_style_element::RcHtmlStyleElement,
     html_u_list_element::RcHtmlUListElement,
     location::{Location, RcLocation},
     node::{Node, NodeFields},
@@ -22,6 +24,7 @@ use safe_once::cell::OnceCell;
 use std::rc::Rc;
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
+use octant_error::octant_error;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct DocumentFields {
@@ -30,6 +33,9 @@ pub struct DocumentFields {
     document: web_sys::Document,
     #[cfg(side = "server")]
     body: OnceCell<RcHtmlElement>,
+    #[cfg(side = "server")]
+    head: OnceCell<RcHtmlHeadElement>,
+    #[cfg(side = "server")]
     location: OnceCell<RcLocation>,
 }
 
@@ -84,6 +90,12 @@ impl dyn Document {
             self.native().create_element("li")?.dyn_into().unwrap(),
         ))
     }
+    #[rpc]
+    pub fn create_style_element(self: &RcfRef<Self>, _: &Rc<Runtime>) -> RcHtmlStyleElement {
+        Ok(RcHtmlStyleElement::peer_new(
+            self.native().create_element("style")?.dyn_into().unwrap(),
+        ))
+    }
     #[cfg(side = "server")]
     pub fn location<'a>(self: &'a RcfRef<Self>) -> &'a RcfRef<dyn Location> {
         self.document()
@@ -101,5 +113,17 @@ impl dyn Document {
     #[rpc]
     fn body_impl(self: &RcfRef<Self>, _: &Rc<Runtime>) -> RcHtmlElement {
         Ok(RcHtmlElement::peer_new(self.native().body().unwrap()))
+    }
+    #[cfg(side = "server")]
+    pub fn head<'a>(self: &'a RcfRef<Self>) -> &'a RcfRef<dyn HtmlHeadElement> {
+        self.document().head.get_or_init(|| self.head_impl())
+    }
+    #[rpc]
+    fn head_impl(self: &RcfRef<Self>, _: &Rc<Runtime>) -> RcHtmlHeadElement {
+        Ok(RcHtmlHeadElement::peer_new(
+            self.native()
+                .head()
+                .ok_or_else(|| octant_error!("document head missing"))?,
+        ))
     }
 }

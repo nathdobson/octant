@@ -18,6 +18,7 @@ use crate::score::ScoreApplication;
 
 mod navbar;
 mod score;
+mod css_scope;
 
 #[tokio::main]
 async fn main() -> OctantResult<()> {

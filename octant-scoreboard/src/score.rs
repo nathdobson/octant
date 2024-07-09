@@ -3,13 +3,15 @@ use std::{rc::Rc, sync::Arc};
 use marshal_pointer::Rcf;
 use parking_lot::Mutex;
 
+use crate::{
+    css_scope::CssScopeSet,
+    navbar::{Navbar, NavbarStyle},
+};
 use octant_account::SessionTable;
 use octant_cookies::CookieRouter;
 use octant_runtime_server::reexports::octant_error::OctantResult;
 use octant_server::{session::Session, OctantApplication, PathHandler, UrlPart};
 use octant_web_sys_server::{global::Global, node::Node, text::RcText};
-
-use crate::navbar::Navbar;
 
 pub struct ScoreApplication {
     pub cookies: Arc<CookieRouter>,
@@ -49,7 +51,9 @@ impl OctantApplication for ScoreApplication {
         self: Arc<Self>,
         session: Rc<Session>,
     ) -> OctantResult<Arc<dyn PathHandler>> {
-        let mut navbar = Navbar::new(session.global().clone());
+        let mut scopes = CssScopeSet::new(session.global().clone());
+        let style = Arc::new(NavbarStyle::new(&mut scopes));
+        let mut navbar = Navbar::new(session.global().clone(), &style);
 
         navbar.register(
             "First",
@@ -57,7 +61,20 @@ impl OctantApplication for ScoreApplication {
             "a",
             Box::new({
                 let global = session.global().clone();
-                move || TextPathHandler::new(&global, "a".to_owned())
+                let style = style.clone();
+                move || {
+                    let mut navbar = Navbar::new(global.clone(), &style);
+                    navbar.register(
+                        "Part X",
+                        "ax",
+                        "x",
+                        Box::new({
+                            let global = global.clone();
+                            move || TextPathHandler::new(&global, "hi".to_string())
+                        }),
+                    );
+                    Arc::new(navbar)
+                }
             }),
         );
         navbar.register(
@@ -67,6 +84,15 @@ impl OctantApplication for ScoreApplication {
             Box::new({
                 let global = session.global().clone();
                 move || TextPathHandler::new(&global, "b".to_owned())
+            }),
+        );
+        navbar.register(
+            "Third",
+            "c title",
+            "c",
+            Box::new({
+                let global = session.global().clone();
+                move || TextPathHandler::new(&global, "c".to_owned())
             }),
         );
 

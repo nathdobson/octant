@@ -48,7 +48,12 @@ web-sys = { workspace = true, features = ["HtmlDivElement",  "Location",
     "UserVerificationRequirement",
     "HtmlUListElement",
     "HtmlLiElement",
-    "CssStyleDeclaration"
+    "CssStyleDeclaration",
+    "CssStyleSheet",
+    "StyleSheet",
+    "HtmlStyleElement",
+    "HtmlHeadElement",
+    "DomTokenList",
 ] }
 wasm-bindgen = { workspace = true }
 js-sys = { workspace = true }
