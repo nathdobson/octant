@@ -1,22 +1,15 @@
+use std::{rc::Rc, sync::Arc};
+
 use marshal_pointer::Rcf;
 use parking_lot::Mutex;
-use std::{rc::Rc, sync::Arc};
-use url::Url;
 
-use crate::navbar::Navbar;
 use octant_account::SessionTable;
 use octant_cookies::CookieRouter;
-use octant_runtime_server::reexports::{
-    marshal_pointer::RcfRef,
-    octant_error::{octant_error, OctantResult},
-};
+use octant_runtime_server::reexports::octant_error::OctantResult;
 use octant_server::{session::Session, OctantApplication, PathHandler, UrlPart};
-use octant_web_sys_server::{
-    element::RcElement,
-    global::Global,
-    node::{Node, RcNode},
-    text::{RcText, Text},
-};
+use octant_web_sys_server::{global::Global, node::Node, text::RcText};
+
+use crate::navbar::Navbar;
 
 pub struct ScoreApplication {
     pub cookies: Arc<CookieRouter>,
@@ -59,7 +52,7 @@ impl OctantApplication for ScoreApplication {
         let mut navbar = Navbar::new(session.global().clone());
 
         navbar.register(
-            "a button",
+            "First",
             "a title",
             "a",
             Box::new({
@@ -68,7 +61,7 @@ impl OctantApplication for ScoreApplication {
             }),
         );
         navbar.register(
-            "b button",
+            "Second",
             "b title",
             "b",
             Box::new({

@@ -4,15 +4,17 @@
 #![allow(dead_code)]
 #![feature(arbitrary_self_types)]
 
-use parking_lot::Mutex;
 use std::sync::Arc;
 
-use crate::score::ScoreApplication;
+use parking_lot::Mutex;
+
 use octant_account::{AccountModule, SessionTable};
 use octant_cookies::CookieRouter;
 use octant_panic::register_panic_handler;
 use octant_runtime_server::reexports::octant_error::OctantResult;
 use octant_server::{OctantServer, OctantServerOptions};
+
+use crate::score::ScoreApplication;
 
 mod navbar;
 mod score;

@@ -4,12 +4,17 @@
 #![allow(unused_variables)]
 #![deny(unused_must_use)]
 
-use crate::login::LoginHandler;
+use std::{collections::HashMap, rc::Rc, sync::Arc};
+
 use base64urlsafedata::HumanBinaryData;
 use marshal_derive::{Deserialize, DeserializeUpdate, Serialize, SerializeStream, SerializeUpdate};
 use marshal_object::derive_variant;
 use marshal_serde::WithSerde;
 use marshal_update::{hash_map::UpdateHashMap, prim::Prim};
+use parking_lot::Mutex;
+use uuid::Uuid;
+use webauthn_rs::{prelude::Passkey, Webauthn, WebauthnBuilder};
+
 use octant_cookies::{CookieData, CookieRouter};
 use octant_database::{
     database::ArcDatabase,
@@ -17,14 +22,10 @@ use octant_database::{
 };
 use octant_error::{octant_error, OctantResult};
 use octant_server::{
-    session::{Session, UrlPrefix},
     OctantServer,
+    session::{Session, UrlPrefix},
 };
-use parking_lot::Mutex;
-use std::{collections::HashMap, rc::Rc, sync::Arc};
-use url::Url;
-use uuid::Uuid;
-use webauthn_rs::{prelude::Passkey, Webauthn, WebauthnBuilder};
+
 
 mod into_auth;
 mod into_octant;

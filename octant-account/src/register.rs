@@ -1,17 +1,17 @@
-use marshal_pointer::Rcf;
 use std::{rc::Rc, sync::Arc};
-use url::Url;
+
+use marshal_pointer::Rcf;
 use webauthn_rs::prelude::{Passkey, Uuid};
 
-use crate::{build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, Account, AccountTable};
 use octant_database::database::ArcDatabase;
-use octant_error::{octant_error, Context, OctantResult};
-use octant_runtime_server::reexports::marshal_pointer::RcfRef;
-use octant_server::{session::Session, PathHandler, UrlPart};
+use octant_error::{Context, octant_error, OctantResult};
+use octant_server::{PathHandler, session::Session, UrlPart};
 use octant_web_sys_server::{
     builder::{ElementExt, HtmlFormElementExt, NodeExt},
-    node::{Node, RcNode},
+    node::Node,
 };
+
+use crate::{Account, AccountTable, build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant};
 
 pub struct RegisterApplication {
     pub(crate) db: ArcDatabase,

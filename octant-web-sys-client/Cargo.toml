@@ -45,7 +45,11 @@ web-sys = { workspace = true, features = ["HtmlDivElement",  "Location",
     "AttestationConveyancePreference",
     "AuthenticationExtensionsClientInputs",
     "AuthenticatorAttachment",
-    "UserVerificationRequirement",] }
+    "UserVerificationRequirement",
+    "HtmlUListElement",
+    "HtmlLiElement",
+    "CssStyleDeclaration"
+] }
 wasm-bindgen = { workspace = true }
 js-sys = { workspace = true }
 safe-once = { workspace = true }
