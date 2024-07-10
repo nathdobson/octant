@@ -4,7 +4,7 @@ use marshal_pointer::{Rcf, RcfRef};
 use octant_account::SessionTable;
 use octant_components::{
     css_scope::CssScopeSet,
-    navbar::{Navbar, NavbarBuilder},
+    navbar::{style::NavbarStyle, NavbarBuilder},
     PathComponent, PathComponentBuilder,
 };
 use octant_cookies::CookieRouter;
@@ -13,7 +13,6 @@ use octant_server::{session::Session, OctantApplication};
 use octant_web_sys_server::{global::Global, node::Node, text::RcText};
 use parking_lot::Mutex;
 use url::Url;
-use octant_components::navbar::style::NavbarStyle;
 
 pub struct ScoreApplication {
     pub cookies: Arc<CookieRouter>,

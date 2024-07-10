@@ -1,6 +1,7 @@
 #![feature(trait_upcasting)]
 #![feature(arbitrary_self_types)]
 #![deny(unused_must_use)]
+#![allow(dead_code)]
 
 use marshal_pointer::{Rcf, RcfRef};
 use octant_runtime_server::reexports::octant_error::OctantResult;
