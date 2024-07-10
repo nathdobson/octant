@@ -17,7 +17,6 @@ use futures::{
 use marshal::context::OwnedContext;
 use marshal_json::{decode::full::JsonDecoderBuilder, encode::full::JsonEncoderBuilder};
 use marshal_pointer::Rcf;
-use octant_components::PathComponentBuilder;
 use octant_database::{
     database::{ArcDatabase, Database},
     file::DatabaseFile,
@@ -40,7 +39,7 @@ use warp::{
     ws::{Message, WebSocket},
     Filter, Rejection, Reply,
 };
-
+use octant_components::ComponentBuilder;
 use crate::{
     session::{Session, UrlPrefix},
     sink::BufferedDownMessageSink,
@@ -64,10 +63,10 @@ pub struct OctantServerOptions {
 }
 
 pub trait OctantApplication: Sync + Send {
-    fn create_path_component_builder(
+    fn create_component_builder(
         self: Arc<Self>,
         session: Rc<Session>,
-    ) -> OctantResult<Rcf<dyn PathComponentBuilder>>;
+    ) -> OctantResult<Rcf<dyn ComponentBuilder>>;
 }
 
 pub struct OctantServer {
@@ -191,8 +190,9 @@ impl OctantServer {
                 let url = Url::parse(&url)?;
                 session.insert_data(UrlPrefix::new(url.join("/")?));
                 log::info!("url = {}", url);
-                let component_builder = app.create_path_component_builder(session)?;
-                let component = component_builder.build("/site")?;
+                let component_builder = app.create_component_builder(session)?;
+                component_builder.set_self_path("/site");
+                let component = component_builder.build_component()?;
                 global
                     .window()
                     .document()

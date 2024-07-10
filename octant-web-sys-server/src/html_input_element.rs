@@ -25,7 +25,7 @@ pub struct HtmlInputElementFields {
 #[class]
 pub trait HtmlInputElement: HtmlElement {
     #[cfg(side = "client")]
-    fn update_value(self: &RcfRef<Self>) {
+    fn update_input_value(self: &RcfRef<Self>) {
         let this = self as &RcfRef<dyn crate::html_input_element::HtmlInputElement>;
         this.sink().send(Box::<SetInput>::new(SetInput {
             element: self.strong(),

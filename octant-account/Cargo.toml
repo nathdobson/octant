@@ -28,3 +28,4 @@ marshal-serde = {workspace=true}
 octant-cookies = {workspace=true}
 marshal-pointer = {workspace=true}
 octant-components = {workspace = true}
+safe-once = {workspace = true}

@@ -1,12 +1,16 @@
 use crate::{
     element::RcElement,
     html_anchor_element::RcHtmlAnchorElement,
+    html_br_element::RcHtmlBrElement,
     html_div_element::{HtmlDivElement, RcHtmlDivElement},
     html_element::{HtmlElement, RcHtmlElement},
     html_form_element::RcHtmlFormElement,
     html_head_element::{HtmlHeadElement, RcHtmlHeadElement},
+    html_heading_element::RcHtmlHeadingElement,
+    html_hr_element::RcHtmlHrElement,
     html_input_element::RcHtmlInputElement,
     html_li_element::RcHtmlLiElement,
+    html_paragraph_element::RcHtmlParagraphElement,
     html_style_element::RcHtmlStyleElement,
     html_u_list_element::RcHtmlUListElement,
     location::{Location, RcLocation},
@@ -16,6 +20,7 @@ use crate::{
     text::{RcText, Text},
 };
 use marshal_pointer::RcfRef;
+use octant_error::octant_error;
 use octant_object::{class, DebugClass};
 use octant_runtime::{
     octant_future::OctantFuture, peer::Peer, rpc, runtime::Runtime, DeserializePeer, SerializePeer,
@@ -24,7 +29,7 @@ use safe_once::cell::OnceCell;
 use std::rc::Rc;
 #[cfg(side = "client")]
 use wasm_bindgen::JsCast;
-use octant_error::octant_error;
+use crate::html_label_element::RcHtmlLabelElement;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct DocumentFields {
@@ -63,8 +68,16 @@ impl dyn Document {
         ))
     }
     #[rpc]
-    pub fn create_element(self: &RcfRef<Self>, _: &Rc<Runtime>, tag: String) -> RcElement {
-        Ok(RcElement::peer_new(self.native().create_element(&tag)?))
+    pub fn create_hr_element(self: &RcfRef<Self>, _: &Rc<Runtime>) -> RcHtmlHrElement {
+        Ok(RcHtmlHrElement::peer_new(
+            self.native().create_element("hr")?.dyn_into().unwrap(),
+        ))
+    }
+    #[rpc]
+    pub fn create_br_element(self: &RcfRef<Self>, _: &Rc<Runtime>) -> RcHtmlBrElement {
+        Ok(RcHtmlBrElement::peer_new(
+            self.native().create_element("br")?.dyn_into().unwrap(),
+        ))
     }
     #[rpc]
     pub fn create_text_node(self: &RcfRef<Self>, _: &Rc<Runtime>, text: String) -> RcText {
@@ -73,9 +86,37 @@ impl dyn Document {
         ))
     }
     #[rpc]
+    pub fn create_heading_element(
+        self: &RcfRef<Self>,
+        _: &Rc<Runtime>,
+        n: usize,
+    ) -> RcHtmlHeadingElement {
+        Ok(RcHtmlHeadingElement::peer_new(
+            self.native()
+                .create_element(&format!("h{}", n))?
+                .dyn_into()
+                .unwrap(),
+        ))
+    }
+    #[rpc]
     pub fn create_input_element(self: &RcfRef<Self>, _: &Rc<Runtime>) -> RcHtmlInputElement {
         Ok(RcHtmlInputElement::peer_new(
             self.native().create_element("input")?.dyn_into().unwrap(),
+        ))
+    }
+    #[rpc]
+    pub fn create_label_element(self: &RcfRef<Self>, _: &Rc<Runtime>) -> RcHtmlLabelElement {
+        Ok(RcHtmlLabelElement::peer_new(
+            self.native().create_element("label")?.dyn_into().unwrap(),
+        ))
+    }
+    #[rpc]
+    pub fn create_paragraph_element(
+        self: &RcfRef<Self>,
+        _: &Rc<Runtime>,
+    ) -> RcHtmlParagraphElement {
+        Ok(RcHtmlParagraphElement::peer_new(
+            self.native().create_element("p")?.dyn_into().unwrap(),
         ))
     }
     #[rpc]

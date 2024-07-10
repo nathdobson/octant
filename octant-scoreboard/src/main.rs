@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use parking_lot::Mutex;
 
-use octant_account::{AccountModule, SessionTable};
+use octant_account::{ SessionTable};
 use octant_cookies::CookieRouter;
 use octant_panic::register_panic_handler;
 use octant_runtime_server::reexports::octant_error::OctantResult;
@@ -27,10 +27,8 @@ async fn main() -> OctantResult<()> {
     let cookies = CookieRouter::new();
     cookies.register(&mut server);
     let sessions = SessionTable::new();
-    AccountModule::new(server.database().clone(), cookies.clone(), sessions.clone())
-        .await
-        .register(&mut server);
     let app = Arc::new(ScoreApplication {
+        db: server.database().clone(),
         cookies: cookies.clone(),
         sessions: sessions.clone(),
         guesses: Mutex::new(vec![]),

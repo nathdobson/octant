@@ -1,33 +1,49 @@
-use std::{future::Future, rc::Rc, sync::Arc};
-
-use marshal_pointer::RcfRef;
-use octant_components::PathComponent;
+use crate::{
+    build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, AccountTable, SessionTable,
+    VerifiedLogin, SESSION_COOKIE,
+};
+use marshal_object::reexports::safe_once::cell::OnceCell;
+use marshal_pointer::{Rcf, RcfRef};
+use octant_components::{Component, ComponentBuilder};
 use octant_cookies::CookieRouter;
 use octant_database::database::ArcDatabase;
 use octant_error::{octant_error, OctantResult};
 use octant_server::session::Session;
 use octant_web_sys_server::{
     builder::{ElementExt, HtmlFormElementExt, NodeExt},
-    node::Node,
+    node::{Node, RcNode},
 };
+use std::{future::Future, rc::Rc, sync::Arc};
 use url::Url;
 use uuid::Uuid;
 use webauthn_rs::prelude::Passkey;
 
-use crate::{
-    build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, AccountTable, SessionTable,
-    VerifiedLogin, SESSION_COOKIE,
-};
-
-pub struct LoginApplication {
-    pub(crate) db: ArcDatabase,
-    pub(crate) cookies: Arc<CookieRouter>,
-    pub(crate) sessions: Arc<SessionTable>,
+pub struct LoginComponentBuilder {
+    db: ArcDatabase,
+    cookies: Arc<CookieRouter>,
+    sessions: Arc<SessionTable>,
+    session: Rc<Session>,
+    path: OnceCell<String>,
 }
 
-impl LoginApplication {
+impl LoginComponentBuilder {
+    pub fn new(
+        db: ArcDatabase,
+        cookies: Arc<CookieRouter>,
+        sessions: Arc<SessionTable>,
+        session: Rc<Session>,
+    ) -> Self {
+        LoginComponentBuilder {
+            db,
+            cookies,
+            sessions,
+            session,
+            path: OnceCell::new(),
+        }
+    }
+
     pub fn do_login<'a>(
-        self: Arc<Self>,
+        self: &'a RcfRef<Self>,
         session: Rc<Session>,
         email: &'a str,
     ) -> impl 'a + Future<Output = OctantResult<()>> {
@@ -77,29 +93,24 @@ impl LoginApplication {
     }
 }
 
-pub struct LoginHandler {
-    app: Arc<LoginApplication>,
-    session: Rc<Session>,
-}
-
-impl PathComponent for LoginHandler {
-    fn node<'a>(self: &'a RcfRef<Self>) -> &'a RcfRef<dyn Node> {
-        todo!()
+impl ComponentBuilder for LoginComponentBuilder {
+    fn set_self_path(self: &RcfRef<Self>, path: &str) {
+        self.path.set(path.to_owned()).ok().unwrap();
     }
 
-    fn update_path(self: &RcfRef<Self>, url: &Url) -> OctantResult<()> {
+    fn build_component(self: &RcfRef<Self>) -> OctantResult<Rcf<dyn Component>> {
         let d = self.session.global().window().document();
-        let text = d.create_text_node(format!("Register"));
+        let text = d.create_text_node(format!("Login"));
         let email = d
             .create_input_element()
             .attr("type", "text")
             .attr("placeholder", "Email")
             .attr("required", "true");
-        let app = self.app.clone();
+        let this = self.strong();
         let form = d
             .create_form_element()
             .child(email.clone())
-            .child(d.create_element("br".to_string()))
+            .child(d.create_br_element())
             .child(
                 d.create_input_element()
                     .attr("type", "submit")
@@ -110,16 +121,28 @@ impl PathComponent for LoginHandler {
                 Box::new(move |()| {
                     let session = session.clone();
                     let email = email.clone();
-                    let app = app.clone();
+                    let this = this.clone();
                     let spawner = session.global().runtime().spawner().clone();
                     spawner.spawn(async move {
-                        app.do_login(session.clone(), &email.input_value()).await
+                        this.do_login(session.clone(), &email.input_value()).await
                     });
                     Ok(())
                 })
             });
-        let page = d.create_div_element().child(text).child(form);
-        d.body().append_child(page);
+        let node = d.create_div_element().child(text).child(form);
+        Ok(Rcf::new(LoginComponent { node }))
+    }
+}
+
+pub struct LoginComponent {
+    node: RcNode,
+}
+
+impl Component for LoginComponent {
+    fn node<'a>(self: &'a RcfRef<Self>) -> &'a RcfRef<dyn Node> {
+        &*self.node
+    }
+    fn update_path(self: &RcfRef<Self>, url: &Url) -> OctantResult<()> {
         Ok(())
     }
 }

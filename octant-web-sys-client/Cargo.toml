@@ -54,6 +54,11 @@ web-sys = { workspace = true, features = ["HtmlDivElement",  "Location",
     "HtmlStyleElement",
     "HtmlHeadElement",
     "DomTokenList",
+    "HtmlHeadingElement",
+    "HtmlParagraphElement",
+    "HtmlHrElement",
+    "HtmlBrElement",
+    "HtmlLabelElement",
 ] }
 wasm-bindgen = { workspace = true }
 js-sys = { workspace = true }

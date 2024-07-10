@@ -56,11 +56,7 @@ impl dyn HtmlFormElement {
             move |e: Event| {
                 e.prevent_default();
                 if let Some(this) = this.upgrade() {
-                    for child in this.children() {
-                        if let Ok(child) = downcast_object::<_, RcHtmlInputElement>(child) {
-                            child.update_value();
-                        }
-                    }
+                    this.update_input_values_rec();
                     this.sink()
                         .send(Box::new(SubmitForm { form: this.clone() }));
                 }
