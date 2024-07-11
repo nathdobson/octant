@@ -107,7 +107,7 @@ impl CookieRouter {
                 .window()
                 .fetch(request)
                 .await?
-                .text()
+                .local_text()
                 .await?;
             Ok(())
         }
@@ -124,7 +124,7 @@ impl CookieRouter {
             .window()
             .fetch(request)
             .await?
-            .text()
+            .local_text()
             .await?;
         log::info!("Cookies: {:?}", session.data::<CookieData>());
         Ok(())

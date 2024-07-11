@@ -23,6 +23,7 @@ by_address = {workspace=true}
 marshal = {workspace=true,features = ["base64urlsafedata"]}
 marshal-object = {workspace=true}
 marshal-pointer = {workspace=true}
+safe-once-async = {workspace=true}
 
 [build-dependencies]
 octant-metabuild = { workspace = true }

@@ -19,6 +19,8 @@ use marshal_json::decode::full::JsonDecoderBuilder;
 use marshal_json::encode::full::JsonEncoderBuilder;
 use marshal_object::derive_variant;
 use marshal_pointer::{Rcf, RcfRef};
+
+use safe_once_async::detached::DetachedFuture;
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
 
@@ -41,16 +43,6 @@ use crate::{
     serialize_peer,
 };
 
-// pub struct BoxOctantFutureResult;
-// derive_box_object!(BoxOctantFutureResult, OctantFutureResult);
-// derive_serialize_provider!(BoxOctantFutureResult, JsonEncoder, BinEncoder);
-// derive_deserialize_provider!(BoxOctantFutureResult, JsonDecoder, BinDecoder);
-// pub trait OctantFutureResult: Debug + AsDiscriminant<BoxOctantFutureResult> + RawAny {}
-
-// type Unit=();
-// derive_variant!(BoxOctantFutureResult, Unit);
-// impl OctantFutureResult for () {}
-
 #[derive(DebugClass)]
 pub struct AbstractOctantFutureFields {
     parent: PeerFields,
@@ -60,20 +52,6 @@ pub struct AbstractOctantFutureFields {
 
 #[class]
 pub trait AbstractOctantFuture: Peer {}
-
-//
-// #[cfg(side = "server")]
-// define_class! {
-//     pub class AbstractOctantFuture extends Peer {
-//         field sender: RefCell<Option<oneshot::Sender<RawEncoded>>>;
-//     }
-// }
-//
-// #[cfg(side = "client")]
-// define_class! {
-//     pub class AbstractOctantFuture extends Peer {
-//     }
-// }
 
 #[cfg(side = "server")]
 pub struct OctantFuture<T: FutureReturn> {
@@ -92,18 +70,7 @@ pub struct OctantFuture<T: FutureReturn> {
     phantom: PhantomData<T>,
 }
 
-// impl<E: Encoder> Serialize<E> for Box<dyn OctantFutureResult> {
-//     fn serialize<'w, 'en>(
-//         &self,
-//         e: AnyEncoder<'w, 'en, E>,
-//         ctx: marshal::context::Context,
-//     ) -> anyhow::Result<()> {
-//         todo!()
-//     }
-// }
 #[derive(Serialize, Debug, Deserialize)]
-// #[serialize(bounds = Box<dyn OctantFutureResult>: Serialize<E>)]
-// #[deserialize(bounds = Box<dyn OctantFutureResult>: Deserialize<D>)]
 pub struct FutureResponse {
     promise: RcAbstractOctantFuture,
     value: Vec<u8>,
@@ -192,24 +159,6 @@ impl<D: Decoder> DeserializeRc<D> for dyn AbstractOctantFuture {
     }
 }
 
-// impl Serialize for dyn AbstractOctantFuture {
-//     fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-//     where
-//         S: Serializer,
-//     {
-//         self.raw_handle().serialize(s)
-//     }
-// }
-//
-// impl<'de> DeserializeRcWith<'de> for dyn AbstractOctantFuture {
-//     fn deserialize_rc_with<D: Deserializer<'de>>(
-//         ctx: &DeserializeContext,
-//         d: D,
-//     ) -> Result<Rc2<Self>, D::Error> {
-//         deserialize_object_with(ctx, d)
-//     }
-// }
-
 impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
     type Down = (TypedHandle<dyn AbstractOctantFuture>, T::Down);
 
@@ -240,3 +189,6 @@ impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
         runtime.add(down.0, self.parent)
     }
 }
+
+#[cfg(side = "server")]
+impl<T: FutureReturn> DetachedFuture for OctantFuture<T> {}

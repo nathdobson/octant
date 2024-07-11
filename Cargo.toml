@@ -115,3 +115,4 @@ marshal-serde = {path="../marshal/marshal-serde"}
 octant-cookies = {path="octant-cookies"}
 octant-components = {path="octant-components"}
 linked-hash-map = "0.5.6"
+safe-once-async = {path="../safe-once-async"}

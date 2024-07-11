@@ -173,3 +173,9 @@ impl<T> Context<T> for Option<T> {
         anyhow::Context::with_context(self, context).map_err(OctantError)
     }
 }
+
+impl From<&OctantError> for OctantError {
+    fn from(value: &OctantError) -> Self {
+        OctantError::msg(format!("{}", value))
+    }
+}

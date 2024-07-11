@@ -1,12 +1,11 @@
-use std::{fmt::Debug, marker::Unsize, rc::Rc};
+use crate::{
+    handle::TypedHandle, immediate_return::ImmediateReturn, peer::Peer, runtime::Runtime,
+    OctantDeserialize, OctantSerialize,
+};
 use marshal_pointer::Rcf;
 use octant_error::OctantError;
 use octant_object::class::Class;
-use crate::{
-    handle::TypedHandle, immediate_return::ImmediateReturn, OctantDeserialize, OctantSerialize,
-    peer::Peer,
-    runtime::Runtime,
-};
+use std::{fmt::Debug, marker::Unsize, rc::Rc};
 // use crate::octant_future::OctantFutureResult;
 #[cfg(side = "server")]
 use crate::peer::PeerFields;
@@ -137,6 +136,9 @@ impl<T> DataReturn<T> {
     }
     pub fn into_inner(self) -> T {
         self.0
+    }
+    pub fn inner(&self) -> &T {
+        &self.0
     }
 }
 

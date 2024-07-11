@@ -27,7 +27,7 @@ marshal-json = {workspace=true}
 marshal-object = {workspace=true}
 anyhow={workspace=true}
 marshal-pointer = {workspace=true, features=["weak-table"]}
-
+safe-once-async  = {workspace = true}
 
 [build-dependencies]
 octant-metabuild = { workspace = true }
