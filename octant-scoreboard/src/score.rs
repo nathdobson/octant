@@ -124,6 +124,7 @@ impl OctantApplication for ScoreApplication {
                 self.cookies.clone(),
                 self.sessions.clone(),
                 session.clone(),
+                account_style.clone(),
             )),
         );
         navbar.register(
@@ -133,7 +134,7 @@ impl OctantApplication for ScoreApplication {
             Rcf::new(RegisterComponentBuilder::new(
                 self.db.clone(),
                 session,
-                account_style,
+                account_style.clone(),
             )),
         );
 
