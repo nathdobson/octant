@@ -85,3 +85,4 @@ pub mod html_paragraph_element;
 pub mod html_hr_element;
 pub mod html_label_element;
 pub mod html_br_element;
+mod js_string;

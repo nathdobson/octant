@@ -1,8 +1,11 @@
+cargo-features = ["metabuild"]
+
 [package]
 name = "octant-client"
 version = "0.1.0"
 authors = []
 edition = "2018"
+metabuild = ["octant-metabuild"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -38,3 +41,9 @@ safe-once = { workspace = true }
 marshal-json= {workspace=true}
 marshal-bin = {workspace=true}
 anyhow = {workspace=true}
+
+[build-dependencies]
+octant-metabuild = {workspace = true}
+
+[package.metadata.octant-metabuild]
+resources = ["www"]

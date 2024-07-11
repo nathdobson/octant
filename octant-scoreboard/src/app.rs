@@ -94,15 +94,7 @@ impl OctantApplication for ScoreApplication {
 
         let mut navbar = NavbarBuilder::new(global.clone(), navbar_style.clone());
 
-        let mut child_navbar = NavbarBuilder::new(global.clone(), navbar_style.clone());
-        child_navbar.register(
-            "Part X",
-            "ax",
-            "x",
-            TextComponentBuilder::new(session.global().clone(), "hi".to_string()),
-        );
-
-        navbar.register("First", "a title", "a", Rcf::new(child_navbar));
+        // navbar.register("First", "a title", "a", Rcf::new(child_navbar));
         navbar.register(
             "Second",
             "b title",

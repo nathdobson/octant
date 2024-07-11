@@ -17,13 +17,14 @@ members = [
     "octant-serde",
     "octant-web-sys-client",
     "octant-web-sys-server",
-    "octant-sys-build",
+    "octant-metabuild",
     "octant-runtime-client",
     "octant-runtime-server",
     "octant-serde-derive",
     "octant-object-derive",
     "octant-runtime-derive",
-    "octant-cookies", "octant-components",
+    "octant-cookies",
+    "octant-components",
 ]
 
 [profile.release]
@@ -47,7 +48,7 @@ octant-serde = { path = "octant-serde" }
 octant-error = { path = "octant-error" }
 octant-web-sys-server = { path = "octant-web-sys-server" }
 octant-web-sys-client = { path = "octant-web-sys-client" }
-octant-sys-build = { path = "octant-sys-build" }
+octant-metabuild = { path = "octant-metabuild" }
 octant-object = { path = "octant-object" }
 web-sys = "0.3.69"
 paste = "1.0.15"

@@ -29,23 +29,6 @@ enum Commands {
     Test,
 }
 
-fn copy_dir_all<'a>(src: &'a Path, dst: &'a Path) -> BoxFuture<'a, OctantResult<()>> {
-    async move {
-        fs::create_dir_all(&dst).await?;
-        let mut entries = fs::read_dir(src).await?;
-        while let Some(entry) = entries.next_entry().await? {
-            let ty = entry.file_type().await?;
-            if ty.is_dir() {
-                copy_dir_all(&entry.path(), &dst.join(entry.file_name())).await?;
-            } else {
-                fs::copy(entry.path(), dst.join(entry.file_name())).await?;
-            }
-        }
-        Ok(())
-    }
-    .boxed()
-}
-
 #[tokio::main]
 async fn main() {
     if let Err(e) = main_impl().await {
@@ -64,11 +47,12 @@ async fn main_impl() -> OctantResult<()> {
         Profile::Release => "release",
         Profile::Dev => "debug",
     };
+    create_dir_all("../target/www/wasm-pack").await?;
     tokio::process::Command::new("wasm-pack")
         .args(&["--log-level", "warn"])
         .arg("build")
         .args(&["--target", "web"])
-        .args(&["--out-dir", "../target/www"])
+        .args(&["--out-dir", "../target/www/wasm-pack"])
         .arg("octant-client")
         .arg(&format!("--{profile_name}"))
         .status()
@@ -83,9 +67,8 @@ async fn main_impl() -> OctantResult<()> {
         .await?
         .exit_ok()
         .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
-    create_dir_all("target/www").await?;
     create_dir_all("target/db").await?;
-    copy_dir_all("octant-client/www".as_ref(), "target/www".as_ref()).await?;
+    // copy_dir_all("octant-client/www".as_ref(), "target/www".as_ref()).await?;
     Command::new(&format!("target/{profile_dir_name}/octant-scoreboard"))
         .args(&["--bind-http", "0.0.0.0:8080"])
         .args(&["--bind-https", "0.0.0.0:8081"])

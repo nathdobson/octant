@@ -243,7 +243,7 @@ impl OctantServer {
     pub async fn run_arc(self: Arc<Self>, app: Arc<dyn OctantApplication>) -> OctantResult<()> {
         let statik = Self::statik();
         let site = warp::path("site")
-            .and(warp::fs::file("./target/www/index.html"))
+            .and(warp::fs::file("./target/www/octant-client/index.html"))
             .map(Self::add_header);
         let socket = warp::path("socket")
             .and(warp::path::param())

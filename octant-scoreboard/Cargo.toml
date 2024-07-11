@@ -1,7 +1,10 @@
+cargo-features = ["metabuild"]
+
 [package]
 name = "octant-scoreboard"
 version = "0.1.0"
 edition = "2021"
+metabuild = ["octant-metabuild"]
 
 [dependencies]
 octant-server = { workspace = true }
@@ -23,3 +26,9 @@ octant-cookies = {workspace = true}
 marshal-pointer = {workspace=true}
 octant-components = {workspace = true}
 safe-once = {workspace = true}
+
+[build-dependencies]
+octant-metabuild = { workspace = true }
+
+[package.metadata.octant-metabuild]
+resources = ["www"]

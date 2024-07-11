@@ -3,7 +3,7 @@ cargo-features = ["metabuild"]
 name = "octant-runtime-server"
 version = "0.1.0"
 edition = "2021"
-metabuild = ["octant-sys-build"]
+metabuild = ["octant-metabuild"]
 
 [dependencies]
 serde = { workspace=true, features = ["derive"] }
@@ -29,8 +29,8 @@ anyhow = {workspace=true}
 marshal-pointer = {workspace=true, features=["weak-table"]}
 
 [build-dependencies]
-octant-sys-build = { workspace = true }
+octant-metabuild = { workspace = true }
 
-[package.metadata.octant-sys-build]
+[package.metadata.octant-metabuild]
 side = "server"
 shared-name = "octant-runtime"

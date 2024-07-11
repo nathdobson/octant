@@ -4,7 +4,7 @@ cargo-features = ["metabuild"]
 name = "octant-web-sys-client"
 version = "0.1.0"
 edition = "2021"
-metabuild = ["octant-sys-build"]
+metabuild = ["octant-metabuild"]
 
 [dependencies]
 octant-runtime-client = {workspace=true}
@@ -73,8 +73,8 @@ marshal-object = {workspace=true}
 marshal-pointer = {workspace=true}
 
 [build-dependencies]
-octant-sys-build = { workspace = true }
+octant-metabuild = { workspace = true }
 
-[package.metadata.octant-sys-build]
+[package.metadata.octant-metabuild]
 side = "client"
 shared-name = "octant-web-sys"

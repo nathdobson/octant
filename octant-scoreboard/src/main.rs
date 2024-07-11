@@ -13,10 +13,11 @@ use octant_cookies::CookieRouter;
 use octant_panic::register_panic_handler;
 use octant_runtime_server::reexports::octant_error::OctantResult;
 use octant_server::{OctantServer, OctantServerOptions};
-use crate::score::ScoreApplication;
+use crate::app::ScoreApplication;
 
 // mod navbar;
-mod score;
+mod app;
+mod puzzle;
 
 #[tokio::main]
 async fn main() -> OctantResult<()> {
