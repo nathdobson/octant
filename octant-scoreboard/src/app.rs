@@ -1,3 +1,4 @@
+use crate::puzzle::PuzzleComponentBuilder;
 use marshal_pointer::{Rcf, RcfRef};
 use octant_account::{
     login::LoginComponentBuilder, register::RegisterComponentBuilder, style::AccountStyle,
@@ -94,7 +95,12 @@ impl OctantApplication for ScoreApplication {
 
         let mut navbar = NavbarBuilder::new(global.clone(), navbar_style.clone());
 
-        // navbar.register("First", "a title", "a", Rcf::new(child_navbar));
+        navbar.register(
+            "Puzzle 1",
+            "",
+            "puzzle1",
+            PuzzleComponentBuilder::new(session.clone()),
+        );
         navbar.register(
             "Second",
             "b title",

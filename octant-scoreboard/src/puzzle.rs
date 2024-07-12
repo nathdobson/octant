@@ -15,8 +15,8 @@ pub struct PuzzleComponent {
 }
 
 impl PuzzleComponentBuilder {
-    pub fn new(session: Rc<Session>) -> Self {
-        PuzzleComponentBuilder { session }
+    pub fn new(session: Rc<Session>) -> Rcf<Self> {
+        Rcf::new(PuzzleComponentBuilder { session })
     }
 }
 
@@ -25,6 +25,23 @@ impl ComponentBuilder for PuzzleComponentBuilder {
     fn build_component(self: &RcfRef<Self>) -> OctantResult<Rcf<dyn Component>> {
         let d = self.session.global().window().document();
         let div = d.create_div_element();
+        let this = self.strong();
+        self.session.global().runtime().spawner().spawn({
+            let div = div.clone();
+            async move {
+                let global = this.session.global();
+                let request_init = global.new_request_init();
+                let request = this
+                    .session
+                    .global()
+                    .new_request("/static/octant-scoreboard/puzzle1.htmli".to_owned(), request_init);
+                let content = this.session.global().window().fetch(request).await?;
+                let content = content.remote_text().await?.strong();
+                div.set_inner_html(content);
+                Ok(())
+            }
+        });
+
         Ok(Rcf::new(PuzzleComponent { div }))
     }
 }
