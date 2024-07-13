@@ -25,19 +25,34 @@ impl ComponentBuilder for PuzzleComponentBuilder {
     fn build_component(self: &RcfRef<Self>) -> OctantResult<Rcf<dyn Component>> {
         let d = self.session.global().window().document();
         let div = d.create_div_element();
+
+        div.append_child({
+            let form = d.create_form_element();
+            form.append_child({
+                let text=d.create_input_element();
+
+                text
+            });
+            form
+        });
+        let content_div;
+        div.append_child({
+            content_div = d.create_div_element();
+            content_div.clone()
+        });
         let this = self.strong();
         self.session.global().runtime().spawner().spawn({
-            let div = div.clone();
+            let content_div = content_div.clone();
             async move {
                 let global = this.session.global();
                 let request_init = global.new_request_init();
-                let request = this
-                    .session
-                    .global()
-                    .new_request("/static/octant-scoreboard/puzzle1.htmli".to_owned(), request_init);
+                let request = this.session.global().new_request(
+                    "/static/octant-scoreboard/puzzle1.htmli".to_owned(),
+                    request_init,
+                );
                 let content = this.session.global().window().fetch(request).await?;
                 let content = content.remote_text().await?.strong();
-                div.set_inner_html(content);
+                content_div.set_inner_html(content);
                 Ok(())
             }
         });

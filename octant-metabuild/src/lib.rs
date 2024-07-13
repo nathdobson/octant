@@ -6,7 +6,6 @@ use std::{
     fmt::{Display, Formatter},
     fs,
     fs::create_dir_all,
-    io,
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
@@ -55,21 +54,6 @@ impl Display for Side {
     }
 }
 
-fn copy_dir_all(src: &Path, dst: &Path) -> io::Result<()> {
-    fs::create_dir_all(&dst)?;
-    let mut entries = fs::read_dir(src)?;
-    for entry in entries {
-        let entry = entry?;
-        let ty = entry.file_type()?;
-        if ty.is_dir() {
-            copy_dir_all(&entry.path(), &dst.join(entry.file_name()))?;
-        } else {
-            fs::copy(entry.path(), dst.join(entry.file_name()))?;
-        }
-    }
-    Ok(())
-}
-
 pub fn metabuild() {
     let package =
         std::env::var("CARGO_PKG_NAME").expect("Cannot find CARGO_PKG_NAME environment variable");
@@ -116,12 +100,10 @@ pub fn metabuild() {
                 .parent()
                 .expect("manifest has no parent directory")
                 .join(resource);
-            let to = &Path::new(
-                &workspace_metadata.workspace_root,
-            )
-            .join("target")
-            .join(resource)
-            .join(&package.name);
+            let to = &Path::new(&workspace_metadata.workspace_root)
+                .join("target")
+                .join(resource)
+                .join(&package.name);
             create_dir_all(to.parent().unwrap())
                 .unwrap_or_else(|e| panic!("Could not create resource directory {:?} {}", to, e));
             fs::remove_file(to).unwrap();

@@ -1,18 +1,22 @@
-use std::cell::RefCell;
-use std::rc::Rc;
+use crate::{
+    attributes::autocomplete::Autocomplete,
+    html_element::{HtmlElement, HtmlElementFields},
+    object::Object,
+    octant_runtime::peer::AsNative,
+};
 use marshal::{Deserialize, Serialize};
 use marshal_object::derive_variant;
 use marshal_pointer::RcfRef;
 use octant_error::OctantResult;
 use octant_object::{class, DebugClass};
 use octant_runtime::{
-    DeserializePeer, PeerNew, proto::UpMessage, SerializePeer,
+    proto::{BoxUpMessage, UpMessage},
+    rpc,
+    runtime::Runtime,
+    DeserializePeer, PeerNew, SerializePeer,
 };
-use octant_runtime::proto::BoxUpMessage;
-use octant_runtime::runtime::Runtime;
-use crate::{html_element::HtmlElement, object::Object};
-use crate::html_element::HtmlElementFields;
-use crate::octant_runtime::peer::AsNative;
+use std::{cell::RefCell, rc::Rc};
+use crate::attributes::input_type::InputType;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct HtmlInputElementFields {
@@ -49,6 +53,35 @@ impl UpMessage for SetInput {
     #[cfg(side = "server")]
     fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()> {
         *self.element.html_input_element().value.borrow_mut() = Rc::new(self.value);
+        Ok(())
+    }
+}
+
+#[rpc]
+impl dyn HtmlInputElement {
+    #[rpc]
+    pub fn set_autocomplete(self: &RcfRef<Self>, _: &Rc<Runtime>, autocomplete: Autocomplete) {
+        self.native().set_autocomplete(&autocomplete.to_string());
+        Ok(())
+    }
+    #[rpc]
+    pub fn set_type(self: &RcfRef<Self>, _: &Rc<Runtime>, typ: InputType) {
+        self.native().set_type(&typ.as_string());
+        Ok(())
+    }
+    #[rpc]
+    pub fn set_value(self: &RcfRef<Self>, _: &Rc<Runtime>, value: String) {
+        self.native().set_value(&value);
+        Ok(())
+    }
+    #[rpc]
+    pub fn set_placeholder(self: &RcfRef<Self>, _: &Rc<Runtime>, placeholder: String) {
+        self.native().set_placeholder(&placeholder);
+        Ok(())
+    }
+    #[rpc]
+    pub fn set_required(self: &RcfRef<Self>, _: &Rc<Runtime>, required: bool) {
+        self.native().set_required(required);
         Ok(())
     }
 }

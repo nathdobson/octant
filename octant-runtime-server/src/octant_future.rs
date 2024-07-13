@@ -19,7 +19,7 @@ use marshal_json::decode::full::JsonDecoderBuilder;
 use marshal_json::encode::full::JsonEncoderBuilder;
 use marshal_object::derive_variant;
 use marshal_pointer::{Rcf, RcfRef};
-
+#[cfg(side = "server")]
 use safe_once_async::detached::DetachedFuture;
 #[cfg(side = "server")]
 use tokio::sync::oneshot;

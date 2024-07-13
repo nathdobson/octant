@@ -18,37 +18,29 @@ pub struct ElementFields {
 #[class]
 pub trait Element: Node {
     #[cfg(side = "server")]
-    fn set_attribute(self: &RcfRef<Self>, key: &str, value: &str) {
-        self.set_attribute_impl(key.to_string(), value.to_string())
-    }
-    #[cfg(side = "server")]
     fn set_inner_html(self: &RcfRef<Self>, value: RcJsString) {
         self.set_inner_html_impl(value);
+    }
+    #[cfg(side = "server")]
+    fn set_id(self: &RcfRef<Self>, value: String) {
+        self.set_id_impl(value)
     }
 }
 
 #[rpc]
 impl dyn Element {
     #[rpc]
-    fn set_attribute_impl(
-        self: &RcfRef<dyn Element>,
-        _: &Rc<Runtime>,
-        key: String,
-        value: String,
-    ) -> () {
-        self.native().set_attribute(&key, &value).unwrap();
+    fn set_id_impl(self: &RcfRef<dyn Element>, _: &Rc<Runtime>, value: String) {
+        self.native().set_id(&value);
         Ok(())
     }
     #[rpc]
     fn set_inner_html_impl(self: &RcfRef<dyn Element>, _: &Rc<Runtime>, value: RcJsString) -> () {
-        // self.native().set_inner_html(value);
-        // extras::set_inner_html(self.native(), value.native());
         self.native()
             .clone()
             .dyn_into::<extras::ExtraElement>()
             .unwrap()
             .set_inner_html_extra(value.native());
-        log::info!("{:?} {:?}", self.native(), value);
         Ok(())
     }
 }

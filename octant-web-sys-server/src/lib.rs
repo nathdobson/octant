@@ -11,6 +11,7 @@
 #![feature(type_alias_impl_trait)]
 #![feature(try_blocks)]
 #![feature(impl_trait_in_assoc_type)]
+#![allow(dead_code)]
 
 #[cfg(side="client")]
 extern crate octant_runtime_client as octant_runtime;
@@ -40,8 +41,8 @@ pub mod authenticator_attestation_response;
 pub mod authenticator_response;
 pub mod authenticator_selection_criteria;
 pub mod authenticator_transport;
-#[cfg(side = "server")]
-pub mod builder;
+// #[cfg(side = "server")]
+// pub mod builder;
 pub mod credential;
 pub mod credential_creation_options;
 pub mod credential_data;
@@ -85,4 +86,5 @@ pub mod html_paragraph_element;
 pub mod html_hr_element;
 pub mod html_label_element;
 pub mod html_br_element;
-mod js_string;
+pub mod js_string;
+pub mod attributes;

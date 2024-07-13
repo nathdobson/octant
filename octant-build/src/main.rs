@@ -1,10 +1,9 @@
 #![feature(exit_status_error)]
 
-use std::{io, io::ErrorKind, path::Path};
+use std::{io, io::ErrorKind};
 
 use clap::{Parser, Subcommand, ValueEnum};
-use futures::future::{BoxFuture, FutureExt};
-use tokio::{fs, fs::create_dir_all, process::Command};
+use tokio::{fs::create_dir_all, process::Command};
 
 use octant_error::OctantResult;
 

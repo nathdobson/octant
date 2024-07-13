@@ -1,6 +1,6 @@
 use crate::{
-    build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, register::RegisterComponent,
-    style::AccountStyle, AccountTable, SessionTable, VerifiedLogin, SESSION_COOKIE,
+    build_webauthn, into_auth::IntoAuth, into_octant::IntoOctant, style::AccountStyle,
+    AccountTable, SessionTable, VerifiedLogin, SESSION_COOKIE,
 };
 use marshal_object::reexports::safe_once::cell::OnceCell;
 use marshal_pointer::{EmptyRcf, Rcf, RcfRef};
@@ -10,16 +10,17 @@ use octant_database::database::ArcDatabase;
 use octant_error::{octant_error, OctantResult};
 use octant_server::session::Session;
 use octant_web_sys_server::{
-    builder::{ElementExt, HtmlFormElementExt, NodeExt},
+    attributes::autocomplete::{Autocomplete, AutocompleteContactField, AutocompleteField},
     html_form_element::RcHtmlFormElement,
     html_input_element::RcHtmlInputElement,
-    node::{Node, RcNode},
+    node::Node,
     text::RcText,
 };
-use std::{future::Future, rc::Rc, sync::Arc};
+use std::{rc::Rc, sync::Arc};
 use url::Url;
 use uuid::Uuid;
 use webauthn_rs::prelude::Passkey;
+use octant_web_sys_server::attributes::input_type::InputType;
 
 pub struct LoginComponentBuilder {
     db: ArcDatabase,
@@ -110,7 +111,8 @@ impl LoginComponent {
                 ),
             )
             .await?;
-        self.error_text.set_node_value("login successful".to_owned());
+        self.error_text
+            .set_node_value("login successful".to_owned());
         Ok(())
     }
 }
@@ -162,19 +164,27 @@ impl ComponentBuilder for LoginComponentBuilder {
 
                 email_label.append_child({
                     email_input = d.create_input_element();
-                    email_label.set_attribute("autocomplete", "email");
-                    email_input.set_attribute("id", "email");
-                    email_input.set_attribute("type", "text");
-                    email_input.set_attribute("placeholder", "Enter Email");
-                    email_input.set_attribute("required", "true");
+                    email_input.set_autocomplete(Autocomplete::Tokens {
+                        section: None,
+                        address_type: None,
+                        field: AutocompleteField::Contact {
+                            kind: None,
+                            field: AutocompleteContactField::Email,
+                        },
+                        webauthn: false,
+                    });
+                    email_input.set_id("email".to_string());
+                    email_input.set_type(InputType::Text);
+                    email_input.set_placeholder("Enter Email".to_string());
+                    email_input.set_required(true);
                     email_input.clone()
                 });
                 email_label
             });
             form.append_child({
                 let submit = d.create_input_element();
-                submit.set_attribute("type", "submit");
-                submit.set_attribute("value", "Login");
+                submit.set_type(InputType::Submit);
+                submit.set_value("Login".to_string());
                 submit
             });
             form.set_form_submit_handler(handler);

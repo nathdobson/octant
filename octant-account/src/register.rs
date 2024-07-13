@@ -16,6 +16,7 @@ use octant_web_sys_server::{
 use safe_once::cell::OnceCell;
 use url::Url;
 use webauthn_rs::prelude::Uuid;
+use octant_web_sys_server::attributes::input_type::InputType;
 
 pub struct RegisterComponentBuilder {
     db: ArcDatabase,
@@ -131,9 +132,9 @@ impl ComponentBuilder for RegisterComponentBuilder {
                 email_label.append_child(d.create_text_node("Email".to_owned()));
                 email_label.append_child({
                     email_input = d.create_input_element();
-                    email_input.set_attribute("type", "text");
-                    email_input.set_attribute("placeholder", "Enter Email");
-                    email_input.set_attribute("required", "true");
+                    email_input.set_type(InputType::Text);
+                    email_input.set_placeholder("Enter Email".to_string());
+                    email_input.set_required(true);
                     email_input.clone()
                 });
                 email_label
@@ -143,17 +144,17 @@ impl ComponentBuilder for RegisterComponentBuilder {
                 name_label.append_child(d.create_text_node("Team Name".to_owned()));
                 name_label.append_child({
                     name_input = d.create_input_element();
-                    name_input.set_attribute("type", "text");
-                    name_input.set_attribute("placeholder", "Enter Team Name");
-                    name_input.set_attribute("required", "true");
+                    name_input.set_type(InputType::Text);
+                    name_input.set_placeholder("Enter Team Name".to_string());
+                    name_input.set_required(true);
                     name_input.clone()
                 });
                 name_label
             });
             form.append_child({
                 let submit = d.create_input_element();
-                submit.set_attribute("type", "submit");
-                submit.set_attribute("value", "Register");
+                submit.set_type(InputType::Submit);
+                submit.set_value("Register".to_string());
                 submit
             });
             form.set_form_submit_handler(handler);
