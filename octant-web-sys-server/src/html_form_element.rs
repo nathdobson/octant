@@ -28,6 +28,7 @@ use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
 #[cfg(side = "client")]
 use web_sys::Event;
+use crate::html_input_element::HtmlInputElement;
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct HtmlFormElementFields {
@@ -56,7 +57,11 @@ impl dyn HtmlFormElement {
             move |e: Event| {
                 e.prevent_default();
                 if let Some(this) = this.upgrade() {
-                    this.update_input_values_rec();
+                    for desc in
+                        (&*this as &RcfRef<dyn Node>).descendants_by_type::<dyn HtmlInputElement>()
+                    {
+                        desc.update_input_value();
+                    }
                     this.sink()
                         .send(Box::new(SubmitForm { form: this.clone() }));
                 }

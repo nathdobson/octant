@@ -1,17 +1,17 @@
-use by_address::ByAddress;
-use std::{cell::RefCell, collections::HashSet, rc::Rc};
-
 use crate::{
     event_target::{EventTarget, EventTargetFields},
+    html_input_element::RcHtmlInputElement,
     object::{Object, ObjectFields},
     octant_runtime::peer::AsNative,
 };
+use by_address::ByAddress;
+use marshal_pointer::Rcf;
 use octant_object::{cast::downcast_object, class, DebugClass};
 use octant_runtime::{
     reexports::marshal_pointer::RcfRef, rpc, runtime::Runtime, DeserializePeer, PeerNew,
     SerializePeer,
 };
-use crate::html_input_element::RcHtmlInputElement;
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 #[derive(DebugClass, PeerNew, SerializePeer, DeserializePeer)]
 pub struct NodeFields {
@@ -47,19 +47,26 @@ pub trait Node: EventTarget {
             .remove(&ByAddress(e.clone()));
         self.remove_child_impl(e);
     }
-    #[cfg(side = "client")]
-    fn update_input_values_rec(self: &RcfRef<Self>) {
-        if let Ok(input) = downcast_object::<_, RcHtmlInputElement>(self.strong()) {
-            input.update_input_value();
-        }
-        for child in self.children() {
-            child.update_input_values_rec();
-        }
-    }
 }
 
 #[rpc]
 impl dyn Node {
+    pub fn descendants_by_type<T: 'static + ?Sized>(self: &RcfRef<Self>) -> Vec<Rcf<T>> {
+        let mut output = vec![];
+        self.descendants_by_type_impl(&mut output);
+        output
+    }
+    fn descendants_by_type_impl<T: 'static + ?Sized>(
+        self: &RcfRef<Self>,
+        output_vec: &mut Vec<Rcf<T>>,
+    ) {
+        if let Ok(output) = downcast_object::<_, Rcf<T>>(self.strong()) {
+            output_vec.push(output);
+        }
+        for child in self.children.borrow().iter() {
+            child.descendants_by_type_impl(output_vec);
+        }
+    }
     #[rpc]
     fn append_child_impl(self: &RcfRef<Self>, _: &Rc<Runtime>, add: RcNode) -> () {
         self.node()

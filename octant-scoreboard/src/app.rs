@@ -99,7 +99,7 @@ impl OctantApplication for ScoreApplication {
             "Puzzle 1",
             "",
             "puzzle1",
-            PuzzleComponentBuilder::new(session.clone()),
+            PuzzleComponentBuilder::new(self.db.clone(),session.clone()),
         );
         navbar.register(
             "Second",
