@@ -6,7 +6,7 @@ use tokio::sync::mpsc;
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
 use web_sys::{CloseEvent, ErrorEvent, Event, MessageEvent, WebSocket};
 
-use octant_error::{Context, octant_error, OctantError, OctantResult};
+use octant_error::{octant_error, Context, OctantError, OctantResult};
 
 struct WebSocketStream {
     socket: WebSocket,
@@ -145,8 +145,7 @@ pub async fn connect(address: &str) -> OctantResult<(WebSocketSender, WebSocketR
         WebSocketEvent::Connect => {}
         WebSocketEvent::Error(e) => {
             log::error!("receive error");
-            return Err(OctantError::from(JsValue::from(e))
-                .context("Failed to connect."));
+            return Err(OctantError::from(JsValue::from(e)).context("Failed to connect."));
         }
         WebSocketEvent::Message(_) => unreachable!(),
         WebSocketEvent::Close => {
@@ -164,4 +163,13 @@ pub async fn connect(address: &str) -> OctantResult<(WebSocketSender, WebSocketR
             receiver: recv_rx,
         },
     ))
+}
+
+impl WebSocketMessage {
+    pub fn as_bytes(&self) -> &[u8] {
+        match self {
+            WebSocketMessage::Text(x) => x.as_bytes(),
+            WebSocketMessage::Binary(x) => x,
+        }
+    }
 }

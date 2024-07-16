@@ -24,7 +24,7 @@ use marshal::{
     encode::{AnyEncoder, Encoder},
     ser::Serialize,
 };
-use marshal_bin::{decode::full::BinDecoder, encode::full::BinEncoder};
+use marshal_fixed::{decode::full::FixedDecoder, encode::full::FixedEncoder};
 use marshal_json::{decode::full::JsonDecoder, encode::full::JsonEncoder};
 use marshal_pointer::{Rcf, RcfRef};
 use octant_object::class::Class;
@@ -55,8 +55,8 @@ pub mod reexports {
     pub use octant_serde;
 }
 
-pub trait OctantDeserialize = Deserialize<JsonDecoder> + Deserialize<BinDecoder>;
-pub trait OctantSerialize = Serialize<JsonEncoder> + Serialize<BinEncoder>;
+pub trait OctantDeserialize = Deserialize<JsonDecoder> + Deserialize<FixedDecoder>;
+pub trait OctantSerialize = Serialize<JsonEncoder> + Serialize<FixedEncoder>;
 
 #[cfg_attr(side = "client", path = "client_runtime.rs")]
 #[cfg_attr(side = "server", path = "server_runtime.rs")]

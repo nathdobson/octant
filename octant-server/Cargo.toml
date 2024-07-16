@@ -30,3 +30,4 @@ safe-once = {workspace=true}
 marshal-pointer = {workspace=true}
 marshal = {workspace=true}
 octant-components={workspace = true}
+marshal-fixed = {workspace = true}

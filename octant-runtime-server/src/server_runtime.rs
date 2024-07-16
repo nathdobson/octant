@@ -5,7 +5,6 @@ use std::{
 
 use atomic_refcell::AtomicRefCell;
 use marshal::context::OwnedContext;
-use marshal_json::decode::full::JsonDecoderBuilder;
 use marshal_pointer::{Rcf, RcfWeak};
 use octant_error::OctantResult;
 use octant_executor::event_loop::EventSpawn;
@@ -17,7 +16,7 @@ use crate::{
     delete::delete_rpc,
     handle::{RawHandle, TypedHandle},
     peer::{Peer, PeerFields},
-    proto::{DownMessage, UpMessage, UpMessageList},
+    proto::{DownMessage, Proto, UpMessage, UpMessageList},
     LookupError,
 };
 
@@ -27,6 +26,7 @@ struct State {
 }
 
 pub struct Runtime {
+    proto: Proto,
     state: AtomicRefCell<State>,
     spawn: Rc<EventSpawn>,
     sink: UnboundedSender<Box<dyn DownMessage>>,
@@ -39,8 +39,13 @@ impl Debug for Runtime {
 }
 
 impl Runtime {
-    pub fn new(sink: UnboundedSender<Box<dyn DownMessage>>, spawn: Rc<EventSpawn>) -> Self {
+    pub fn new(
+        proto: Proto,
+        sink: UnboundedSender<Box<dyn DownMessage>>,
+        spawn: Rc<EventSpawn>,
+    ) -> Self {
         Runtime {
+            proto,
             state: AtomicRefCell::new(State {
                 next_handle: 0,
                 handles: WeakValueHashMap::new(),
@@ -57,7 +62,6 @@ impl Runtime {
     }
     pub fn add<T: Peer>(&self, value: T) -> Rcf<T> {
         let handle = ((&value) as &dyn Peer).raw_handle();
-        log::info!("Adding handle {:?}", handle);
         let result = Rcf::new(value);
         self.state
             .borrow_mut()
@@ -75,16 +79,16 @@ impl Runtime {
         PeerFields::new(self.clone(), handle)
     }
     pub fn delete(self: &Rc<Self>, handle: RawHandle) {
-        log::info!("Deleting handle {:?}", handle);
         delete_rpc(self, handle);
     }
     pub fn run_batch(self: &Rc<Self>, batch: UpMessageList) -> OctantResult<()> {
         let mut ctx = OwnedContext::new();
         ctx.insert_const(self);
         for message in batch.commands {
-            let message = JsonDecoderBuilder::new(&message)
-                .deserialize::<Box<dyn UpMessage>>(ctx.borrow())?;
-            log::info!("Running up message {:?}", message);
+            let message = self
+                .proto
+                .deserialize::<Box<dyn UpMessage>>(&message, ctx.borrow())?;
+            log::info!("UpMessage: {:#?}", message);
             self.run_message(message)?;
         }
         Ok(())
@@ -104,5 +108,8 @@ impl Runtime {
                 .ok_or_else(|| LookupError::NotFound(handle.raw()))?,
         )
         .map_err(|_| LookupError::DowncastFailed)?)
+    }
+    pub fn proto(&self) -> Proto {
+        self.proto
     }
 }

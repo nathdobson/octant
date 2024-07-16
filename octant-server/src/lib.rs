@@ -4,19 +4,20 @@
 #![feature(trait_upcasting)]
 #![feature(never_type)]
 
-use std::{
-    future::pending, net::SocketAddr, path::Path, rc::Rc, sync::Arc, thread::available_parallelism,
-    time::Duration,
+use crate::{
+    session::{Session, UrlPrefix},
+    sink::BufferedDownMessageSink,
 };
-
-use clap::Parser;
+use clap::{ Parser};
 use futures::{
     stream::{SplitSink, SplitStream, StreamExt},
     SinkExt,
 };
 use marshal::context::OwnedContext;
+use marshal_fixed::{decode::full::FixedDecoderBuilder, encode::full::FixedEncoderBuilder};
 use marshal_json::{decode::full::JsonDecoderBuilder, encode::full::JsonEncoderBuilder};
 use marshal_pointer::Rcf;
+use octant_components::ComponentBuilder;
 use octant_database::{
     database::{ArcDatabase, Database},
     file::DatabaseFile,
@@ -27,22 +28,21 @@ use octant_executor::{
     local_set::{LocalSetPool, LocalSetSpawn},
 };
 use octant_runtime_server::{
-    proto::{DownMessageList, UpMessageList},
+    proto::{ Proto, UpMessageList},
     runtime::Runtime,
 };
-use octant_web_sys_server::{global::Global};
+use octant_web_sys_server::global::Global;
 use parking_lot::Mutex;
+use std::{
+    future::pending, net::SocketAddr, path::Path, rc::Rc, sync::Arc, thread::available_parallelism,
+    time::Duration,
+};
 use tokio::{sync::mpsc, try_join};
 use url::Url;
 use warp::{
     filters::BoxedFilter,
     ws::{Message, WebSocket},
     Filter, Rejection, Reply,
-};
-use octant_components::ComponentBuilder;
-use crate::{
-    session::{Session, UrlPrefix},
-    sink::BufferedDownMessageSink,
 };
 
 pub mod session;
@@ -123,12 +123,6 @@ impl OctantServer {
     pub fn add_warp_handler(&mut self, handler: WarpHandler) {
         self.warp_handlers.get_mut().push(handler);
     }
-    async fn encode(list: DownMessageList) -> OctantResult<Message> {
-        let mut ctx = OwnedContext::new();
-        Ok(Message::text(
-            JsonEncoderBuilder::new().serialize(&list, ctx.borrow())?,
-        ))
-    }
     fn decode(runtime: &Rc<Runtime>, x: Message) -> OctantResult<Option<UpMessageList>> {
         if x.is_close() {
             Ok(None)
@@ -138,7 +132,10 @@ impl OctantServer {
                 JsonDecoderBuilder::new(x.as_bytes()).deserialize::<UpMessageList>(ctx.borrow())?;
             Ok(Some(output))
         } else if x.is_binary() {
-            todo!();
+            let mut ctx = OwnedContext::new();
+            let output = FixedDecoderBuilder::new(x.as_bytes())
+                .deserialize::<UpMessageList>(ctx.borrow())?;
+            Ok(Some(output))
         } else {
             Ok(None)
         }
@@ -146,13 +143,14 @@ impl OctantServer {
     pub async fn run_socket(
         self: Arc<Self>,
         app: Arc<dyn OctantApplication>,
+        proto: String,
         tx: SplitSink<WebSocket, Message>,
         rx: SplitStream<WebSocket>,
     ) -> OctantResult<()> {
         let spawn = self.spawn.clone();
         spawn
             .spawn_async(move || async move {
-                self.run_socket_local(app, tx, rx).await?;
+                self.run_socket_local(app, proto, tx, rx).await?;
                 Ok(())
             })
             .await?
@@ -160,13 +158,29 @@ impl OctantServer {
     pub async fn run_socket_local(
         self: Arc<Self>,
         app: Arc<dyn OctantApplication>,
+        proto: String,
         tx: SplitSink<WebSocket, Message>,
         mut rx: SplitStream<WebSocket>,
     ) -> OctantResult<()> {
+        let proto = proto.parse::<Proto>()?;
         let (tx_inner, rx_inner) = mpsc::unbounded_channel();
-        let mut sink = BufferedDownMessageSink::new(rx_inner, Box::pin(tx.with(Self::encode)));
+        let mut sink = BufferedDownMessageSink::new(
+            proto,
+            rx_inner,
+            Box::pin(tx.with(move |list| async move {
+                let mut ctx = OwnedContext::new();
+                match proto {
+                    Proto::Json => Ok(Message::text(
+                        JsonEncoderBuilder::new().serialize(&list, ctx.borrow())?,
+                    )),
+                    Proto::Fixed => Ok(Message::binary(
+                        FixedEncoderBuilder::new().serialize(&list, ctx.borrow())?,
+                    )),
+                }
+            })),
+        );
         let (spawn, mut pool) = EventPool::new(move |cx| sink.poll_flush(cx));
-        let runtime = Rc::new(Runtime::new(tx_inner, spawn.clone()));
+        let runtime = Rc::new(Runtime::new(proto,tx_inner, spawn.clone()));
         let global = Global::new(runtime);
         let session = Rc::new(Session::new(global.clone()));
         spawn.spawn({
@@ -188,10 +202,20 @@ impl OctantServer {
             async move {
                 let url = global.window().document().location().href().await?;
                 let url = Url::parse(&url)?;
+                let mut segments = url
+                    .path_segments()
+                    .ok_or_else(|| octant_error!("no url path"))?;
+                let site = segments
+                    .next()
+                    .ok_or_else(|| octant_error!("no site in path"))?;
+                let proto_str = segments
+                    .next()
+                    .ok_or_else(|| octant_error!("no proto in path"))?;
+
                 session.insert_data(UrlPrefix::new(url.join("/")?));
                 log::info!("url = {}", url);
                 let component_builder = app.create_component_builder(session)?;
-                component_builder.set_self_path("/site");
+                component_builder.set_self_path(&format!("/{}/{}", site, proto_str));
                 let component = component_builder.build_component()?;
                 global
                     .window()
@@ -251,14 +275,14 @@ impl OctantServer {
             .map({
                 let this = self.clone();
                 let app = app.clone();
-                move |name: String, ws: warp::ws::Ws| {
+                move |proto: String, ws: warp::ws::Ws| {
                     log::info!("Handling");
                     let this = this.clone();
                     let app = app.clone();
                     ws.on_upgrade(|websocket| async move {
                         log::info!("Upgraded");
                         let (tx, rx) = websocket.split();
-                        if let Err(e) = this.run_socket(app, tx, rx).await {
+                        if let Err(e) = this.run_socket(app, proto, tx, rx).await {
                             log::error!("Error handling websocket: {:?}", e);
                         }
                     })

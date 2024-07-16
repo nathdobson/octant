@@ -13,10 +13,6 @@ use marshal::{
     ser::rc::SerializeRc,
     Deserialize, Serialize,
 };
-#[cfg(side = "server")]
-use marshal_json::decode::full::JsonDecoderBuilder;
-#[cfg(side = "client")]
-use marshal_json::encode::full::JsonEncoderBuilder;
 use marshal_object::derive_variant;
 use marshal_pointer::{Rcf, RcfRef};
 #[cfg(side = "server")]
@@ -106,14 +102,15 @@ impl<T: Debug + FutureReturn> OctantFuture<T> {
                 let result = f.await;
                 let down = down.borrow_mut().take().unwrap();
                 let up = result.future_produce(&runtime, down);
-                let up = JsonEncoderBuilder::new()
+                let up = runtime
+                    .proto()
                     .serialize(&up, OwnedContext::new().borrow())
                     .unwrap();
                 runtime
                     .sink()
                     .send(Box::<FutureResponse>::new(FutureResponse {
                         promise: parent,
-                        value: up.into_bytes(),
+                        value: up,
                     }));
             }
         });
@@ -131,8 +128,9 @@ impl<T: FutureReturn> Future for OctantFuture<T> {
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         if let Poll::Ready(up) = Pin::new(&mut (*self).receiver).poll(cx)? {
             let mut ctx = OwnedContext::new();
-            ctx.insert_const((*self).parent.runtime());
-            let up = JsonDecoderBuilder::new(&up).deserialize::<T::Up>(ctx.borrow())?;
+            let runtime = (*self).parent.runtime();
+            ctx.insert_const(runtime);
+            let up = runtime.proto().deserialize::<T::Up>(&up, ctx.borrow())?;
             let retain = self.retain.take().unwrap();
             return Poll::Ready(Ok(T::future_return(self.parent.runtime(), retain, up)));
         }

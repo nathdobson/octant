@@ -10,7 +10,7 @@ use octant_object::{cast::downcast_object, class::Class};
 use crate::{
     handle::{RawHandle, TypedHandle},
     peer::{Peer, RcPeer},
-    proto::UpMessage,
+    proto::{Proto, UpMessage},
     LookupError,
 };
 
@@ -19,6 +19,7 @@ struct State {
 }
 
 pub struct Runtime {
+    proto: Proto,
     state: AtomicRefCell<State>,
     sink: Rc<RuntimeSink>,
 }
@@ -29,8 +30,12 @@ pub struct RuntimeSink {
 }
 
 impl Runtime {
-    pub fn new(sink: UnboundedSender<Box<dyn UpMessage>>) -> OctantResult<Rc<Runtime>> {
+    pub fn new(
+        proto: Proto,
+        sink: UnboundedSender<Box<dyn UpMessage>>,
+    ) -> OctantResult<Rc<Runtime>> {
         let runtime = Rc::new(Runtime {
+            proto,
             state: AtomicRefCell::new(State {
                 handles: HashMap::new(),
             }),
@@ -84,6 +89,9 @@ impl Runtime {
     // }
     pub fn sink(&self) -> &Rc<RuntimeSink> {
         &self.sink
+    }
+    pub fn proto(&self) -> Proto {
+        self.proto
     }
 }
 

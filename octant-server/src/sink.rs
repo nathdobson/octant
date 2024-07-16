@@ -4,11 +4,10 @@ use std::{
 };
 
 use futures::{Sink, SinkExt};
-use marshal_json::encode::full::JsonEncoderBuilder;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 use octant_runtime_server::{
-    proto::{DownMessage, DownMessageList},
+    proto::{DownMessage, DownMessageList, Proto},
     reexports::{
         marshal::context::OwnedContext,
         octant_error::{OctantError, OctantResult},
@@ -16,6 +15,7 @@ use octant_runtime_server::{
 };
 
 pub struct BufferedDownMessageSink {
+    proto: Proto,
     source: UnboundedReceiver<Box<dyn DownMessage>>,
     buffer: Vec<Box<dyn DownMessage>>,
     sink: Pin<Box<dyn Sink<DownMessageList, Error = OctantError>>>,
@@ -23,10 +23,12 @@ pub struct BufferedDownMessageSink {
 
 impl BufferedDownMessageSink {
     pub fn new(
+        proto: Proto,
         source: UnboundedReceiver<Box<dyn DownMessage>>,
         sink: Pin<Box<dyn Sink<DownMessageList, Error = OctantError>>>,
     ) -> Self {
         BufferedDownMessageSink {
+            proto,
             source,
             buffer: vec![],
             sink,
@@ -44,8 +46,8 @@ impl BufferedDownMessageSink {
                     .drain(..)
                     .map(|x| {
                         let mut ctx = OwnedContext::new();
-                        let output = JsonEncoderBuilder::new().serialize(&x, ctx.borrow())?;
-                        Ok(output.into_bytes())
+                        let output = self.proto.serialize(&x, ctx.borrow())?;
+                        Ok(output)
                     })
                     .collect::<OctantResult<Vec<_>>>()?;
                 self.sink.start_send_unpin(DownMessageList { commands })?;
