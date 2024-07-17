@@ -4,7 +4,7 @@
 #![deny(unused_must_use)]
 #![feature(trait_alias)]
 #![feature(arbitrary_self_types)]
-
+#![feature(debug_closure_helpers)]
 extern crate core;
 extern crate self as octant_runtime;
 #[cfg(side = "client")]

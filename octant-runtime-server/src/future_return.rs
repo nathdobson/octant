@@ -12,7 +12,7 @@ use crate::peer::PeerFields;
 #[cfg(side = "server")]
 use crate::PeerNew;
 
-pub trait FutureReturn: 'static {
+pub trait FutureReturn: 'static + Debug {
     type Down: 'static + OctantSerialize + OctantDeserialize + Debug;
     type Up: 'static + OctantSerialize + OctantDeserialize + Debug;
     #[cfg(side = "server")]

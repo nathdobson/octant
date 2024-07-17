@@ -6,6 +6,7 @@ use std::{
     fmt::{Display, Formatter},
     fs,
     fs::create_dir_all,
+    io,
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
@@ -106,7 +107,11 @@ pub fn metabuild() {
                 .join(&package.name);
             create_dir_all(to.parent().unwrap())
                 .unwrap_or_else(|e| panic!("Could not create resource directory {:?} {}", to, e));
-            fs::remove_file(to).unwrap();
+            if let Err(e) = fs::remove_file(to) {
+                if e.kind() != io::ErrorKind::NotFound {
+                    Result::<(), _>::Err(e).unwrap();
+                }
+            }
             std::os::unix::fs::symlink(from, to).unwrap_or_else(|e| {
                 panic!(
                     "Could not create symlink from {:?} to {:?}: {}",

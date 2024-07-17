@@ -1,10 +1,3 @@
-use std::{cell::RefCell, fmt::Debug, future::Future, marker::PhantomData, rc::Rc};
-#[cfg(side = "server")]
-use std::{
-    pin::Pin,
-    task::{Context, Poll},
-};
-
 use marshal::{
     context::OwnedContext,
     de::rc::DeserializeRc,
@@ -17,6 +10,18 @@ use marshal_object::derive_variant;
 use marshal_pointer::{Rcf, RcfRef};
 #[cfg(side = "server")]
 use safe_once_async::detached::DetachedFuture;
+use std::{
+    cell::RefCell,
+    fmt::{Debug, Formatter},
+    future::Future,
+    marker::PhantomData,
+    rc::Rc,
+};
+#[cfg(side = "server")]
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
 #[cfg(side = "server")]
 use tokio::sync::oneshot;
 
@@ -39,11 +44,25 @@ use crate::{
     serialize_peer,
 };
 
+#[cfg(side = "server")]
+struct Sender(RefCell<Option<oneshot::Sender<Vec<u8>>>>);
+
 #[derive(DebugClass)]
 pub struct AbstractOctantFutureFields {
     parent: PeerFields,
     #[cfg(side = "server")]
-    sender: RefCell<Option<oneshot::Sender<Vec<u8>>>>,
+    sender: Sender,
+}
+
+#[cfg(side = "server")]
+impl Debug for Sender {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.0.borrow().is_some() {
+            write!(f, "pending")
+        } else {
+            write!(f, "ready")
+        }
+    }
 }
 
 #[class]
@@ -66,10 +85,19 @@ pub struct OctantFuture<T: FutureReturn> {
     phantom: PhantomData<T>,
 }
 
-#[derive(Serialize, Debug, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct FutureResponse {
     promise: RcAbstractOctantFuture,
     value: Vec<u8>,
+}
+
+impl Debug for FutureResponse {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FutureResponse")
+            .field("promise", &self.promise)
+            .field_with("value", |f| write!(f, ".."))
+            .finish()
+    }
 }
 
 derive_variant!(BoxUpMessage, FutureResponse);
@@ -78,6 +106,7 @@ impl UpMessage for FutureResponse {
     fn run(self: Box<Self>, runtime: &Rc<Runtime>) -> OctantResult<()> {
         self.promise
             .sender
+            .0
             .borrow_mut()
             .take()
             .ok_or_else(|| octant_error!("double return"))?
@@ -132,7 +161,9 @@ impl<T: FutureReturn> Future for OctantFuture<T> {
             ctx.insert_const(runtime);
             let up = runtime.proto().deserialize::<T::Up>(&up, ctx.borrow())?;
             let retain = self.retain.take().unwrap();
-            return Poll::Ready(Ok(T::future_return(self.parent.runtime(), retain, up)));
+            let result = T::future_return(self.parent.runtime(), retain, up);
+            log::info!("Future {:?} returned {:?}", (*self).parent.typed_handle().raw(), result);
+            return Poll::Ready(Ok(result));
         }
         Poll::Pending
     }
@@ -167,7 +198,7 @@ impl<T: FutureReturn> ImmediateReturn for OctantFuture<T> {
         let peer: Rcf<dyn AbstractOctantFuture> =
             runtime.add::<AbstractOctantFutureFields>(AbstractOctantFutureFields {
                 parent: runtime.add_uninit(),
-                sender: RefCell::new(Some(tx)),
+                sender: Sender(RefCell::new(Some(tx))),
             });
         let handle = (*peer).typed_handle();
         (
